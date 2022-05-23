@@ -1,5 +1,6 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
+//import * as spl from '@solana/spl-token';
 //import { Connection } from "@solana/web3.js";
 import { Stakan } from "../target/types/stakan";
 
@@ -214,6 +215,8 @@ describe("stakan", () => {
   anchor.setProvider(provider);
 
   const program = anchor.workspace.Stakan as Program<Stakan>;
+  const tokenProgramID = anchor.Spl.token().programId;
+//  spl.TOKEN_PROGRAM_ID;
 
   const programWallet = provider.wallet;
 
@@ -312,7 +315,7 @@ describe("stakan", () => {
   it("SHOULD FAIL - action before Global state initialized!", async () => {
     try {
       const dummyGameSessionAccountKeypair = anchor.web3.Keypair.generate()
-      await initGameSession(userWallet, dummyGameSessionAccountKeypair, 1000000);
+      await initGameSession(userWallet, dummyGameSessionAccountKeypair, 0);
     }
     catch(e) {
 //      console.log(e);
@@ -320,7 +323,7 @@ describe("stakan", () => {
     }
     throw "Should have failed upon action before Global state initialization";
   });
-/*
+
   it("Global state is initialized!", async () => {
     const globalBalanceBefore = await provider.connection.getBalance(gameGlobalWallet.publicKey);
     console.log("Game account before init: ", globalBalanceBefore);
@@ -359,9 +362,9 @@ describe("stakan", () => {
     }
     throw "Should have failed upon double initialization";
   });
-*/
-  it("User Game account is initialized!", async () => {
-    await initUserGameAccount(userWallet, userGameAccountKeypair, gameGlobalAccountKeypair);
+
+  it("User is Signed Up!", async () => {
+    await signUpUser(userWallet, userGameAccountKeypair, gameGlobalAccountKeypair);
     const accountInfo = await provider.connection.getAccountInfo(userGameAccountKeypair.publicKey);
     console.log("User Game account data: ", accountInfo.data);
     
@@ -374,9 +377,9 @@ describe("stakan", () => {
     assert(userGameAccountData['saved_game_sessions'], 0);
   });
 
-  it("SHOULD FAIL: User Game account is initialized twice!", async () => {
+  it("SHOULD FAIL: User Game is Signed Up twice!", async () => {
     try {
-      await initUserGameAccount(userWallet, userGameAccountKeypair, gameGlobalAccountKeypair);
+      await signUpUser(userWallet, userGameAccountKeypair, gameGlobalAccountKeypair);
     }
     catch {
       return;
@@ -386,7 +389,7 @@ describe("stakan", () => {
 
   it("Game session is started!", async () => {
     gameSessionAccountKeypair = anchor.web3.Keypair.generate();
-    await initGameSession(userWallet, gameSessionAccountKeypair, 0);
+    await initGameSession(userWallet, gameSessionAccountKeypair, 1000000);
   });
 
   it("Game session has ended & saved!", async () => {
@@ -410,7 +413,7 @@ describe("stakan", () => {
 
   it("SHOULD FAIL: Game session is initialized once again after saved & closed !", async () => {
     try {
-      await initGameSession(userWallet, gameSessionAccountKeypair, 1000000);
+      await initGameSession(userWallet, gameSessionAccountKeypair, 0);
     }
     catch {
         return;
@@ -431,9 +434,9 @@ describe("stakan", () => {
   });
   */
 
-async function initUserGameAccount(userWallet, userGameAccount, gameGlobalAccount) {      
+async function signUpUser(userWallet, userGameAccount, gameGlobalAccount) {      
   const dummy = anchor.web3.Keypair.generate();
-  const tx = await program.rpc.initUserGameAccount(
+  const tx = await program.rpc.signUpUser(
     {
       accounts: {
         userGameAccount: userGameAccountKeypair.publicKey,
@@ -449,37 +452,57 @@ async function initUserGameAccount(userWallet, userGameAccount, gameGlobalAccoun
 }
   
 async function initGameSession(userWallet, sessionAccount, stake) {      
-  const userBalanceBefore = await provider.connection.getBalance(userWallet.publicKey);
-  const globalBalanceBefore = await provider.connection.getBalance(gameGlobalWallet.publicKey);
+  try {
+    const userBalanceBefore = await provider.connection.getBalance(userWallet.publicKey);
+//    const globalBalanceBefore = await provider.connection.getBalance(gameGlobalWallet.publicKey);
   
-  console.log("User wallet before init: ", userBalanceBefore);
-  console.log("Game account before init: ", globalBalanceBefore);
+    console.log("User wallet before init: ", userBalanceBefore);
+//    console.log("Game account before init: ", globalBalanceBefore);
 
-  const tx = await program.rpc.initGameSession(
-    new anchor.BN(stake),
-    {
-      accounts: {
-        gameSessionAccount: sessionAccount.publicKey,
-        gameGlobalAccount: gameGlobalAccountKeypair.publicKey,
-        userWallet: userWallet.publicKey,
-        globalWallet: gameGlobalWallet.publicKey,
-        systemProgram: SystemProgram.programId,
-      },
-      signers: [userWallet, sessionAccount],
-    }
-  );
-  const userBalanceAfter = await provider.connection.getBalance(userWallet.publicKey);
-  const globalBalanceAfter = await provider.connection.getBalance(gameGlobalWallet.publicKey);
+    const [pdaGameSessionAccount, pdaGameSessionAccountBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [sessionAccount.publicKey.toBuffer()],
+        program.programId
+      );
 
-  console.log("User wallet after init: ", userBalanceAfter, ", delta: ", userBalanceBefore - userBalanceAfter);
-  console.log("Game account after init: ", globalBalanceAfter, ", delta: ", globalBalanceBefore - globalBalanceAfter);
-/*
-  const userBalanceAfter1 = await provider.connection.getBalance(userWallet.publicKey);
-  const globalBalanceAfter1 = await provider.connection.getBalance(gameGlobalWallet.publicKey);
+    const pdaGameSessionAccountBalanceBefore = await provider.connection.getBalance(pdaGameSessionAccount);
+    console.log("Game session(PDA) balance before init:", pdaGameSessionAccountBalanceBefore);
+    console.log("Stake:", stake);
 
-  console.log("User wallet after init: ", userBalanceAfter1, ", delta: ", userBalanceBefore - userBalanceAfter1);
-  console.log("Game account after init: ", globalBalanceAfter1, ", delta: ", globalBalanceBefore - globalBalanceAfter1);
-*/
+    const rentExemption = await provider.connection.getMinimumBalanceForRentExemption(8 + 100);
+    console.log("rentExemption:", rentExemption);
+
+    const tx = await program.methods
+      .initGameSession(
+//      pdaGameSessionAccountBump,
+        userWallet.publicKey,
+        new anchor.BN(stake),
+      )
+      .accounts({
+//        accounts: {
+          gameSessionAccount: sessionAccount.publicKey,
+          pdaGameSessionAccount: pdaGameSessionAccount,
+          gameGlobalAccount: gameGlobalAccountKeypair.publicKey,
+          userWallet: userWallet.publicKey,
+          globalWallet: gameGlobalWallet.publicKey,
+  //        tokenProgram: tokenProgramID,
+          systemProgram: SystemProgram.programId,
+      })
+      .signers([userWallet, sessionAccount])
+      .rpc();
+//      })
+//    );
+      const userBalanceAfter = await provider.connection.getBalance(userWallet.publicKey);
+      const globalBalanceAfter = await provider.connection.getBalance(gameGlobalWallet.publicKey);
+      const pdaGameSessionAccountBalanceAfter = await provider.connection.getBalance(pdaGameSessionAccount);
+    
+      console.log("User wallet after init: ", userBalanceAfter, ", delta: ", userBalanceBefore - userBalanceAfter);
+//      console.log("Game account after init: ", globalBalanceAfter, ", delta: ", globalBalanceBefore - globalBalanceAfter);
+      console.log("Game session(PDA) balance after init: ", pdaGameSessionAccountBalanceAfter);
+    } catch(e) {
+    console.log(e);
+    throw e;
+  }
 }
 
 async function saveToArweave(userPublicKey, data): Promise<string> {
