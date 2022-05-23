@@ -5,6 +5,9 @@ mod game_global_account;
 
 #[error_code]
 pub enum GameError {
+    #[msg("Initialize global wallet with more funds.")]
+    GlobalFundsTooLow,
+
     #[msg("Invalid Game Global Account public key.")]
     InvalidGlobalStateKey,
 
@@ -13,6 +16,9 @@ pub enum GameError {
 
     #[msg("Could not transfer reward from Global Account.")]
     CouldNotTransferReward,
+
+    #[msg("Stake is higher than fund can accept.")]
+    StakeTooHigh,
 
     #[msg("Invalid value of game session duration.")]
     InvalidDuration,
@@ -30,21 +36,45 @@ static global_account_key: Pubkey
 pub mod stakan {
     use super::*;
 
-    pub fn init_global_state(ctx: Context<InitGlobalState>) -> Result<()> {
-        ctx.accounts.game_global_account.global_stake = GameGlobalState::MIN_STAKE_LAMPORTS;
+    pub fn init_global_state(ctx: Context<InitGlobalState>, funds: u64) -> Result<()> {
+/*
+        if funds < GameGlobalState::MIN_STAKE_LAMPORTS {
+            return Err(GameError::StakeTooHigh.into())
+        }
+
+        let ix = anchor_lang::solana_program::system_instruction::transfer(
+            &ctx.accounts.global_wallet.key(),
+            &ctx.accounts.global_wallet.key(),
+            funds,
+        );
+        anchor_lang::solana_program::program::invoke(
+            &ix,
+            &[
+                ctx.accounts.global_wallet.to_account_info(),
+                ctx.accounts.global_wallet.to_account_info(),
+            ],
+        )?;
+*/
+//        ctx.accounts.game_global_account.funds = GameGlobalState::MIN_STAKE_LAMPORTS;
+//        ctx.accounts.game_global_account.funds = funds;
         Ok(())
     }
 
     pub fn init_user_game_account(ctx: Context<InitUserGameAccount>) -> Result<()> {
-        ctx.accounts.user_game_account.max_score = 0xbeef;
-        ctx.accounts.user_game_account.saved_game_sessions = 0xdead;
+        ctx.accounts.user_game_account.max_score = 0; //0xbeef;
+        ctx.accounts.user_game_account.saved_game_sessions = 0; //0xdead;
         Ok(())
     }
 
     pub fn init_game_session(ctx: Context<InitGameSession>, stake: u64) -> Result<()> {
+        // reward is funds/2, so stake should be smaller than funds 
+        // in order the reward is greater than stake in case the user is rewarded 
+        if ctx.accounts.game_global_account.funds <= stake {
+            return Err(GameError::StakeTooHigh.into())
+        }
+
         ctx.accounts.game_session_account.stake = stake;
 //        return Ok(());
-
         if stake > 0 {
             let ix = anchor_lang::solana_program::system_instruction::transfer(
                 &ctx.accounts.user_wallet.key(),
@@ -59,8 +89,8 @@ pub mod stakan {
                         ctx.accounts.global_wallet.to_account_info(),
                     ],
                 ) {
-                Ok(_) => {
-                    ctx.accounts.game_global_account.global_stake += stake;
+                Ok(()) => {
+                    ctx.accounts.game_global_account.funds += stake;
                     Ok(())
                 },
                 Err(_) => Err(GameError::CouldNotTransferStake.into()),
@@ -86,7 +116,7 @@ pub mod stakan {
         if score > ctx.accounts.game_global_account.global_max_score {
             ctx.accounts.game_global_account.global_max_score = score;
 
-            let reward = ctx.accounts.game_global_account.global_stake / 2;
+            let reward = ctx.accounts.game_global_account.funds / 2;
 
             let ix = anchor_lang::solana_program::system_instruction::transfer(
                 &ctx.accounts.global_wallet.key(),
@@ -101,8 +131,8 @@ pub mod stakan {
                         ctx.accounts.user_wallet.to_account_info(),
                     ],
                 ) {
-                Ok(_) => {
-                    ctx.accounts.game_global_account.global_stake -= reward;
+                Ok(()) => {
+                    ctx.accounts.game_global_account.funds -= reward;
                     Ok(())
                 },
                 Err(_) => Err(GameError::CouldNotTransferReward.into()),
@@ -129,6 +159,7 @@ pub struct InitUserGameAccount<'info> {
     pub user_game_account: Account<'info, UserGame>,
     #[account(mut)]
     pub user_wallet: Signer<'info>,
+    pub game_global_account: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
@@ -205,7 +236,7 @@ pub struct UserGame {
 #[account]
 pub struct GameGlobalState {
     pub global_max_score: u64,
-    pub global_stake: u64,
+    pub funds: u64,
 } 
 
 impl GameGlobalState {

@@ -4,9 +4,7 @@ import { Program } from "@project-serum/anchor";
 import { Stakan } from "../target/types/stakan";
 
 import Arweave from "arweave";
-//import TestWeave from "testweave-sdk"
 import { serialize, deserialize } from "borsh";
-//import fetch from "node-fetch";
 //import ArLocal from 'arlocal';
 const axios = require('axios');
 
@@ -67,9 +65,9 @@ class GameSessionArchive extends Assignable {
       }
   }
 
-  public static async get(userWalletPublicKey) {
+  public static async getArchiveIds(userWalletPublicKey, numberOfArchives) {
     const queryObject = { query: `{
-      transactions(first: 100,
+      transactions(first: ${numberOfArchives},
         tags: [
           {
             name: "App-Name",
@@ -105,9 +103,22 @@ class GameSessionArchive extends Assignable {
 //    console.log("queryObject: ", queryObject);
     let results = await arweave.api.post('/graphql', queryObject);
 
-    const edges = results.data.data.transactions.edges;
+    return results.data.data.transactions.edges.map(edge => edge.node.id);
+  }
 
-    results.data.data.transactions.edges.map(async edge => {
+  public static async get(userWalletPublicKey, numberOfArchives) {
+    const archiveIds = await this.getArchiveIds(userWalletPublicKey, numberOfArchives);
+    
+    const archivedData = archiveIds.map(async id => {
+      const buffer = await arweave.transactions.getData(id,
+        { decode: true, string: false }
+      );
+      const data = deserialize(GameSessionArchive.schema, GameSessionArchive, Buffer.from(buffer));
+      return data;
+    });
+    return archivedData;
+/*    
+    edges.map(async edge => {
       console.log("Node ID: " + edge.node.id);
       const buffer = await arweave.transactions.getData(
         edge.node.id,
@@ -125,8 +136,9 @@ class GameSessionArchive extends Assignable {
       }
       //      const data =  Buffer.from(buffer);
     });
+    */
 
-    return edges;
+//    return edges;
   }
 }
 
@@ -209,7 +221,8 @@ describe("stakan", () => {
   const gameGlobalAccountKeypair = anchor.web3.Keypair.generate();
 
   const userWallet = anchor.web3.Keypair.generate();
-  const gameSessionAccountKeypair = anchor.web3.Keypair.generate();
+
+  let gameSessionAccountKeypair;
 
   const bip39 = require('bip39');
 
@@ -259,7 +272,6 @@ describe("stakan", () => {
 
   it("Arweave create test transaction!", async () => {
 //    const testWeave = await TestWeave.init(arweave);
-
     let data = "BLABLABLA";
 
     const dataTransaction = await arweave.createTransaction({
@@ -275,31 +287,19 @@ describe("stakan", () => {
     const statusAfterPost = await arweave.transactions.getStatus(dataTransaction.id)
     assert(statusAfterPost, 202);
 
-//    await fetch('http://localhost:1984/mine');
     await axios.get('http://localhost:1984/mine');
     const statusAfterMine = await arweave.transactions.getStatus(dataTransaction.id)
     console.log(statusAfterMine); // this will return 200
     assert(statusAfterPost, 200);
-    
-    // use the TestWeave to instantly mine the block that contains the transaction
-  /*  
-    await testWeave.mine();
-    const statusAfterMine = await arweave.transactions.getStatus(dataTransaction.id)
-    console.log(statusAfterMine); // this will return 200
-    assert(statusAfterPost, 200);
-  */  
-    
-//    await arweave.transactions.
-//    await arweave.api.
   });
-
+/*
   it("Arweave query test transaction!", async () => {
     let results = await arweave.api.post('/graphql', queryObject);
 
     const edges = results.data.data.transactions.edges;
 //    console.log(edges);
   });
-
+*/
   it("Airdrop!", async () => {
     await provider.connection.confirmTransaction(
       await provider.connection.requestAirdrop(gameGlobalWallet.publicKey, 100000000000)
@@ -311,7 +311,8 @@ describe("stakan", () => {
  
   it("SHOULD FAIL - action before Global state initialized!", async () => {
     try {
-      await initGameSession(userWallet, gameSessionAccountKeypair, 1000000);
+      const dummyGameSessionAccountKeypair = anchor.web3.Keypair.generate()
+      await initGameSession(userWallet, dummyGameSessionAccountKeypair, 1000000);
     }
     catch(e) {
 //      console.log(e);
@@ -319,18 +320,22 @@ describe("stakan", () => {
     }
     throw "Should have failed upon action before Global state initialization";
   });
-
+/*
   it("Global state is initialized!", async () => {
     const globalBalanceBefore = await provider.connection.getBalance(gameGlobalWallet.publicKey);
     console.log("Game account before init: ", globalBalanceBefore);
 
-    const tx = await program.rpc.initGlobalState({
+    const tx = await program.rpc.initGlobalState(
+      new anchor.BN(globalBalanceBefore),
+      {
         accounts: {
           gameGlobalAccount: gameGlobalAccountKeypair.publicKey,
-          globalWallet: programWallet.publicKey,
+//          globalWallet: programWallet.publicKey,
+          globalWallet: gameGlobalWallet.publicKey,
           systemProgram: SystemProgram.programId,
         },
-        signers: [gameGlobalAccountKeypair],
+//        signers: [gameGlobalWallet],
+        signers: [gameGlobalWallet, gameGlobalAccountKeypair],
       });
 
     const globalBalanceAfter = await provider.connection.getBalance(gameGlobalWallet.publicKey);
@@ -345,7 +350,7 @@ describe("stakan", () => {
           globalWallet: gameGlobalWallet.publicKey,
           systemProgram: SystemProgram.programId,
         },
-        signers: [gameGlobalAccountKeypair],
+        signers: [gameGlobalWallet, gameGlobalAccountKeypair],
       });
     }
     catch(e) {
@@ -354,10 +359,9 @@ describe("stakan", () => {
     }
     throw "Should have failed upon double initialization";
   });
-
+*/
   it("User Game account is initialized!", async () => {
-    //    await initGameSession(userWallet, gameSessionAccountKeypair, 1000000);
-    await initUserGameAccount(userWallet, userGameAccountKeypair);
+    await initUserGameAccount(userWallet, userGameAccountKeypair, gameGlobalAccountKeypair);
     const accountInfo = await provider.connection.getAccountInfo(userGameAccountKeypair.publicKey);
     console.log("User Game account data: ", accountInfo.data);
     
@@ -366,12 +370,13 @@ describe("stakan", () => {
       userGameAccountData['max_score'].toString(16),
       userGameAccountData['saved_game_sessions'].toString(16),
     );
+    assert(userGameAccountData['max_score'], 0);
+    assert(userGameAccountData['saved_game_sessions'], 0);
   });
 
   it("SHOULD FAIL: User Game account is initialized twice!", async () => {
-    //    await initGameSession(userWallet, gameSessionAccountKeypair, 1000000);
     try {
-      await initUserGameAccount(userWallet, userGameAccountKeypair);
+      await initUserGameAccount(userWallet, userGameAccountKeypair, gameGlobalAccountKeypair);
     }
     catch {
       return;
@@ -379,16 +384,30 @@ describe("stakan", () => {
     throw "Should have failed upon double initialization";
   });
 
-  it("Game session is initialized!", async () => {
-//    await initGameSession(userWallet, gameSessionAccountKeypair, 1000000);
+  it("Game session is started!", async () => {
+    gameSessionAccountKeypair = anchor.web3.Keypair.generate();
     await initGameSession(userWallet, gameSessionAccountKeypair, 0);
   });
 
-  it("Game session is saved!", async () => {
-
+  it("Game session has ended & saved!", async () => {
     await saveGameSession(userWallet, gameGlobalWallet, gameSessionAccountKeypair, 42, 1234);
+    gameSessionAccountKeypair = undefined;
   });
   
+  it("Game session is started!", async () => {
+    gameSessionAccountKeypair = anchor.web3.Keypair.generate();
+    await initGameSession(userWallet, gameSessionAccountKeypair, 0);
+  });
+
+  it("Game session has ended & saved!", async () => {
+    await saveGameSession(userWallet, gameGlobalWallet, gameSessionAccountKeypair, 43, 4321);
+    gameSessionAccountKeypair = undefined;
+  });
+
+  it("User game archive!", async () => {
+    await getUserGameArchive();
+  });
+
   it("SHOULD FAIL: Game session is initialized once again after saved & closed !", async () => {
     try {
       await initGameSession(userWallet, gameSessionAccountKeypair, 1000000);
@@ -398,6 +417,8 @@ describe("stakan", () => {
     }
     throw "Should have failed upon session is initialized once again after saved & closed";
   });
+
+  
 /*
   it("SHOULD FAIL: Game session is saved twice!", async () => {
     try {
@@ -409,34 +430,24 @@ describe("stakan", () => {
     throw "Should have failed upon session saving twice";
   });
   */
-/*
-  it("List of saved game sessions", async () => {
-    const signatures = 
-      await provider.connection.getSignaturesForAddress(userWallet.publicKey, {},'confirmed');
 
-    for ( let i = 0; i < signatures.length; i++ ) {
-      const sig = signatures[i].signature;
-      const trans = await provider.connection.getTransaction(sig, {commitment: "confirmed"});
-      if ( trans ) {
-        console.log("transaction account keys: ", trans.transaction.message);
-      }
-    } 
-  });
-*/
-async function initUserGameAccount(userWallet, userGameAccount) {      
+async function initUserGameAccount(userWallet, userGameAccount, gameGlobalAccount) {      
+  const dummy = anchor.web3.Keypair.generate();
   const tx = await program.rpc.initUserGameAccount(
     {
       accounts: {
         userGameAccount: userGameAccountKeypair.publicKey,
         userWallet: userWallet.publicKey,
+        gameGlobalAccount: dummy.publicKey,
+  //      gameGlobalAccount: gameGlobalAccount.publicKey,
         systemProgram: SystemProgram.programId,
       },
-      signers: [userWallet, userGameAccount],
+      signers: [userWallet, userGameAccount, dummy],
+ //     signers: [userWallet, userGameAccount, gameGlobalAccount],
     }
   );
 }
   
-
 async function initGameSession(userWallet, sessionAccount, stake) {      
   const userBalanceBefore = await provider.connection.getBalance(userWallet.publicKey);
   const globalBalanceBefore = await provider.connection.getBalance(gameGlobalWallet.publicKey);
@@ -473,27 +484,23 @@ async function initGameSession(userWallet, sessionAccount, stake) {
 
 async function saveToArweave(userPublicKey, data): Promise<string> {
   const serializedData = GameSessionArchive.serialize(data);
+//  console.log("SERIALIZED: ", serializedData);
 
-  console.log("SERIALIZED: ", serializedData);
-
-  GameSessionArchive.deserialize(serializedData);
-
+//  GameSessionArchive.deserialize(serializedData);
   const tx = await arweave.createTransaction({
     data: serializedData
   });
-  console.log("Transaction DATa: ", tx.data);
-  
+//  console.log("Transaction DATa: ", tx.data);
   tx.addTag('App-Name', 'Stakan');
   tx.addTag('User', userPublicKey.toString());
   
   await arweave.transactions.sign(tx, arweaveWallet);
   await arweave.transactions.post(tx);
-
+  // mine transaction to simulate immediate confirmation
   await axios.get('http://localhost:1984/mine');
 
   const statusAfterPost = await arweave.transactions.getStatus(tx.id);
-  console.log("status after post: ", statusAfterPost.confirmed);
-
+//  console.log("status after post: ", statusAfterPost.confirmed);
   return statusAfterPost.status === 200 ? tx.id : undefined;
 }
 
@@ -504,24 +511,22 @@ async function saveGameSession(userWallet, globalWallet, sessionAccount, score, 
   console.log("User wallet before saving: ", userBalanceBefore);
   console.log("Game account before saving: ", globalBalanceBefore);
 
-  const archiveId = await saveToArweave(userWallet.publicKey,
+  const archiveId = await saveToArweave(
+    userWallet.publicKey,
     { score, duration }
   );
 
   if (!archiveId) throw "Failed to create Arweave transaction";
-
+/*
   console.log("ARCHIVE ID: ", archiveId);
 
   const delay = time => new Promise(res=>setTimeout(res,time));
   let status = await arweave.transactions.getStatus(archiveId);
-/*  for(let i = 0; i < 100; i++) {
+  for(let i = 0; i < 100; i++) {
     console.log("status: ", status);
     await delay(500);
   }
 */
-  const edges = await GameSessionArchive.get(userWallet.publicKey);
-
-//  edges.forEach(edge => console.log("edges: ", edge.node.data));
 
   const signers = [userWallet, globalWallet];
   const tx = await program.rpc.saveGameSession(
@@ -538,7 +543,7 @@ async function saveGameSession(userWallet, globalWallet, sessionAccount, score, 
     },
     signers,
   });
-
+/*
   const userBalanceAfter = await provider.connection.getBalance(userWallet.publicKey);
   const globalBalanceAfter = await provider.connection.getBalance(gameGlobalWallet.publicKey);
 
@@ -550,8 +555,22 @@ async function saveGameSession(userWallet, globalWallet, sessionAccount, score, 
 
   if (signatures.length !== signers.length) 
     throw "Failed to get transaction signature for game session, num. of signatures: " + signatures.length;
+*/
 }
 
+async function getUserGameArchive() {
+  const accountInfo = await provider.connection.getAccountInfo(userGameAccountKeypair.publicKey);
+  
+  let userGameAccountData = UserGameAccount.deserialize(accountInfo.data.slice(0, 8+8+8));
+  Promise.all(
+    await GameSessionArchive.get(
+      userWallet.publicKey, 
+      userGameAccountData['saved_game_sessions']
+    )
+  ).then(archivedData => archivedData.forEach(data => {
+    console.log("Archived score: ", data['score'].toString(), ", duration: ", data['duration'].toString());
+  }));
+}
 /*
   it("Short game loop run!", async () => {
     const interval = 400;
