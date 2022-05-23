@@ -226,6 +226,7 @@ describe("stakan", () => {
   const userWallet = anchor.web3.Keypair.generate();
 
   let gameSessionAccountKeypair;
+  let [pdaGameSessionAccount, pdaGameSessionAccountBump] = [undefined, undefined];
 
   const bip39 = require('bip39');
 
@@ -315,7 +316,13 @@ describe("stakan", () => {
   it("SHOULD FAIL - action before Global state initialized!", async () => {
     try {
       const dummyGameSessionAccountKeypair = anchor.web3.Keypair.generate()
-      await initGameSession(userWallet, dummyGameSessionAccountKeypair, 0);
+      const [dummyPda, dummyBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [dummyGameSessionAccountKeypair.publicKey.toBuffer()],
+          program.programId
+        );
+
+      await initGameSession(userWallet, dummyGameSessionAccountKeypair, dummyPda, 0);
     }
     catch(e) {
 //      console.log(e);
@@ -389,22 +396,37 @@ describe("stakan", () => {
 
   it("Game session is started!", async () => {
     gameSessionAccountKeypair = anchor.web3.Keypair.generate();
-    await initGameSession(userWallet, gameSessionAccountKeypair, 1000000);
+    [pdaGameSessionAccount, pdaGameSessionAccountBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [gameSessionAccountKeypair.publicKey.toBuffer()],
+        program.programId
+      );
+
+    await initGameSession(userWallet, gameSessionAccountKeypair, pdaGameSessionAccount, 1000000);
   });
 
   it("Game session has ended & saved!", async () => {
-    await saveGameSession(userWallet, gameGlobalWallet, gameSessionAccountKeypair, 42, 1234);
+    await saveGameSession(userWallet, gameGlobalWallet, 
+      gameSessionAccountKeypair, pdaGameSessionAccount, 42, 1234);
     gameSessionAccountKeypair = undefined;
+    [pdaGameSessionAccount, pdaGameSessionAccountBump] = [undefined, undefined];
   });
   
   it("Game session is started!", async () => {
     gameSessionAccountKeypair = anchor.web3.Keypair.generate();
-    await initGameSession(userWallet, gameSessionAccountKeypair, 0);
+    [pdaGameSessionAccount, pdaGameSessionAccountBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [gameSessionAccountKeypair.publicKey.toBuffer()],
+        program.programId
+      );
+    await initGameSession(userWallet, gameSessionAccountKeypair, pdaGameSessionAccount, 0);
   });
 
   it("Game session has ended & saved!", async () => {
-    await saveGameSession(userWallet, gameGlobalWallet, gameSessionAccountKeypair, 43, 4321);
+    await saveGameSession(userWallet, gameGlobalWallet, 
+      gameSessionAccountKeypair, pdaGameSessionAccount, 43, 4321);
     gameSessionAccountKeypair = undefined;
+    [pdaGameSessionAccount, pdaGameSessionAccountBump] = [undefined, undefined];
   });
 
   it("User game archive!", async () => {
@@ -413,7 +435,12 @@ describe("stakan", () => {
 
   it("SHOULD FAIL: Game session is initialized once again after saved & closed !", async () => {
     try {
-      await initGameSession(userWallet, gameSessionAccountKeypair, 0);
+      [pdaGameSessionAccount, pdaGameSessionAccountBump] =
+        await anchor.web3.PublicKey.findProgramAddress(
+          [gameSessionAccountKeypair.publicKey.toBuffer()],
+          program.programId
+        );
+      await initGameSession(userWallet, gameSessionAccountKeypair, pdaGameSessionAccount, 0);
     }
     catch {
         return;
@@ -451,19 +478,13 @@ async function signUpUser(userWallet, userGameAccount, gameGlobalAccount) {
   );
 }
   
-async function initGameSession(userWallet, sessionAccount, stake) {      
+async function initGameSession(userWallet, sessionAccount, pdaGameSessionAccount, stake) {      
   try {
     const userBalanceBefore = await provider.connection.getBalance(userWallet.publicKey);
 //    const globalBalanceBefore = await provider.connection.getBalance(gameGlobalWallet.publicKey);
   
     console.log("User wallet before init: ", userBalanceBefore);
 //    console.log("Game account before init: ", globalBalanceBefore);
-
-    const [pdaGameSessionAccount, pdaGameSessionAccountBump] =
-      await anchor.web3.PublicKey.findProgramAddress(
-        [sessionAccount.publicKey.toBuffer()],
-        program.programId
-      );
 
     const pdaGameSessionAccountBalanceBefore = await provider.connection.getBalance(pdaGameSessionAccount);
     console.log("Game session(PDA) balance before init:", pdaGameSessionAccountBalanceBefore);
@@ -479,19 +500,16 @@ async function initGameSession(userWallet, sessionAccount, stake) {
         new anchor.BN(stake),
       )
       .accounts({
-//        accounts: {
           gameSessionAccount: sessionAccount.publicKey,
           pdaGameSessionAccount: pdaGameSessionAccount,
           gameGlobalAccount: gameGlobalAccountKeypair.publicKey,
           userWallet: userWallet.publicKey,
           globalWallet: gameGlobalWallet.publicKey,
-  //        tokenProgram: tokenProgramID,
           systemProgram: SystemProgram.programId,
       })
       .signers([userWallet, sessionAccount])
       .rpc();
-//      })
-//    );
+
       const userBalanceAfter = await provider.connection.getBalance(userWallet.publicKey);
       const globalBalanceAfter = await provider.connection.getBalance(gameGlobalWallet.publicKey);
       const pdaGameSessionAccountBalanceAfter = await provider.connection.getBalance(pdaGameSessionAccount);
@@ -527,7 +545,7 @@ async function saveToArweave(userPublicKey, data): Promise<string> {
   return statusAfterPost.status === 200 ? tx.id : undefined;
 }
 
-async function saveGameSession(userWallet, globalWallet, sessionAccount, score, duration) {
+async function saveGameSession(userWallet, globalWallet, sessionAccount, pdaGameSessionAccount, score, duration) {
   const userBalanceBefore = await provider.connection.getBalance(userWallet.publicKey);
   const globalBalanceBefore = await provider.connection.getBalance(gameGlobalWallet.publicKey);
   
@@ -552,20 +570,22 @@ async function saveGameSession(userWallet, globalWallet, sessionAccount, score, 
 */
 
   const signers = [userWallet, globalWallet];
-  const tx = await program.rpc.saveGameSession(
-    new anchor.BN(score),
-    new anchor.BN(duration),
-    {
-      accounts: {
+  const tx = await program.methods
+    .saveGameSession(
+      new anchor.BN(score),
+      new anchor.BN(duration),
+    )
+    .accounts({
         gameSessionAccount: sessionAccount.publicKey,
+        pdaGameSessionAccount,
         gameGlobalAccount: gameGlobalAccountKeypair.publicKey,
         userGameAccount: userGameAccountKeypair.publicKey,
         userWallet: userWallet.publicKey,
         globalWallet: gameGlobalWallet.publicKey,
         systemProgram: SystemProgram.programId,
-    },
-    signers,
-  });
+    })
+    .signers([])
+    .rpc();
 /*
   const userBalanceAfter = await provider.connection.getBalance(userWallet.publicKey);
   const globalBalanceAfter = await provider.connection.getBalance(gameGlobalWallet.publicKey);

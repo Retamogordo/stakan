@@ -78,9 +78,9 @@ pub mod stakan {
             return Err(GameError::StakeTooHigh.into())
         }
 
-        ctx.accounts.game_session_account.stake = stake;
-//        ctx.accounts.pda_game_session_account.authority = authority;
-//        return Ok(());
+//        ctx.accounts.game_session_account.stake = stake;
+        ctx.accounts.pda_game_session_account.stake = stake;
+        ctx.accounts.pda_game_session_account.user_wallet = authority;
 
         if stake > 0 {
             let ix = anchor_lang::solana_program::system_instruction::transfer(
@@ -148,7 +148,7 @@ pub mod stakan {
             ctx.accounts.user_game_account.max_score = score;
         }
 
-        let stake = ctx.accounts.game_session_account.stake;
+        let stake = ctx.accounts.pda_game_session_account.stake;
 /*
         anchor_spl::token::transfer(
             CpiContext::new_with_signer(
@@ -182,7 +182,7 @@ pub mod stakan {
 */
 
         let ix = anchor_lang::solana_program::system_instruction::transfer(
-            &ctx.accounts.game_session_account.key(),
+            &ctx.accounts.pda_game_session_account.key(),
             &ctx.accounts.global_wallet.key(),
             stake,
         );
@@ -190,12 +190,12 @@ pub mod stakan {
             anchor_lang::solana_program::program::invoke(
                 &ix,
                 &[
-                    ctx.accounts.game_session_account.to_account_info(),
+                    ctx.accounts.pda_game_session_account.to_account_info(),
                     ctx.accounts.global_wallet.to_account_info(),
                 ],
             ) {
             Ok(()) => {
-                    ctx.accounts.game_global_account.funds += stake;
+                ctx.accounts.game_global_account.funds += stake;
             },
             Err(_) => return Err(GameError::CouldNotTransferStake.into()),
         }
@@ -287,15 +287,27 @@ impl InitGameSession<'_> {
 pub struct SaveGameSession<'info> {
     #[account(mut, close = user_wallet)]
     pub game_session_account: Account<'info, GameSession>,
+
+    #[account(mut, close = user_wallet, has_one = user_wallet)]
+    pub pda_game_session_account: Account<'info, GameSessionStake>,
+
     #[account(mut)]
     pub game_global_account: Account<'info, GameGlobalState>,
     #[account(mut)]
     pub user_game_account: Account<'info, UserGame>,
+    
     #[account(mut)]
-//    /// CHECK:` doc comment explaining why no checks through types are necessary.
-    pub user_wallet: Signer<'info>,
+//    pub user_wallet: Signer<'info>,
+    /// CHECK:` doc comment explaining why no checks through types are necessary.
+    pub user_wallet: UncheckedAccount<'info>,
+    
+//    #[account(mut)]
+//    pub global_wallet: Signer<'info>,
+
     #[account(mut)]
-    pub global_wallet: Signer<'info>,
+    /// CHECK:` doc comment explaining why no checks through types are necessary.
+    pub global_wallet: UncheckedAccount<'info>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -322,12 +334,12 @@ pub struct CloseGameSessionAccount<'info> {
 pub struct GameSession {
     pub score: u64,
     pub duration_millis: u64,
-    pub stake: u64,
+//    pub stake: u64,
 } 
 
 #[account]
 pub struct GameSessionStake {
-    pub authority: Pubkey,
+    pub user_wallet: Pubkey,
     pub stake: u64,
 } 
 
