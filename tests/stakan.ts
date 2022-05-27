@@ -19,22 +19,48 @@ class Assignable {
   }
 }
 
-class UserGameAccount extends Assignable { 
-  public static deserialize(buffer: Buffer): UserGameAccount {
+class UserAccountWrapped extends Assignable { 
+  public static deserialize(buffer: Buffer): [number, Buffer] {
     const schema = new Map([
       [
-        UserGameAccount, 
+        UserAccountWrapped, 
         { 
           kind: 'struct', 
           fields: [
               ['discriminant', [8]],
-              ['max_score', 'u64'], 
-              ['saved_game_sessions', 'u64']
+              ['inner_size', 'u16'], 
             ] 
         }
       ]
     ]);
-    let data = deserialize(schema, UserGameAccount, buffer);
+    const wrapped = deserialize(schema, UserAccountWrapped, buffer.slice(0, 8+2));
+    const inner_size = wrapped['inner_size'];
+    return [inner_size, buffer.slice(8+2, 8+2+inner_size)];
+  }
+}
+
+class UserAccount extends Assignable { 
+  public static deserialize(buffer: Buffer): UserAccount {
+    const schema = new Map([
+      [
+        UserAccount, 
+        { 
+          kind: 'struct', 
+          fields: [
+            ['username', 'String'], 
+            ['max_score', 'u64'], 
+            ['saved_game_sessions', 'u64'],
+            ['mint', [32]],
+            ['mint_account', [32]],
+            ] 
+        }
+      ]
+    ]);
+    const [data_size, inner_buffer] = UserAccountWrapped.deserialize(buffer);
+    console.log("----------- DATA SIZE: ", data_size);
+    let data = deserialize(schema, UserAccount, inner_buffer);
+//    let data = deserialize(schema, UserAccount, buffer.slice(8+2, buffer.length));
+    console.log("----------- DATA: ", data['username']);
     return data;
   }
 }
@@ -199,38 +225,27 @@ async function signUpUser(
 
   const userBalanceBefore = await provider.connection.getBalance(userWallet.publicKey);
   console.log("user balance before: ", userBalanceBefore);
-/*
-  const userMintAccount = await mint.createAssociatedTokenAccount(
-        userWallet.publicKey
-  );
-*/  
-//  console.log("after mint acc. creation");
-//  const userTokenAccount =  ;
 
-  const [userTokenAccount, userTokenAccountBump] =
+  const [userAccount, userTokenAccountBump] =
     await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from('user_token_account')],
+      [Buffer.from('user_account')],
       program.programId
     );
-  const [userMintAccount, userMintAccountBump] =
+  const [mintAccount, mintAccountBump] =
     await anchor.web3.PublicKey.findProgramAddress(
       [Buffer.from('user_mint_account')],
       program.programId
     );
-
-  //  const userTokenAccount = anchor.web3.Keypair.generate();
   
   await program.methods
     .signUpUser(
       username,
     )
     .accounts({
-        userTokenAccount,
-//      userTokenAccount: userTokenAccount.publicKey,
+        userAccount,
         userWallet: userWallet.publicKey,
-//        userWallet: program.provider.wallet.publicKey,
         mint: mint.publicKey,
-        mintAccount: userMintAccount,
+        mintAccount,
 
         tokenProgram: tokenProgramID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
@@ -238,7 +253,12 @@ async function signUpUser(
     })
     .signers([userWallet])
     .rpc();
+  
+    const accountInfo = await provider.connection.getAccountInfo(userAccount);
 
+    let UserAccountData 
+      = UserAccount.deserialize(accountInfo.data);
+    console.log(UserAccountData);
 }
 
 before(async () => {
@@ -317,7 +337,10 @@ describe("stakan", () => {
   });
 
   it("Sign up user", async () => {
-    await signUpUser("superman", userWallet, stakanMint);
+    
+    await signUpUser("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ০𝚸𝗤ՀꓢṰǓⅤ𝔚Ⲭ𝑌𝙕𝘢𝕤", userWallet, stakanMint);
+//    await signUpUser("суперман", userWallet, stakanMint);
+//    await signUpUser("superman&supergirl", userWallet, stakanMint);
   });
 //  return;
 
@@ -336,7 +359,7 @@ describe("stakan", () => {
   const seed = stakanMnemonicToSeed.map( (x, i) => x + userWallet.secretKey[i] );
 
 //  console.log("seed size: ", seed.length);
-  const userGameAccountKeypair = anchor.web3.Keypair.fromSeed(
+  const UserAccountKeypair = anchor.web3.Keypair.fromSeed(
     seed 
   );
 
@@ -520,13 +543,13 @@ async function saveToArweave(userPublicKey, data): Promise<string> {
 }
 
 async function getUserGameArchive() {
-  const accountInfo = await provider.connection.getAccountInfo(userGameAccountKeypair.publicKey);
+  const accountInfo = await provider.connection.getAccountInfo(UserAccountKeypair.publicKey);
   
-  let userGameAccountData = UserGameAccount.deserialize(accountInfo.data.slice(0, 8+8+8));
+  let UserAccountData = UserAccount.deserialize(accountInfo.data.slice(0, 8+8+8));
   Promise.all(
     await GameSessionArchive.get(
       userWallet.publicKey, 
-      userGameAccountData['saved_game_sessions']
+      UserAccountData['saved_game_sessions']
     )
   ).then(archivedData => archivedData.forEach(data => {
     console.log("Archived score: ", data['score'].toString(), ", duration: ", data['duration'].toString());
