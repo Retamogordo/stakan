@@ -57,7 +57,7 @@ class UserAccount extends Assignable {
       ]
     ]);
     const [data_size, inner_buffer] = UserAccountWrapped.deserialize(buffer);
-    console.log("----------- DATA SIZE: ", data_size);
+//    console.log("----------- DATA SIZE: ", data_size);
     let data = deserialize(schema, UserAccount, inner_buffer);
 //    let data = deserialize(schema, UserAccount, buffer.slice(8+2, buffer.length));
     console.log("----------- DATA: ", data['username']);
@@ -87,7 +87,6 @@ class GameSessionArchive extends Assignable {
   public static deserialize(buffer: Uint8Array) {
     try {
       const data = deserialize(GameSessionArchive.schema, GameSessionArchive, Buffer.from(buffer));
-      console.log("Deser Archive: ", data);
       } catch(e) {
         console.log(e);
         throw e;
@@ -214,18 +213,47 @@ const { SystemProgram } = anchor.web3;
 const provider = anchor.Provider.env();
 let programWallet;
 let stakanMint: spl.Token;
-let userWallet;
-let gameGlobalWallet;
+let stakanTokens: anchor.web3.PublicKey;
 
+let userWallet;
+
+async function setUpStakan(
+  ) {
+    anchor.setProvider(provider);
+    programWallet = program.provider.wallet;
+    let stakanTokensAmount = 1000;
+  
+    console.log("before minting ", stakanTokensAmount, " Stakan Tokens...");
+  
+    stakanMint = await spl.Token.createMint(
+      program.provider.connection,
+      programWallet.payer,
+      programWallet.publicKey,
+      programWallet.publicKey,    // freeze authority
+      0,  // decimals
+      tokenProgramID
+    );
+    stakanTokens = await stakanMint.createAssociatedTokenAccount(
+      program.provider.wallet.publicKey
+    );
+  
+    await stakanMint.mintTo(stakanTokens, program.provider.wallet.publicKey, [], stakanTokensAmount);
+  
+    let tokenAmount 
+      = await program.provider.connection.getTokenAccountBalance(stakanTokens);
+  
+    console.log("after minting, owner balance: ", tokenAmount);
+}
+  
 async function signUpUser(
   username: string,
   userWallet, 
   mint: spl.Token,
-) {
-
+): Promise<[anchor.web3.PublicKey, anchor.web3.PublicKey]> {
+/*
   const userBalanceBefore = await provider.connection.getBalance(userWallet.publicKey);
   console.log("user balance before: ", userBalanceBefore);
-
+*/
   const [userAccount, userTokenAccountBump] =
     await anchor.web3.PublicKey.findProgramAddress(
       [Buffer.from('user_account')],
@@ -255,59 +283,84 @@ async function signUpUser(
     .rpc();
   
     const accountInfo = await provider.connection.getAccountInfo(userAccount);
+    let userAccountData = UserAccount.deserialize(accountInfo.data);
+    console.log(userAccountData);
 
-    let UserAccountData 
-      = UserAccount.deserialize(accountInfo.data);
-    console.log(UserAccountData);
+    return [userAccount, mintAccount];
+}
+
+async function purchaseStakanTokens(
+  userAccount: anchor.web3.PublicKey,
+  userWallet: anchor.web3.Keypair, 
+  userMintAccount: anchor.web3.PublicKey,
+  mint: spl.Token,
+  tokenAmount: number,
+) {
+  console.log("before purchasing tokens...");
+  console.log("userWallet balance: ", 
+    await provider.connection.getBalance(userWallet.publicKey));
+  console.log("programWallet balance: ", 
+    await provider.connection.getBalance(programWallet.publicKey));
+
+  const tx = await program.transaction
+    .purchaseTokens(
+      new anchor.BN(tokenAmount),
+      {
+        accounts: {
+          userAccount,
+          userMintAccount,
+          userWallet: userWallet.publicKey,
+          mint: mint.publicKey,
+          programMintAccount: stakanTokens,
+          programWallet: programWallet.publicKey,
+
+          tokenProgram: tokenProgramID,
+          systemProgram: SystemProgram.programId,
+        },
+          signers: []
+//        signers: [userWallet, programWallet]
+      }
+    )
+    
+    tx.feePayer = await userWallet.publicKey;
+    let blockhashObj = await provider.connection.getLatestBlockhash();
+    tx.recentBlockhash = await blockhashObj.blockhash;
+    tx.sign(userWallet);
+    const signedTx = await programWallet.signTransaction(tx);    
+    const txid = await provider.connection.sendRawTransaction(
+      signedTx.serialize()
+    );
+    await provider.connection.confirmTransaction(txid);
+
+    console.log("after purchasing tokens");
+    console.log("userWallet balance: ", 
+      await provider.connection.getBalance(userWallet.publicKey));
+    console.log("programWallet balance: ", 
+      await provider.connection.getBalance(programWallet.publicKey));
+
 }
 
 before(async () => {
   anchor.setProvider(provider);
-  programWallet = provider.wallet;
+  programWallet = program.provider.wallet;
 
-  gameGlobalWallet = anchor.web3.Keypair.generate();
+  await setUpStakan();
+
   userWallet = anchor.web3.Keypair.generate();
-
-//  anchor.Spl.token()
-  console.log("before minting");
-  
-//  anchor.Spl.token().methods.initializeMint
-  stakanMint = await spl.Token.createMint(
-    program.provider.connection,
-    programWallet.payer,
-    programWallet.publicKey,
-//    gameGlobalWallet.publicKey, // mint authority
-//    gameGlobalWallet.publicKey, // freeze authority
-    programWallet.publicKey,    // freeze authority
-    0,  // decimals
-    tokenProgramID
-//    spl.TOKEN_PROGRAM_ID
-  );
-  let stakanTokens = await stakanMint.createAssociatedTokenAccount(
-//    program.provider.wallet.publicKey
-    gameGlobalWallet.publicKey
-  );
-
-  await stakanMint.mintTo(stakanTokens, program.provider.wallet.publicKey, [], 1000);
-//  await stakanMint.mintTo(stakanTokens, gameGlobalWallet.publicKey, [programWallet.payer], 1000);
-
-  let tokenAmount 
-    = await program.provider.connection.getTokenAccountBalance(stakanTokens);
-
-  console.log("after minting, owner balance: ", tokenAmount);
 
   const dummyTokenReceiver = await stakanMint.createAssociatedTokenAccount(
     anchor.web3.Keypair.generate().publicKey
   );
 
   await stakanMint.transfer(stakanTokens, 
-    dummyTokenReceiver, 
-    gameGlobalWallet,
+    dummyTokenReceiver,
+    program.provider.wallet.publicKey, 
+//    gameGlobalWallet,
     [],
     400
   );
 
-  tokenAmount 
+  const tokenAmount 
     = await program.provider.connection.getTokenAccountBalance(stakanTokens);
 /*
   console.log("after transfer, owner balance: ", tokenAmount, 
@@ -327,10 +380,10 @@ before(async () => {
 
 describe("stakan", () => {
   it("Airdrop!", async () => {
-    await provider.connection.confirmTransaction(
+/*    await provider.connection.confirmTransaction(
       await provider.connection.requestAirdrop(gameGlobalWallet.publicKey, 100000000000)
     );
-    
+*/    
     await provider.connection.confirmTransaction( 
       await provider.connection.requestAirdrop(userWallet.publicKey, 1000000000)
     );
@@ -338,8 +391,17 @@ describe("stakan", () => {
 
   it("Sign up user", async () => {
     
-    await signUpUser("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ০𝚸𝗤ՀꓢṰǓⅤ𝔚Ⲭ𝑌𝙕𝘢𝕤", userWallet, stakanMint);
-//    await signUpUser("суперман", userWallet, stakanMint);
+    let [userAccount, userMintAccount] 
+      = await signUpUser("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ০𝚸𝗤ՀꓢṰǓⅤ𝔚Ⲭ𝑌𝙕𝘢𝕤", userWallet, stakanMint);
+          
+    await purchaseStakanTokens(
+      userAccount,
+      userWallet,
+      userMintAccount,
+      stakanMint,
+      3
+    );
+      //    await signUpUser("суперман", userWallet, stakanMint);
 //    await signUpUser("superman&supergirl", userWallet, stakanMint);
   });
 //  return;
@@ -423,10 +485,11 @@ describe("stakan", () => {
   });
 
   it("Airdrop!", async () => {
+/*
     await provider.connection.confirmTransaction(
       await provider.connection.requestAirdrop(gameGlobalWallet.publicKey, 100000000000)
     );
-    
+ */   
     await provider.connection.confirmTransaction( 
       await provider.connection.requestAirdrop(userWallet.publicKey, 1000000000)
     );
@@ -508,7 +571,7 @@ async function initGameSession(
       .rpc();
 
       const userBalanceAfter = await provider.connection.getBalance(userWallet.publicKey);
-      const globalBalanceAfter = await provider.connection.getBalance(gameGlobalWallet.publicKey);
+    //  const globalBalanceAfter = await provider.connection.getBalance(gameGlobalWallet.publicKey);
       const pdaGameSessionAccountBalanceAfter = await provider.connection.getBalance(pdaGameSessionAccount);
     
       console.log("User wallet after init: ", userBalanceAfter, ", delta: ", userBalanceBefore - userBalanceAfter);

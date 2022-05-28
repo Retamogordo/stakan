@@ -79,6 +79,34 @@ impl SignUpUser<'_> {
 }
 
 #[derive(Accounts)]
+pub struct PurchaseTokens<'info> {
+    user_account: Account<'info, User>,
+
+    #[account(mut,
+        constraint = user_mint_account.mint == mint.key(),
+        constraint = user_mint_account.owner == user_account.key(),
+    )]
+    user_mint_account: Account<'info, TokenAccount>,
+
+    mint: Account<'info, Mint>,  
+
+    #[account(mut)]
+    user_wallet: Signer<'info>,
+
+    #[account(mut,
+        constraint = program_mint_account.mint == mint.key(),
+        constraint = program_mint_account.owner == program_wallet.key(),
+    )]
+    program_mint_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    program_wallet: Signer<'info>,
+
+    token_program: Program<'info, Token>,
+    system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 #[instruction(pda_game_session_account_bump: u8)]
 pub struct InitGameSession<'info> {
 
@@ -142,6 +170,7 @@ pub struct User {
     inner_size: u16,
     user: UserInner,    
 } 
+
 #[derive(Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct UserInner {
     username: Vec<u8>,
@@ -184,8 +213,7 @@ pub mod stakan {
     use super::*;
 
     pub fn sign_up_user(ctx: Context<SignUpUser>,
-        username: String,
-        ) -> Result<()> {
+        username: String, ) -> Result<()> {
             if SignUpUser::USERNAME_LEN < username.len() {
                 return Err(GameError::UsernameTooLong.into())
             }
@@ -205,6 +233,43 @@ pub mod stakan {
             ) as u16;
             
             Ok(())
+    }
+
+    pub fn purchase_tokens(ctx: Context<PurchaseTokens>,
+        token_amount: u64, 
+    ) -> Result<()> {
+        solana_program::program::invoke(
+            &solana_program::system_instruction::transfer(
+                ctx.accounts.user_wallet.key, 
+                ctx.accounts.program_wallet.key, 
+                token_amount * 1000000),
+            &[
+                ctx.accounts.user_wallet.to_account_info(),
+                ctx.accounts.program_wallet.to_account_info(),
+                ctx.accounts.system_program.to_account_info()
+            ],
+        )?;
+
+        anchor_spl::token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+
+                anchor_spl::token::Transfer {
+                    from: ctx
+                        .accounts
+                        .program_mint_account
+                        .to_account_info(),
+                    to: ctx
+                        .accounts
+                        .user_mint_account
+                        .to_account_info(),
+                    authority: ctx.accounts.program_wallet.to_account_info(),
+                },
+            ),
+            token_amount,
+        )?;
+
+        Ok(())
     }
 
     pub fn init_game_session(ctx: Context<InitGameSession>,
