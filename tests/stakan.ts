@@ -11,6 +11,22 @@ import { serialize, deserialize } from "borsh";
 //import ArLocal from 'arlocal';
 const axios = require('axios');
 
+class User {
+  username: string;
+  wallet: anchor.web3.Keypair;
+  account: anchor.web3.PublicKey | undefined; // pda user state account
+  tokenAccount: anchor.web3.PublicKey | undefined; // pda user token account
+
+  constructor(username: string, wallet: anchor.web3.Keypair) {
+    this.username = username;
+    this.wallet = wallet;
+  }
+
+  async getTokenBalance(): Promise<anchor.web3.RpcResponseAndContext<anchor.web3.TokenAmount>> {
+    return await provider.connection.getTokenAccountBalance(this.tokenAccount);
+  }
+}
+
 class Assignable {
   constructor(properties) {
     Object.keys(properties).map((key) => {
@@ -50,6 +66,7 @@ class UserAccount extends Assignable {
             ['username', 'String'], 
             ['max_score', 'u64'], 
             ['saved_game_sessions', 'u64'],
+            ['user_wallet', [32]],
             ['mint', [32]],
             ['mint_account', [32]],
             ] 
@@ -215,7 +232,9 @@ let programWallet;
 let stakanMint: spl.Token;
 let stakanTokens: anchor.web3.PublicKey;
 
-let userWallet;
+//let userWallet;
+let user: User;
+let user2: User;
 
 async function setUpStakan(
   ) {
@@ -246,72 +265,75 @@ async function setUpStakan(
 }
   
 async function signUpUser(
-  username: string,
-  userWallet, 
+  user: User,
   mint: spl.Token,
-): Promise<[anchor.web3.PublicKey, anchor.web3.PublicKey]> {
+) {  
 /*
   const userBalanceBefore = await provider.connection.getBalance(userWallet.publicKey);
   console.log("user balance before: ", userBalanceBefore);
 */
+
   const [userAccount, userTokenAccountBump] =
     await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from('user_account')],
+      [Buffer.from('user_account'), Buffer.from(user.username).slice(0, 20)],
       program.programId
     );
-  const [mintAccount, mintAccountBump] =
+  const [tokenAccount, tokenAccountBump] =
     await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from('user_mint_account')],
+      [Buffer.from('user_token_account'), Buffer.from(user.username).slice(0, 20)],
       program.programId
     );
   
   await program.methods
     .signUpUser(
-      username,
+      user.username,
     )
     .accounts({
         userAccount,
-        userWallet: userWallet.publicKey,
+        userWallet: user.wallet.publicKey,
         mint: mint.publicKey,
-        mintAccount,
+        tokenAccount,
 
         tokenProgram: tokenProgramID,
         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
         systemProgram: SystemProgram.programId,
     })
-    .signers([userWallet])
+    .signers([user.wallet])
     .rpc();
   
+    user.account = userAccount;
+    user.tokenAccount = tokenAccount;
+
     const accountInfo = await provider.connection.getAccountInfo(userAccount);
     let userAccountData = UserAccount.deserialize(accountInfo.data);
     console.log(userAccountData);
 
-    return [userAccount, mintAccount];
+//    return [userAccount, mintAccount];
 }
 
-async function purchaseStakanTokens(
-  userAccount: anchor.web3.PublicKey,
-  userWallet: anchor.web3.Keypair, 
-  userMintAccount: anchor.web3.PublicKey,
+async function purchaseStakanTokens(user: User,
   mint: spl.Token,
   tokenAmount: number,
 ) {
   console.log("before purchasing tokens...");
   console.log("userWallet balance: ", 
-    await provider.connection.getBalance(userWallet.publicKey));
+    await provider.connection.getBalance(user.wallet.publicKey));
   console.log("programWallet balance: ", 
     await provider.connection.getBalance(programWallet.publicKey));
+  console.log("userMintAccount balance: ", 
+    await user.getTokenBalance());
+//    await provider.connection.getTokenAccountBalance(user.tokenAccount));
 
   const tx = await program.transaction
     .purchaseTokens(
       new anchor.BN(tokenAmount),
       {
         accounts: {
-          userAccount,
-          userMintAccount,
-          userWallet: userWallet.publicKey,
+          userAccount: user.account,
+          userTokenAccount: user.tokenAccount,
+          userWallet: user.wallet.publicKey,
           mint: mint.publicKey,
-          programMintAccount: stakanTokens,
+          programTokenAccount: stakanTokens,
           programWallet: programWallet.publicKey,
 
           tokenProgram: tokenProgramID,
@@ -322,22 +344,24 @@ async function purchaseStakanTokens(
       }
     )
     
-    tx.feePayer = await userWallet.publicKey;
+    tx.feePayer = await user.wallet.publicKey;
     let blockhashObj = await provider.connection.getLatestBlockhash();
     tx.recentBlockhash = await blockhashObj.blockhash;
-    tx.sign(userWallet);
+    tx.sign(user.wallet);
     const signedTx = await programWallet.signTransaction(tx);    
     const txid = await provider.connection.sendRawTransaction(
-      signedTx.serialize()
+        signedTx.serialize()
     );
     await provider.connection.confirmTransaction(txid);
 
     console.log("after purchasing tokens");
     console.log("userWallet balance: ", 
-      await provider.connection.getBalance(userWallet.publicKey));
+      await provider.connection.getBalance(user.wallet.publicKey));
     console.log("programWallet balance: ", 
       await provider.connection.getBalance(programWallet.publicKey));
-
+    console.log("userMintAccount balance: ", await user.getTokenBalance());
+//      await provider.connection.getTokenAccountBalance(user.tokenAccount));
+  
 }
 
 before(async () => {
@@ -346,7 +370,10 @@ before(async () => {
 
   await setUpStakan();
 
-  userWallet = anchor.web3.Keypair.generate();
+  const userWallet = anchor.web3.Keypair.generate();
+  user = new User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ০𝚸𝗤ՀꓢṰǓⅤ𝔚Ⲭ𝑌𝙕𝘢𝕤", userWallet);
+
+  user2 = new User("superman", userWallet);
 
   const dummyTokenReceiver = await stakanMint.createAssociatedTokenAccount(
     anchor.web3.Keypair.generate().publicKey
@@ -385,31 +412,29 @@ describe("stakan", () => {
     );
 */    
     await provider.connection.confirmTransaction( 
-      await provider.connection.requestAirdrop(userWallet.publicKey, 1000000000)
+      await provider.connection.requestAirdrop(user.wallet.publicKey, 1000000000)
     );
   });
 
   it("Sign up user", async () => {
-    
-    let [userAccount, userMintAccount] 
-      = await signUpUser("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ০𝚸𝗤ՀꓢṰǓⅤ𝔚Ⲭ𝑌𝙕𝘢𝕤", userWallet, stakanMint);
+    await signUpUser(user, stakanMint);
           
-    await purchaseStakanTokens(
-      userAccount,
-      userWallet,
-      userMintAccount,
+    await purchaseStakanTokens(user,
       stakanMint,
       3
     );
       //    await signUpUser("суперман", userWallet, stakanMint);
 //    await signUpUser("superman&supergirl", userWallet, stakanMint);
   });
-//  return;
+
+  it("Sign up user", async () => {
+    await signUpUser(user2, stakanMint);          
+  });
 
   // Configure the client to use the local cluster.
   const gameGlobalAccountKeypair = anchor.web3.Keypair.generate();
 
-  const userWallet = anchor.web3.Keypair.generate();
+//  const userWallet = anchor.web3.Keypair.generate();
 
 
   let gameSessionAccountKeypair;
@@ -417,14 +442,14 @@ describe("stakan", () => {
 
   const bip39 = require('bip39');
 
-  const stakanMnemonicToSeed = bip39.mnemonicToSeedSync('Stakan').slice(0, 32);
-  const seed = stakanMnemonicToSeed.map( (x, i) => x + userWallet.secretKey[i] );
+//  const stakanMnemonicToSeed = bip39.mnemonicToSeedSync('Stakan').slice(0, 32);
+//  const seed = stakanMnemonicToSeed.map( (x, i) => x + userWallet.secretKey[i] );
 
 //  console.log("seed size: ", seed.length);
-  const UserAccountKeypair = anchor.web3.Keypair.fromSeed(
+/*  const UserAccountKeypair = anchor.web3.Keypair.fromSeed(
     seed 
   );
-
+*/
 
   it("Arweave init!", async () => {
 //    await arLocal.start();

@@ -48,9 +48,13 @@ pub struct InitGlobalState<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction(username: String)]
 pub struct SignUpUser<'info> {
     #[account(init, payer = user_wallet, space = 8 + 1000,
-        seeds = [b"user_account".as_ref()],
+        seeds = [
+            b"user_account".as_ref(), 
+            SignUpUser::username_slice_for_seed(username.as_str())
+        ],
         bump,
     )]
     user_account: Account<'info, User>,
@@ -63,12 +67,15 @@ pub struct SignUpUser<'info> {
     #[account(
         init, 
         payer = user_wallet,
-        seeds = [b"user_mint_account"],
+        seeds = [
+            b"user_token_account",
+            SignUpUser::username_slice_for_seed(username.as_str()),
+        ],
         bump,
         token::mint = mint,
         token::authority = user_account,
     )]
-    mint_account: Account<'info, TokenAccount>,
+    token_account: Account<'info, TokenAccount>,
 
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
@@ -76,28 +83,43 @@ pub struct SignUpUser<'info> {
 }
 impl SignUpUser<'_> {
     const USERNAME_LEN: usize = 120;
+    const MAX_USERNAME_LEN_FOR_SEED: usize = 20;
+
+    fn username_slice_for_seed(username: &str) -> &[u8] {
+        let len = if SignUpUser::MAX_USERNAME_LEN_FOR_SEED > username.len() {
+            username.len()
+        } else { SignUpUser::MAX_USERNAME_LEN_FOR_SEED };
+
+        &username.as_bytes()[..len]
+    }
 }
 
 #[derive(Accounts)]
 pub struct PurchaseTokens<'info> {
+    #[account(
+        constraint = user_account.user.user_wallet == user_wallet.key(),
+    )]
     user_account: Account<'info, User>,
 
     #[account(mut,
-        constraint = user_mint_account.mint == mint.key(),
-        constraint = user_mint_account.owner == user_account.key(),
+        constraint = user_token_account.mint == mint.key(),
+        constraint = user_token_account.owner == user_account.key(),
     )]
-    user_mint_account: Account<'info, TokenAccount>,
+    user_token_account: Account<'info, TokenAccount>,
 
+    #[account(
+        constraint = mint.key() == user_account.user.mint,
+    )]
     mint: Account<'info, Mint>,  
 
     #[account(mut)]
     user_wallet: Signer<'info>,
 
     #[account(mut,
-        constraint = program_mint_account.mint == mint.key(),
-        constraint = program_mint_account.owner == program_wallet.key(),
+        constraint = program_token_account.mint == mint.key(),
+        constraint = program_token_account.owner == program_wallet.key(),
     )]
-    program_mint_account: Account<'info, TokenAccount>,
+    program_token_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     program_wallet: Signer<'info>,
@@ -177,8 +199,9 @@ pub struct UserInner {
     
     max_score: u64,
     saved_game_sessions: u64,
+    user_wallet: Pubkey,
     mint: Pubkey,
-    mint_account: Pubkey,
+    token_account: Pubkey,
 } 
 
 impl UserInner {
@@ -190,6 +213,7 @@ impl UserInner {
             size_of::<u32>() + self.username.len() 
             + size_of::<u64>()
             + size_of::<u64>()
+            + size_of::<Pubkey>()
             + size_of::<Pubkey>()
             + size_of::<Pubkey>()
         ) as u16
@@ -218,18 +242,19 @@ pub mod stakan {
                 return Err(GameError::UsernameTooLong.into())
             }
             
-            let user_game_account = &mut ctx.accounts.user_account;
+            let user_account = &mut ctx.accounts.user_account;
             
-            user_game_account.user = UserInner {
+            user_account.user = UserInner {
                 username: username.into_bytes(),          
                 max_score: 0,
                 saved_game_sessions: 0,
+                user_wallet: ctx.accounts.user_wallet.key(),
                 mint: ctx.accounts.mint.key(),
-                mint_account: ctx.accounts.mint_account.key(),
+                token_account: ctx.accounts.token_account.key(),
             };
 
-            user_game_account.inner_size = (
-                user_game_account.user.size_for_borsh() 
+            user_account.inner_size = (
+                user_account.user.size_for_borsh() 
             ) as u16;
             
             Ok(())
@@ -257,11 +282,11 @@ pub mod stakan {
                 anchor_spl::token::Transfer {
                     from: ctx
                         .accounts
-                        .program_mint_account
+                        .program_token_account
                         .to_account_info(),
                     to: ctx
                         .accounts
-                        .user_mint_account
+                        .user_token_account
                         .to_account_info(),
                     authority: ctx.accounts.program_wallet.to_account_info(),
                 },
