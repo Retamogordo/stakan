@@ -53,7 +53,8 @@ pub struct SignUpUser<'info> {
     #[account(init, payer = user_wallet, space = 8 + 1000,
         seeds = [
             b"user_account".as_ref(), 
-            SignUpUser::username_slice_for_seed(username.as_str())
+//            SignUpUser::username_slice_for_seed(username.as_str())
+            SignUpUser::username_slice_for_seed(username.as_bytes())
         ],
         bump,
     )]
@@ -68,8 +69,9 @@ pub struct SignUpUser<'info> {
         init, 
         payer = user_wallet,
         seeds = [
-            b"user_token_account",
-            SignUpUser::username_slice_for_seed(username.as_str()),
+            b"user_token_account".as_ref(),
+//            SignUpUser::username_slice_for_seed(username.as_str()),
+            SignUpUser::username_slice_for_seed(username.as_bytes()),
         ],
         bump,
         token::mint = mint,
@@ -85,12 +87,14 @@ impl SignUpUser<'_> {
     const USERNAME_LEN: usize = 120;
     const MAX_USERNAME_LEN_FOR_SEED: usize = 20;
 
-    fn username_slice_for_seed(username: &str) -> &[u8] {
-        let len = if SignUpUser::MAX_USERNAME_LEN_FOR_SEED > username.len() {
+//    fn username_slice_for_seed(username: &str) -> &[u8] {
+    fn username_slice_for_seed(username: &[u8]) -> &[u8] {
+            let len = if SignUpUser::MAX_USERNAME_LEN_FOR_SEED > username.len() {
             username.len()
         } else { SignUpUser::MAX_USERNAME_LEN_FOR_SEED };
 
-        &username.as_bytes()[..len]
+//        &username.as_bytes()[..len]
+        &username[..len]
     }
 }
 
@@ -128,6 +132,40 @@ pub struct PurchaseTokens<'info> {
     system_program: Program<'info, System>,
 }
 
+#[derive(Accounts)]
+pub struct InitGameSession<'info> {
+    user_account: Account<'info, User>,
+
+    #[account(mut,
+        constraint = user_token_account.owner == user_account.key(),
+    )]
+    user_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut,
+    )]
+    program_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        init, space = 8 + 100,
+        payer = user_wallet,
+        seeds = [
+            b"game_session_account".as_ref(),
+//            SignUpUser::username_slice_for_seed(username.as_str()),
+//            SignUpUser::username_slice_for_seed(username.as_bytes()),
+        ],
+        bump,
+//        constraint = game_session_account.user_account == user_account.key()
+    )]
+    game_session_account: Account<'info, GameSession>,
+
+    #[account(mut)]
+    user_wallet: Signer<'info>,
+
+    token_program: Program<'info, Token>,
+    system_program: Program<'info, System>,
+}
+
+/*
 #[derive(Accounts)]
 #[instruction(pda_game_session_account_bump: u8)]
 pub struct InitGameSession<'info> {
@@ -173,17 +211,14 @@ pub struct InitGameSession<'info> {
 impl InitGameSession<'_> {
     const SIZE: usize = 8 + 1000;
 }
-
+*/
 #[account]
 pub struct GameSession {
-    user_wallet: Pubkey,
-    stake_wallet: Pubkey,
-    arweave_storage_address: String,
+    user_account: Pubkey,
+//    arweave_storage_address: String,
     score: u64,
     duration_millis: u64,
     stake: u64,
-    stake_mint: Pubkey,
-    stage: GameSessionStage,
 } 
 
 #[account]
@@ -298,6 +333,54 @@ pub mod stakan {
     }
 
     pub fn init_game_session(ctx: Context<InitGameSession>,
+//        arweave_storage_address: String, 
+        stake: u64,
+        bump: u8,
+    ) -> Result<()> {
+        let username = &ctx.accounts.user_account.user.username;
+        
+        if stake > 0 { 
+            let temp_bump = bump.to_le_bytes();
+            
+            let signer_seeds = [
+                b"user_account".as_ref(),
+                SignUpUser::username_slice_for_seed(&username[..]),
+                &temp_bump
+            ];
+            
+            anchor_spl::token::transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.token_program.to_account_info(),
+
+                    anchor_spl::token::Transfer {
+                        from: ctx
+                            .accounts
+                            .user_token_account
+                            .to_account_info(),
+                        to: ctx
+                            .accounts
+                            .program_token_account
+                            .to_account_info(),
+                        authority: ctx.accounts.user_account.to_account_info(),
+                    },
+                    &[&signer_seeds]
+    //                vec![signer_seeds.as_slice()].as_slice()
+                ),
+                stake,
+            )?;
+        }
+
+        let game_session_account = &mut ctx.accounts.game_session_account;
+        
+        game_session_account.user_account = ctx.accounts.user_account.key();
+        game_session_account.stake = stake;
+        game_session_account.duration_millis = 0;
+        game_session_account.score = 0;
+
+        Ok(())
+    }
+/*
+    pub fn init_game_session(ctx: Context<InitGameSession>,
         arweave_storage_address: String, 
 //        bump: u8,
         stake: u64) -> Result<()> {
@@ -347,7 +430,7 @@ pub mod stakan {
             Ok(())
         }
     }
-
+*/
 
     /*
 #[derive(Accounts)]

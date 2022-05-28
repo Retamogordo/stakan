@@ -16,12 +16,21 @@ class User {
   wallet: anchor.web3.Keypair;
   account: anchor.web3.PublicKey | undefined; // pda user state account
   tokenAccount: anchor.web3.PublicKey | undefined; // pda user token account
+  bump: number;
 
   constructor(username: string, wallet: anchor.web3.Keypair) {
     this.username = username;
     this.wallet = wallet;
   }
+  
+  isSignedUp(): boolean {
+    return !this.account === undefined
+  }
 
+  async getBalance(): Promise<number> {
+    return await provider.connection.getBalance(this.wallet.publicKey);
+  }
+  
   async getTokenBalance(): Promise<anchor.web3.RpcResponseAndContext<anchor.web3.TokenAmount>> {
     return await provider.connection.getTokenAccountBalance(this.tokenAccount);
   }
@@ -273,9 +282,12 @@ async function signUpUser(
   console.log("user balance before: ", userBalanceBefore);
 */
 
-  const [userAccount, userTokenAccountBump] =
+  const [userAccount, userAccountBump] =
     await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from('user_account'), Buffer.from(user.username).slice(0, 20)],
+      [
+        Buffer.from('user_account'), 
+        Buffer.from(user.username).slice(0, 20)
+      ],
       program.programId
     );
   const [tokenAccount, tokenAccountBump] =
@@ -301,6 +313,7 @@ async function signUpUser(
     .signers([user.wallet])
     .rpc();
   
+    user.bump = userAccountBump;
     user.account = userAccount;
     user.tokenAccount = tokenAccount;
 
@@ -317,7 +330,7 @@ async function purchaseStakanTokens(user: User,
 ) {
   console.log("before purchasing tokens...");
   console.log("userWallet balance: ", 
-    await provider.connection.getBalance(user.wallet.publicKey));
+    await user.getBalance());
   console.log("programWallet balance: ", 
     await provider.connection.getBalance(programWallet.publicKey));
   console.log("userMintAccount balance: ", 
@@ -356,12 +369,43 @@ async function purchaseStakanTokens(user: User,
 
     console.log("after purchasing tokens");
     console.log("userWallet balance: ", 
-      await provider.connection.getBalance(user.wallet.publicKey));
+      await user.getBalance());
     console.log("programWallet balance: ", 
       await provider.connection.getBalance(programWallet.publicKey));
     console.log("userMintAccount balance: ", await user.getTokenBalance());
 //      await provider.connection.getTokenAccountBalance(user.tokenAccount));
   
+}
+async function initGameSession(
+  user: User,
+  stake: number,
+) {
+  const [gameSessionAccount, gameSessionAccountBump] =
+    await anchor.web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from('game_session_account'), 
+//        Buffer.from(user.username).slice(0, 20)
+      ],
+      program.programId
+    );
+
+  await program.methods
+    .initGameSession(
+      new anchor.BN(stake),
+      user.bump,
+    )
+    .accounts({
+        userAccount: user.account,
+        userTokenAccount: user.tokenAccount,
+        programTokenAccount: stakanTokens,
+        gameSessionAccount,
+        userWallet: user.wallet.publicKey,
+
+        tokenProgram: tokenProgramID,
+        systemProgram: SystemProgram.programId,
+    })
+    .signers([user.wallet])
+    .rpc();
 }
 
 before(async () => {
@@ -427,10 +471,14 @@ describe("stakan", () => {
 //    await signUpUser("superman&supergirl", userWallet, stakanMint);
   });
 
-  it("Sign up user", async () => {
+  it("Sign up another user with the same wallet (allowed for now)", async () => {
     await signUpUser(user2, stakanMint);          
   });
 
+  it("Init game session", async () => {
+    const stake = 1;
+    await initGameSession(user, stake);          
+  });
   // Configure the client to use the local cluster.
   const gameGlobalAccountKeypair = anchor.web3.Keypair.generate();
 
@@ -548,7 +596,7 @@ describe("stakan", () => {
   });
   */
   
-async function initGameSession(
+/* async function initGameSession(
   user,
   userWallet,
   stakeWallet,
@@ -606,7 +654,7 @@ async function initGameSession(
     console.log(e);
     throw e;
   }
-}
+} */
 
 async function saveToArweave(userPublicKey, data): Promise<string> {
   const serializedData = GameSessionArchive.serialize(data);
