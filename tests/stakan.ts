@@ -16,7 +16,11 @@ class User {
   wallet: anchor.web3.Keypair;
   account: anchor.web3.PublicKey | undefined; // pda user state account
   tokenAccount: anchor.web3.PublicKey | undefined; // pda user token account
+  arweaveWallet;
+  arweaveStorageAddress: string;
   bump: number;
+  gameSessionAccount: anchor.web3.PublicKey | undefined; // pda of ongoing game session account
+  gameSessionAccountBump: number | undefined;
 
   constructor(username: string, wallet: anchor.web3.Keypair) {
     this.username = username;
@@ -27,12 +31,24 @@ class User {
     return !this.account === undefined
   }
 
+  async assignArweaveWallet(arweaveWallet) {
+    const arweaveStorageAddress = await arweave.wallets.getAddress(arweaveWallet);
+
+    this.arweaveWallet = arweaveWallet;
+    this.arweaveStorageAddress = arweaveStorageAddress;
+  }
+
   async getBalance(): Promise<number> {
     return await provider.connection.getBalance(this.wallet.publicKey);
   }
   
   async getTokenBalance(): Promise<anchor.web3.RpcResponseAndContext<anchor.web3.TokenAmount>> {
     return await provider.connection.getTokenAccountBalance(this.tokenAccount);
+  }
+
+  setGameSession(gameSessionAccount, gameSessionAccountBump) {
+    this.gameSessionAccount = gameSessionAccount;
+    this.gameSessionAccountBump = gameSessionAccountBump;
   }
 }
 
@@ -78,7 +94,8 @@ class UserAccount extends Assignable {
             ['user_wallet', [32]],
             ['mint', [32]],
             ['mint_account', [32]],
-            ] 
+            ['arweave_storage_address', 'String'], 
+          ] 
         }
       ]
     ]);
@@ -86,8 +103,31 @@ class UserAccount extends Assignable {
 //    console.log("----------- DATA SIZE: ", data_size);
     let data = deserialize(schema, UserAccount, inner_buffer);
 //    let data = deserialize(schema, UserAccount, buffer.slice(8+2, buffer.length));
-    console.log("----------- DATA: ", data['username']);
+//    console.log("----------- DATA: ", data);
     return data;
+  }
+}
+
+class GameSessionAccount extends Assignable { 
+  public static deserialize(buffer: Buffer): GameSessionAccount {
+    const schema = new Map([
+      [
+        GameSessionAccount, 
+        { 
+          kind: 'struct', 
+          fields: [
+              ['discriminant', [8]],
+              ['user_account', [32]],
+              ['score', 'u64'], 
+              ['duration_millis', 'u64'], 
+              ['stake', 'u64'], 
+            ] 
+        }
+      ]
+    ]);
+    const acc = deserialize(schema, GameSessionAccount, 
+      buffer.slice(0, 8+32+8+8+8));
+    return acc;
   }
 }
 
@@ -119,7 +159,7 @@ class GameSessionArchive extends Assignable {
       }
   }
 
-  public static async getArchiveIds(userWalletPublicKey, numberOfArchives) {
+  public static async getArchiveIds(userAccount, numberOfArchives) {
     const queryObject = { query: `{
       transactions(first: ${numberOfArchives},
         tags: [
@@ -129,7 +169,7 @@ class GameSessionArchive extends Assignable {
           },
           {
             name: "User",
-            values: ["${userWalletPublicKey}"]
+            values: ["${userAccount}"]
           },
         ]
       ) {
@@ -160,14 +200,16 @@ class GameSessionArchive extends Assignable {
     return results.data.data.transactions.edges.map(edge => edge.node.id);
   }
 
-  public static async get(userWalletPublicKey, numberOfArchives) {
-    const archiveIds = await this.getArchiveIds(userWalletPublicKey, numberOfArchives);
-    
+  public static async get(userAccount, numberOfArchives) {
+    const archiveIds = await this.getArchiveIds(userAccount, numberOfArchives);
+
+//    console.log("ARCHIVE IDS: ", archiveIds);    
     const archivedData = archiveIds.map(async id => {
       const buffer = await arweave.transactions.getData(id,
         { decode: true, string: false }
       );
       const data = deserialize(GameSessionArchive.schema, GameSessionArchive, Buffer.from(buffer));
+//      console.log("DATA: ", data);
       return data;
     });
     return archivedData;
@@ -211,7 +253,7 @@ let duration = 0;
 let arweave: Arweave = undefined;
 //let arLocal: ArLocal = undefined;
 
-let arweaveWallet = undefined;
+//let arweaveWallet = undefined;
 
 function simulateGameLoop(
   program: Program<Stakan>,
@@ -244,6 +286,8 @@ let stakanTokens: anchor.web3.PublicKey;
 //let userWallet;
 let user: User;
 let user2: User;
+//let gameSessionAccount;
+//let gameSessionAccountBump;
 
 async function setUpStakan(
   ) {
@@ -277,6 +321,18 @@ async function signUpUser(
   user: User,
   mint: spl.Token,
 ) {  
+  const arweaveWallet = await arweave.wallets.generate();
+
+  await user.assignArweaveWallet(arweaveWallet);
+
+  console.log("arweave wallet address:", user.arweaveStorageAddress, "len: ", user.arweaveStorageAddress.length);
+
+  const tokens = arweave.ar.arToWinston('10')
+  await arweave.api.get(`/mint/${user.arweaveStorageAddress}/${tokens}`)
+
+  const balance = await arweave.wallets.getBalance(user.arweaveStorageAddress);
+  assert(balance, 10);
+
 /*
   const userBalanceBefore = await provider.connection.getBalance(userWallet.publicKey);
   console.log("user balance before: ", userBalanceBefore);
@@ -286,7 +342,8 @@ async function signUpUser(
     await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from('user_account'), 
-        Buffer.from(user.username).slice(0, 20)
+        Buffer.from(user.username).slice(0, 20),
+        Buffer.from(user.arweaveStorageAddress).slice(0, 20),
       ],
       program.programId
     );
@@ -299,6 +356,7 @@ async function signUpUser(
   await program.methods
     .signUpUser(
       user.username,
+      user.arweaveStorageAddress,
     )
     .accounts({
         userAccount,
@@ -319,9 +377,8 @@ async function signUpUser(
 
     const accountInfo = await provider.connection.getAccountInfo(userAccount);
     let userAccountData = UserAccount.deserialize(accountInfo.data);
+//console.log(accountInfo);
     console.log(userAccountData);
-
-//    return [userAccount, mintAccount];
 }
 
 async function purchaseStakanTokens(user: User,
@@ -373,9 +430,9 @@ async function purchaseStakanTokens(user: User,
     console.log("programWallet balance: ", 
       await provider.connection.getBalance(programWallet.publicKey));
     console.log("userMintAccount balance: ", await user.getTokenBalance());
-//      await provider.connection.getTokenAccountBalance(user.tokenAccount));
-  
+//      await provider.connection.getTokenAccountBalance(user.tokenAccount)); 
 }
+
 async function initGameSession(
   user: User,
   stake: number,
@@ -406,9 +463,92 @@ async function initGameSession(
     })
     .signers([user.wallet])
     .rpc();
+  
+  user.setGameSession(gameSessionAccount, gameSessionAccountBump);
+//  return [gameSessionAccount, gameSessionAccountBump];
+}
+
+async function saveToArweave(user: User, data): Promise<string> {
+  const serializedData = GameSessionArchive.serialize(data);
+//  console.log("SERIALIZED: ", serializedData);
+
+//  GameSessionArchive.deserialize(serializedData);
+  const tx = await arweave.createTransaction({
+    data: serializedData
+  });
+//  console.log("Transaction DATa: ", tx.data);
+  tx.addTag('App-Name', 'Stakan');
+  tx.addTag('User', user.account.toString());
+  
+  await arweave.transactions.sign(tx, user.arweaveWallet);
+  await arweave.transactions.post(tx);
+  // mine transaction to simulate immediate confirmation
+  await axios.get('http://localhost:1984/mine');
+
+  const statusAfterPost = await arweave.transactions.getStatus(tx.id);
+//  console.log("status after post: ", statusAfterPost.confirmed);
+  return statusAfterPost.status === 200 ? tx.id : undefined;
+}
+
+async function finishGameSession(
+  user: User,
+) {
+  const txid = await saveToArweave(user, 
+    {
+      score: 42,
+      duration: 1234,
+    }
+  );
+
+  await program.methods
+    .finishGameSession(
+      txid,
+    )
+    .accounts({
+        userAccount: user.account,
+        gameSessionAccount: user.gameSessionAccount,
+        userWallet: user.wallet.publicKey,
+
+        systemProgram: SystemProgram.programId,
+    })
+    .signers([])
+    .rpc();
+
+   user.setGameSession(undefined, undefined);
+//  const accountInfo = await provider.connection.getAccountInfo(user.account);
+//  let userAccountData = UserAccount.deserialize(accountInfo.data);
+}
+
+async function updateGameSession(
+  user: User,
+  score: number,
+  duration: number,
+) {
+
+  await program.methods
+    .updateGameSession(
+      new anchor.BN(score),
+      new anchor.BN(duration),
+    )
+    .accounts({
+        userAccount: user.account,
+        gameSessionAccount: user.gameSessionAccount,
+
+        systemProgram: SystemProgram.programId,
+    })
+    .signers([])
+    .rpc();
 }
 
 before(async () => {
+  arweave = Arweave.init({
+    host: 'localhost',
+    port: 1984,
+    protocol: 'http',
+    timeout: 20000,
+    logging: false,
+  });
+    
   anchor.setProvider(provider);
   programWallet = program.provider.wallet;
 
@@ -418,6 +558,8 @@ before(async () => {
   user = new User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ০𝚸𝗤ՀꓢṰǓⅤ𝔚Ⲭ𝑌𝙕𝘢𝕤", userWallet);
 
   user2 = new User("superman", userWallet);
+
+//  [gameSessionAccount, gameSessionAccountBump] = [undefined, undefined];
 
   const dummyTokenReceiver = await stakanMint.createAssociatedTokenAccount(
     anchor.web3.Keypair.generate().publicKey
@@ -477,8 +619,36 @@ describe("stakan", () => {
 
   it("Init game session", async () => {
     const stake = 1;
-    await initGameSession(user, stake);          
+    await initGameSession(user, stake);
+    
+    const accountInfo = await provider.connection.getAccountInfo(user.gameSessionAccount);
+    let accountData = GameSessionAccount.deserialize(accountInfo.data);
+  
+    console.log("Game session initialized: score: ", accountData['score'].toString());
   });
+
+  it("Update game session", async () => {
+    await updateGameSession(user, 42, 1234);      
+    
+    const accountInfo = await provider.connection.getAccountInfo(user.gameSessionAccount);
+    let accountData = GameSessionAccount.deserialize(accountInfo.data);
+  
+    console.log("Game session updated: score: ", accountData['score'].toString());  
+  });
+
+  it("Finish game session", async () => {
+    await finishGameSession(user);      
+
+    const numberOfArchives = 1;
+    const archivedData = await GameSessionArchive.get(user.account, numberOfArchives);
+
+    Promise.all(
+      archivedData
+    ).then(archivedData => archivedData.forEach(data => {
+      console.log("Archived score: ", data['score'].toString(), ", duration: ", data['duration'].toString());
+    }));     
+  });
+
   // Configure the client to use the local cluster.
   const gameGlobalAccountKeypair = anchor.web3.Keypair.generate();
 
@@ -498,42 +668,7 @@ describe("stakan", () => {
     seed 
   );
 */
-
-  it("Arweave init!", async () => {
-//    await arLocal.start();
 /*
-    arweave = Arweave.init({
-      host: 'testnet.redstone.tools',
-      port: 443,
-      protocol: 'https'
-    });
-*/
-    arweave = Arweave.init({
-      host: 'localhost',
-      port: 1984,
-      protocol: 'http',
-      timeout: 20000,
-      logging: false,
-    });
-//    console.log("after init");
-
-    arweaveWallet = await arweave.wallets.generate();
-
-    const addr = await arweave.wallets.getAddress(arweaveWallet);
-    console.log("arweave wallet address:", addr, "len: ", addr.length);
-
-
-//    arweave.wallets.
-//    console.log("after wallet get address");
-
-    const tokens = arweave.ar.arToWinston('10')
-    await arweave.api.get(`/mint/${addr}/${tokens}`)
-//    console.log("after minting token");
- 
-    const balance = await arweave.wallets.getBalance(addr)
-    assert(balance, 10);
-  });
-
   it("Arweave create test transaction!", async () => {
 //    const testWeave = await TestWeave.init(arweave);
     let data = "test arweave transaction creation";
@@ -557,126 +692,11 @@ describe("stakan", () => {
     assert(statusAfterPost, 200);
   });
 
-  it("Airdrop!", async () => {
-/*
-    await provider.connection.confirmTransaction(
-      await provider.connection.requestAirdrop(gameGlobalWallet.publicKey, 100000000000)
-    );
- */   
-    await provider.connection.confirmTransaction( 
-      await provider.connection.requestAirdrop(userWallet.publicKey, 1000000000)
-    );
-  });
- 
-  it("Game session is started!", async () => {
-    const user = anchor.web3.Keypair.generate();
-    const stakeWallet = anchor.web3.Keypair.generate();
-
-    await initGameSession(user,
-      userWallet, 
-      stakeWallet,
-      arweaveAddress,
-      1000000);
-  });
   
   it("User game archive!", async () => {
     await getUserGameArchive();
   });
 
-  
-/*
-  it("SHOULD FAIL: Game session is saved twice!", async () => {
-    try {
-      await saveGameSession(userWallet, gameGlobalWallet, gameSessionAccountKeypair, 42, 1234);
-    }
-    catch {
-        return;
-    }
-    throw "Should have failed upon session saving twice";
-  });
-  */
-  
-/* async function initGameSession(
-  user,
-  userWallet,
-  stakeWallet,
-  arweaveAddress,  
-  stake
-  ) {      
-  try {
-    const userBalanceBefore = await provider.connection.getBalance(userWallet.publicKey);
-//    const globalBalanceBefore = await provider.connection.getBalance(gameGlobalWallet.publicKey);
-  
-    console.log("User wallet before init: ", userBalanceBefore);
-//    console.log("Game account before init: ", globalBalanceBefore);
-
-    const pdaGameSessionAccountBalanceBefore = await provider.connection.getBalance(pdaGameSessionAccount);
-    console.log("Game session(PDA) balance before init:", pdaGameSessionAccountBalanceBefore);
-    console.log("Stake:", stake);
-
-//    const rentExemption = await provider.connection.getMinimumBalanceForRentExemption(8 + 100);
-//    console.log("rentExemption:", rentExemption);
-
-    const [gameSessionAccount, gameSessionAccountBump] =
-      await anchor.web3.PublicKey.findProgramAddress(
-        [user.publicKey.toBuffer()],
-        program.programId
-      );
-
-    const tx = await program.methods
-      .initGameSession(
-        arweaveAddress,
-        new anchor.BN(stake),
-      )
-      .accounts({
-          gameSessionAccount,
-          user: user.publicKey,
-          userWallet: userWallet.publicKey,
-          stakeWallet: stakeWallet.publicKey,
-          gameGlobalAccount: gameGlobalAccountKeypair.publicKey,
-          stakeMint: stakeMint.publicKey,
-
-          tokenProgram: tokenProgramID,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-          systemProgram: SystemProgram.programId,
-      })
-      .signers([user])
-      .rpc();
-
-      const userBalanceAfter = await provider.connection.getBalance(userWallet.publicKey);
-    //  const globalBalanceAfter = await provider.connection.getBalance(gameGlobalWallet.publicKey);
-      const pdaGameSessionAccountBalanceAfter = await provider.connection.getBalance(pdaGameSessionAccount);
-    
-      console.log("User wallet after init: ", userBalanceAfter, ", delta: ", userBalanceBefore - userBalanceAfter);
-//      console.log("Game account after init: ", globalBalanceAfter, ", delta: ", globalBalanceBefore - globalBalanceAfter);
-      console.log("Game session(PDA) balance after init: ", pdaGameSessionAccountBalanceAfter);
-    } catch(e) {
-    console.log(e);
-    throw e;
-  }
-} */
-
-async function saveToArweave(userPublicKey, data): Promise<string> {
-  const serializedData = GameSessionArchive.serialize(data);
-//  console.log("SERIALIZED: ", serializedData);
-
-//  GameSessionArchive.deserialize(serializedData);
-  const tx = await arweave.createTransaction({
-    data: serializedData
-  });
-//  console.log("Transaction DATa: ", tx.data);
-  tx.addTag('App-Name', 'Stakan');
-  tx.addTag('User', userPublicKey.toString());
-  
-  await arweave.transactions.sign(tx, arweaveWallet);
-  await arweave.transactions.post(tx);
-  // mine transaction to simulate immediate confirmation
-  await axios.get('http://localhost:1984/mine');
-
-  const statusAfterPost = await arweave.transactions.getStatus(tx.id);
-//  console.log("status after post: ", statusAfterPost.confirmed);
-  return statusAfterPost.status === 200 ? tx.id : undefined;
-}
 
 async function getUserGameArchive() {
   const accountInfo = await provider.connection.getAccountInfo(UserAccountKeypair.publicKey);
@@ -691,6 +711,7 @@ async function getUserGameArchive() {
     console.log("Archived score: ", data['score'].toString(), ", duration: ", data['duration'].toString());
   }));
 }
+*/
 /*
   it("Short game loop run!", async () => {
     const interval = 400;
@@ -770,27 +791,6 @@ async function getUserGameArchive() {
     
       }, 4*interval + 10 
     );
-  });
-*/
-  /*
-  it("Transaction list!", async () => {
-    
-    console.log("Before Game session transactions: ");
-    console.log("connection commitment: ", provider.connection.commitment);
-    const signatures = 
-      await provider.connection.getSignaturesForAddress(
-        gameSessionAccountKeypair.publicKey, 
-        {},
-        'confirmed');
-    console.log("After Game session transactions: ");
-  
-    for ( let i = 0; i < signatures.length; i++ ) {
-      const sig = signatures[i].signature;
-      const trans = await provider.connection.getTransaction(sig, {commitment: "confirmed"});
-      if ( trans ) {
-        console.log(trans);
-      }
-    }
   });
 */
 
