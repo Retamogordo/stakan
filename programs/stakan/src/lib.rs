@@ -213,6 +213,8 @@ pub struct UpdateGameSession<'info> {
 
 #[derive(Accounts)]
 pub struct FinishGameSession<'info> {
+    stakan_state_account: Account<'info, StakanGlobalState>,
+
     #[account(
         constraint = user_account.user.user_wallet == user_wallet.key(),
     )]
@@ -384,10 +386,14 @@ declare_id!("StakanXf8bymj5JEgJYH4qUQ7xTtoR1W2BeHUbDjCJb");
 #[program]
 pub mod stakan {
     use super::*;
-    pub fn set_up_stakan(ctx: Context<SetupStakan>, associated_token_account_bump: u8,
+    pub fn set_up_stakan(ctx: Context<SetupStakan>
     ) -> Result<()> {
-        ctx.accounts.stakan_state_account.mint_token = ctx.accounts.mint.key();
-        ctx.accounts.stakan_state_account.token_account = ctx.accounts.associated_token_account.key();
+        let acc = &mut ctx.accounts.stakan_state_account;
+
+        acc.mint_token = ctx.accounts.mint.key();
+        acc.token_account = ctx.accounts.associated_token_account.key();
+        acc.global_max_score = 0;
+        acc.funds = 0;
         Ok(())
     }
     
@@ -535,7 +541,7 @@ pub mod stakan {
                         .to_account_info(),
 //                        authority: ctx.accounts.program_wallet.to_account_info(),
                     authority: ctx.accounts.stakan_state_account.to_account_info(),
-                    },
+                },
                 &[&signer_seeds]
             ),
             token_amount,
@@ -604,40 +610,78 @@ pub mod stakan {
         // just to ensure arweave has confirmed storage transaction
         _dummy_arweave_storage_tx_id: Option<String>, 
         bump: u8,
+        program_token_account_bump: u8,
     ) -> Result<()> {
+        let global_max_score = ctx.accounts.stakan_state_account.global_max_score;
+        let game_session_score = ctx.accounts.game_session_account.score;
         let stake = ctx.accounts.game_session_account.stake;
         let username = &ctx.accounts.user_account.user.username;
         let arweave_storage_address = &ctx.accounts.user_account.user.arweave_storage_address;
+        let record_hit = game_session_score > global_max_score;
 
-        if stake > 0 { 
-            let temp_bump: [u8; 1] = bump.to_le_bytes();
-//            let signer_seeds 
-//                = ctx.accounts.user_account.compose_user_account_seeds_with_bump(&temp_bump);          
-            let signer_seeds = [
-                b"user_account".as_ref(),
-                User::username_slice_for_seed(&username[..]),
-                User::arweave_storage_address_for_seed(&arweave_storage_address[..]),
-                &temp_bump
-            ];
-            
-            anchor_spl::token::transfer(
-                CpiContext::new_with_signer(
-                    ctx.accounts.token_program.to_account_info(),
+        if record_hit {
+            ctx.accounts.stakan_state_account.global_max_score = game_session_score;
+        }
 
-                    anchor_spl::token::Transfer {
-                        from: ctx.accounts.user_token_account.to_account_info(),                       
-                        to: ctx.accounts.program_token_account.to_account_info(),
-                        authority: ctx.accounts.user_account.to_account_info(),
-                    },
-                    &[&signer_seeds]
-                ),
-                stake,
-            )?;
+        if stake > 0 {   
+            if record_hit {
+                let funds_div_2 = ctx.accounts.program_token_account.amount / 2;
+                
+                if funds_div_2 > stake {
+                    let reward = funds_div_2 - stake;
+                    let temp_bump: [u8; 1] = program_token_account_bump.to_le_bytes();
+        //            let signer_seeds 
+        //                = ctx.accounts.user_account.compose_user_account_seeds_with_bump(&temp_bump);          
+                    let signer_seeds = [
+                        b"stakan_state_account".as_ref(),
+                        &temp_bump
+                    ];
 
+                    anchor_spl::token::transfer(
+                        CpiContext::new_with_signer(
+                            ctx.accounts.token_program.to_account_info(),
+        
+                            anchor_spl::token::Transfer {
+                                from: ctx.accounts.program_token_account.to_account_info(),                       
+                                to: ctx.accounts.user_token_account.to_account_info(),
+                                authority: ctx.accounts.stakan_state_account.to_account_info(),
+                            },
+                            &[&signer_seeds]
+                        ),
+                        reward,
+                        )?;
+                } else { 
+                    return Ok(()) 
+                };
+            } else {
+                let temp_bump: [u8; 1] = bump.to_le_bytes();
+    //            let signer_seeds 
+    //                = ctx.accounts.user_account.compose_user_account_seeds_with_bump(&temp_bump);          
+                let signer_seeds = [
+                    b"user_account".as_ref(),
+                    User::username_slice_for_seed(&username[..]),
+                    User::arweave_storage_address_for_seed(&arweave_storage_address[..]),
+                    &temp_bump
+                ];
+                
+                anchor_spl::token::transfer(
+                    CpiContext::new_with_signer(
+                        ctx.accounts.token_program.to_account_info(),
+
+                        anchor_spl::token::Transfer {
+                            from: ctx.accounts.user_token_account.to_account_info(),                       
+                            to: ctx.accounts.program_token_account.to_account_info(),
+                            authority: ctx.accounts.user_account.to_account_info(),
+                        },
+                        &[&signer_seeds]
+                    ),
+                    stake,
+                )?;
+            }
 //            if stake > ctx.accounts.program_token_account
-            ctx.accounts.program_token_account.reload()?;
+//            ctx.accounts.program_token_account.reload()?;
             
-            let funds = ctx.accounts.program_token_account.amount; 
+//            let funds = ctx.accounts.program_token_account.amount; 
         }
 
         Ok(())

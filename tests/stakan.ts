@@ -316,15 +316,6 @@ async function setUpStakan(
   
     console.log("before minting ", stakanTokensAmount, " Stakan Tokens...");
   
-    const stakanMint = await spl.Token.createMint(
-      program.provider.connection,
-      programWallet.payer,
-      programWallet.publicKey,
-      programWallet.publicKey,    // freeze authority
-      0,  // decimals
-      tokenProgramID
-    );
-
     const [stakanStateAccount, stakanStateAccountBump] =
       await anchor.web3.PublicKey.findProgramAddress(
         [
@@ -341,11 +332,17 @@ async function setUpStakan(
         program.programId
     );
 
-    console.log(associatedTokenAccount.toBase58());
+    const stakanMint = await spl.Token.createMint(
+      program.provider.connection,
+      programWallet.payer,
+      programWallet.publicKey,
+      programWallet.publicKey,    // freeze authority
+      0,  // decimals
+      tokenProgramID
+    );
 
     await program.methods
       .setUpStakan(
-        associatedTokenAccountBump
       )
       .accounts({
           stakanStateAccount,
@@ -375,7 +372,7 @@ async function setUpStakan(
       programWallet.publicKey
     );
 */  
-    await stakanMint.mintTo(associatedTokenAccount, programWallet.publicKey, [], stakanTokensAmount);
+      await stakanMint.mintTo(associatedTokenAccount, programWallet.publicKey, [], stakanTokensAmount);
   
     let tokenAmount 
       = await program.provider.connection.getTokenAccountBalance(associatedTokenAccount);
@@ -504,15 +501,6 @@ async function initGameSession(
       program.programId
     );
   
-  const [escrowTokenAccount, escrowTokenAccountBump] =
-    await anchor.web3.PublicKey.findProgramAddress(
-      [
-        Buffer.from('escrow_token_account'), 
-//        Buffer.from(user.username).slice(0, 20)
-      ],
-      program.programId
-    );
-
   await program.methods
     .initGameSession(
       new anchor.BN(stake),
@@ -572,8 +560,10 @@ async function finishGameSession(
     .finishGameSession(
       txid,
       user.bump,
+      stakanState.stateAccountBump,
     )
     .accounts({
+        stakanStateAccount: stakanState.stateAccount,
         userAccount: user.account,
         userTokenAccount: user.tokenAccount,
         gameSessionAccount: user.gameSessionAccount,
