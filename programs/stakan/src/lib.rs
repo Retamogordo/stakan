@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, Mint, transfer, TokenAccount};
+use anchor_spl::associated_token::{AssociatedToken, };
 
 //use agsol_borsh_schema::BorshSchema;
 
@@ -18,6 +19,9 @@ pub enum GameError {
 
     #[msg("Could not transfer reward from Global Account.")]
     CouldNotTransferReward,
+
+    #[msg("Insufficient tokens on account, can't stake.")]
+    InsufficientTokensOnAccount,
 
     #[msg("Stake is higher than fund can accept.")]
     StakeTooHigh,
@@ -45,18 +49,48 @@ pub enum GameSessionStage {
 }
 
 #[derive(Accounts)]
-pub struct InitGlobalState<'info> {
-    #[account(init, payer = global_wallet, space = 8 + 100)]
-    pub game_global_account: Account<'info, GameGlobalState>,
+pub struct SetupStakan<'info> {
+
+    #[account(init, payer = program_wallet, space = 8 + 100,
+        seeds = [
+            b"stakan_state_account".as_ref(), 
+//            User::username_slice_for_seed(username.as_bytes()),
+//            User::arweave_storage_address_for_seed(arweave_storage_address.as_bytes()),
+        ],
+        bump,
+    )]
+    stakan_state_account: Account<'info, StakanGlobalState>,
+
+//    #[account(init, payer = program_wallet, space = 8+1000)]
+//    #[account(init, payer = program_wallet, space = 8+32+8+1+1+32)]
+    mint: Account<'info, Mint>,  
+
+    #[account(init, payer = program_wallet,
+        seeds = [
+            b"associated_token_account".as_ref(), 
+        ],
+        bump,
+        token::mint = mint,
+        token::authority = stakan_state_account,
+//        token::authority = program_wallet,
+    )]  
+    associated_token_account: Account<'info, TokenAccount>,
+
     #[account(mut)]
-    pub global_wallet: Signer<'info>,
-    pub system_program: Program<'info, System>,
+    program_wallet: Signer<'info>,
+
+    associated_token_program: Program<'info, AssociatedToken>,
+    token_program: Program<'info, Token>,
+    system_program: Program<'info, System>,
+    rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
 #[instruction(username: String, arweave_storage_address: String)]
 pub struct SignUpUser<'info> {
-    #[account(init, payer = user_wallet, space = 8 + 1000,
+    stakan_state_account: Account<'info, StakanGlobalState>,
+
+    #[account(init, payer = user_wallet, space = 8 + 500,
         seeds = [
             b"user_account".as_ref(), 
             User::username_slice_for_seed(username.as_bytes()),
@@ -69,6 +103,9 @@ pub struct SignUpUser<'info> {
     #[account(mut)]
     user_wallet: Signer<'info>,
 
+    #[account(
+        constraint = mint.key() == stakan_state_account.mint_token,
+    )]
     mint: Account<'info, Mint>,  
 
     #[account(
@@ -92,33 +129,31 @@ pub struct SignUpUser<'info> {
 
 #[derive(Accounts)]
 pub struct PurchaseTokens<'info> {
+    stakan_state_account: Account<'info, StakanGlobalState>,
+
     #[account(
         constraint = user_account.user.user_wallet == user_wallet.key(),
     )]
     user_account: Account<'info, User>,
 
     #[account(mut,
-        constraint = user_token_account.mint == mint.key(),
+        constraint = user_token_account.mint == stakan_state_account.mint_token,
         constraint = user_token_account.owner == user_account.key(),
     )]
     user_token_account: Account<'info, TokenAccount>,
-
-    #[account(
-        constraint = mint.key() == user_account.user.mint,
-    )]
-    mint: Account<'info, Mint>,  
 
     #[account(mut)]
     user_wallet: Signer<'info>,
 
     #[account(mut,
-        constraint = program_token_account.mint == mint.key(),
-        constraint = program_token_account.owner == program_wallet.key(),
+        constraint = program_token_account.key() == stakan_state_account.token_account,
+        constraint = program_token_account.owner == stakan_state_account.key(),
     )]
     program_token_account: Account<'info, TokenAccount>,
 
+    /// CHECK:` pubkey of programs wallet to receive lamports from user wallet
     #[account(mut)]
-    program_wallet: Signer<'info>,
+    program_wallet: AccountInfo<'info>,
 
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
@@ -126,17 +161,22 @@ pub struct PurchaseTokens<'info> {
 
 #[derive(Accounts)]
 pub struct InitGameSession<'info> {
+    stakan_state_account: Account<'info, StakanGlobalState>,
+
     #[account(
         constraint = user_account.user.user_wallet == user_wallet.key(),
     )]
     user_account: Account<'info, User>,
 
     #[account(mut,
+        constraint = user_token_account.mint == stakan_state_account.mint_token,
         constraint = user_token_account.owner == user_account.key(),
     )]
     user_token_account: Account<'info, TokenAccount>,
 
     #[account(mut,
+        constraint = program_token_account.key() == stakan_state_account.token_account,
+        constraint = program_token_account.owner == stakan_state_account.key(),
     )]
     program_token_account: Account<'info, TokenAccount>,
 
@@ -149,7 +189,6 @@ pub struct InitGameSession<'info> {
 //            SignUpUser::username_slice_for_seed(username.as_bytes()),
         ],
         bump,
-//        constraint = game_session_account.user_account == user_account.key()
     )]
     game_session_account: Account<'info, GameSession>,
 
@@ -180,14 +219,25 @@ pub struct FinishGameSession<'info> {
     user_account: Account<'info, User>,
 
     #[account(mut,
+        constraint = user_token_account.owner == user_account.key(),
+    )]
+    user_token_account: Account<'info, TokenAccount>,
+
+    #[account(mut,
         close = user_wallet,
         constraint = game_session_account.user_account == user_account.key()
     )]
     game_session_account: Account<'info, GameSession>,
 
+    #[account(mut,
+    )]
+    program_token_account: Account<'info, TokenAccount>,
+
     /// CHECK:` user wallet receiving fee back upon game_session_account closing
     #[account(mut)]
     user_wallet: UncheckedAccount<'info>,
+
+    token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
 }
 /*
@@ -322,20 +372,104 @@ impl UserInner {
 }
 
 #[account]
-pub struct GameGlobalState {
-    pub global_max_score: u64,
-    pub funds: u64,
+pub struct StakanGlobalState {
+    global_max_score: u64,
+    funds: u64,
+    mint_token: Pubkey,
+    token_account: Pubkey,
 } 
-
-impl GameGlobalState {
-    const MIN_STAKE_LAMPORTS: u64 = 1000000;
-}
 
 declare_id!("StakanXf8bymj5JEgJYH4qUQ7xTtoR1W2BeHUbDjCJb");
 
 #[program]
 pub mod stakan {
     use super::*;
+    pub fn set_up_stakan(ctx: Context<SetupStakan>, associated_token_account_bump: u8,
+    ) -> Result<()> {
+        ctx.accounts.stakan_state_account.mint_token = ctx.accounts.mint.key();
+        ctx.accounts.stakan_state_account.token_account = ctx.accounts.associated_token_account.key();
+        Ok(())
+    }
+    
+    pub fn set_up_stakan_new(ctx: Context<SetupStakan>, associated_token_account_bump: u8,
+    ) -> Result<()> {
+//        spl_token::state::Account;
+//        let space = ExtensionType::get_account_len::<TokenAccount>(&[]);
+        let space = 8+500;
+        let owner = &ctx.accounts.program_wallet.key();
+/*
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.system_program.to_account_info(),
+
+            anchor_lang::system_program::CreateAccount {
+                from: ctx.accounts.program_wallet.to_account_info(),
+                to: ctx.accounts.associated_token_account.to_account_info(),
+            }
+        );
+
+        anchor_lang::system_program::create_account(
+            cpi_ctx,
+            ctx.accounts.rent.minimum_balance(space), 
+            space as u64, 
+            owner)?;
+*/
+/*
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+
+            anchor_spl::token::InitializeMint {
+                mint: ctx.accounts.mint.to_account_info(),
+                rent: ctx.accounts.rent.to_account_info(),
+            }
+        );        
+        let decimals = 0;
+        let authority = ctx.accounts.program_wallet.key();
+        let freeze_authority = None; // ctx.accounts.program_wallet.key();
+
+        anchor_spl::token::initialize_mint(cpi_ctx, decimals, &authority, freeze_authority)?;
+*/        
+//        anchor_spl::associated_token::get_associated_token_address(wallet_address: &Pubkey, spl_token_mint_address: &Pubkey)
+        let temp_bump: [u8; 1] = associated_token_account_bump.to_le_bytes();
+        let signer_seeds = [
+            b"associated_token_account".as_ref(),
+//            User::username_slice_for_seed(&username[..]),
+//            User::arweave_storage_address_for_seed(&arweave_storage_address[..]),
+            &temp_bump
+        ];
+       
+        anchor_spl::associated_token::create(
+            CpiContext::new_with_signer(
+                ctx.accounts.associated_token_program.to_account_info(),
+
+                anchor_spl::associated_token::Create {
+                    payer: ctx.accounts.program_wallet.to_account_info(),
+                    associated_token: ctx.accounts.associated_token_account.to_account_info(),
+                    authority: ctx.accounts.program_wallet.to_account_info(),
+                    mint: ctx.accounts.mint.to_account_info(),
+                    token_program: ctx.accounts.associated_token_program.to_account_info(),
+                    system_program: ctx.accounts.system_program.to_account_info(),
+                    rent: ctx.accounts.rent.to_account_info(),
+                },
+                &[&signer_seeds]
+            )
+        )?;        
+        
+/*
+        let cpi_ctx = CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+
+            anchor_spl::token::MintTo {
+                mint: ctx.accounts.mint.to_account_info(),
+                to: ctx.accounts.associated_token_account.to_account_info(),
+                authority: ctx.accounts.program_wallet.to_account_info(),
+            }
+        );        
+        anchor_spl::token::mint_to(
+            cpi_ctx, 
+            1000)?;
+            */
+        Ok(())
+    }
 
     pub fn sign_up_user(ctx: Context<SignUpUser>,
         username: String, 
@@ -352,7 +486,7 @@ pub mod stakan {
                 max_score: 0,
                 saved_game_sessions: 0,
                 user_wallet: ctx.accounts.user_wallet.key(),
-                mint: ctx.accounts.mint.key(),
+                mint: ctx.accounts.stakan_state_account.mint_token.key(),
                 token_account: ctx.accounts.token_account.key(),
                 arweave_storage_address: arweave_storage_address.into_bytes(),
             };
@@ -363,6 +497,7 @@ pub mod stakan {
     }
 
     pub fn purchase_tokens(ctx: Context<PurchaseTokens>,
+        stakan_state_account_bump: u8,
         token_amount: u64, 
     ) -> Result<()> {
 //        solana_program::
@@ -378,8 +513,15 @@ pub mod stakan {
             ],
         )?;
 
+        let temp_bump: [u8; 1] = stakan_state_account_bump.to_le_bytes();
+
+        let signer_seeds = [
+            b"stakan_state_account".as_ref(),
+            &temp_bump
+        ];        
+
         anchor_spl::token::transfer(
-            CpiContext::new(
+            CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
 
                 anchor_spl::token::Transfer {
@@ -391,8 +533,10 @@ pub mod stakan {
                         .accounts
                         .user_token_account
                         .to_account_info(),
-                    authority: ctx.accounts.program_wallet.to_account_info(),
-                },
+//                        authority: ctx.accounts.program_wallet.to_account_info(),
+                    authority: ctx.accounts.stakan_state_account.to_account_info(),
+                    },
+                &[&signer_seeds]
             ),
             token_amount,
         )?;
@@ -405,16 +549,21 @@ pub mod stakan {
         stake: u64,
         bump: u8,
     ) -> Result<()> {
+    
         let username = &ctx.accounts.user_account.user.username;
         let arweave_storage_address = &ctx.accounts.user_account.user.arweave_storage_address;
         let program_tokens_funds = ctx.accounts.program_token_account.amount;
 
+        if ctx.accounts.user_token_account.amount < stake {
+            return Err(GameError::InsufficientTokensOnAccount.into());
+        }
         // reward is funds/2, so stake should be smaller than funds 
-        // in order the reward is greater than stake in case the user is rewarded 
+        // in order the reward to be greater than stake in case the user is rewarded 
         if program_tokens_funds <= stake {
             return Err(GameError::StakeTooHigh.into());
         }
 
+/*
         if stake > 0 { 
             let temp_bump: [u8; 1] = bump.to_le_bytes();
 //            let signer_seeds 
@@ -440,7 +589,7 @@ pub mod stakan {
                 stake,
             )?;
         }
-
+*/
         let game_session_account = &mut ctx.accounts.game_session_account;
         
         game_session_account.user_account = ctx.accounts.user_account.key();
@@ -454,7 +603,42 @@ pub mod stakan {
     pub fn finish_game_session(ctx: Context<FinishGameSession>,
         // just to ensure arweave has confirmed storage transaction
         _dummy_arweave_storage_tx_id: Option<String>, 
+        bump: u8,
     ) -> Result<()> {
+        let stake = ctx.accounts.game_session_account.stake;
+        let username = &ctx.accounts.user_account.user.username;
+        let arweave_storage_address = &ctx.accounts.user_account.user.arweave_storage_address;
+
+        if stake > 0 { 
+            let temp_bump: [u8; 1] = bump.to_le_bytes();
+//            let signer_seeds 
+//                = ctx.accounts.user_account.compose_user_account_seeds_with_bump(&temp_bump);          
+            let signer_seeds = [
+                b"user_account".as_ref(),
+                User::username_slice_for_seed(&username[..]),
+                User::arweave_storage_address_for_seed(&arweave_storage_address[..]),
+                &temp_bump
+            ];
+            
+            anchor_spl::token::transfer(
+                CpiContext::new_with_signer(
+                    ctx.accounts.token_program.to_account_info(),
+
+                    anchor_spl::token::Transfer {
+                        from: ctx.accounts.user_token_account.to_account_info(),                       
+                        to: ctx.accounts.program_token_account.to_account_info(),
+                        authority: ctx.accounts.user_account.to_account_info(),
+                    },
+                    &[&signer_seeds]
+                ),
+                stake,
+            )?;
+
+//            if stake > ctx.accounts.program_token_account
+            ctx.accounts.program_token_account.reload()?;
+            
+            let funds = ctx.accounts.program_token_account.amount; 
+        }
 
         Ok(())
     }
