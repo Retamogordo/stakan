@@ -19,5 +19,6 @@ default = []
 anchor-lang = "0.24.2"
 anchor-spl = "0.24.2"
 solana-program = "1.9.13"
+#spl-token-2022 = "0.3.0"
 #agsol-borsh-schema = "0.0.2"
 #solana-sdk = "1.8.16"
