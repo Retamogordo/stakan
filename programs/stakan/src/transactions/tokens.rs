@@ -35,18 +35,18 @@ pub struct PurchaseTokens<'info> {
 }
 
 impl PurchaseTokens<'_> {
-    const LAMPORTS_PER_STAKAN_TOKEN: u64 = 1000000;
+    pub const LAMPORTS_PER_STAKAN_TOKEN: u64 = 1000000;
 }
 
 #[derive(Accounts)]
 pub struct SellTokens<'info> {
     stakan_state_account: Account<'info, StakanGlobalState>,
-
+/*
     #[account(mut,
 //        constraint = mint.key() == stakan_state_account.mint_token,
     )]
     mint: Account<'info, Mint>, 
-
+*/
     #[account(
         constraint = user_account.user.user_wallet == user_wallet.key(),
     )]
@@ -61,6 +61,11 @@ pub struct SellTokens<'info> {
     /// CHECK:` pubkey of user wallet to receive lamports from program wallet
     #[account(mut)]
     user_wallet: AccountInfo<'info>,
+
+    #[account(mut,
+        constraint = reward_funds_account.owner == stakan_state_account.key(),
+    )]
+    reward_funds_account: Account<'info, TokenAccount>,
 
     #[account(mut)]
     program_wallet: Signer<'info>,
@@ -122,13 +127,13 @@ pub fn sell(
         
         &temp_bump
     ];
-    anchor_spl::token::burn(
+    anchor_spl::token::transfer(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
 
-            anchor_spl::token::Burn {
-                mint: ctx.accounts.mint.to_account_info(),
+            anchor_spl::token::Transfer {
                 from: ctx.accounts.user_token_account.to_account_info(),
+                to: ctx.accounts.reward_funds_account.to_account_info(),
                 authority: ctx.accounts.user_account.to_account_info(),
             },
             &[&signer_seeds]

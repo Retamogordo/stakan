@@ -67,4 +67,11 @@ pub mod stakan {
             stakan_state_account_bump,
         )
     }
+
+    pub fn sign_out_user(
+        ctx: Context<SignOutUser>,
+        user_account_bump: u8,
+    ) -> Result<()> {
+        crate::transactions::user::sign_out(ctx, user_account_bump)
+    }
 }

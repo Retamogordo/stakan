@@ -143,20 +143,25 @@ pub struct SignOutUser<'info> {
         constraint = user_account.user.has_active_game_session == false,
     )]
     user_account: Account<'info, User>,
-    
-    #[account(mut)]
-    user_wallet: Signer<'info>,
-
-    #[account(
-        constraint = mint.key() == stakan_state_account.mint_token,
-    )]
-    mint: Account<'info, Mint>,  
 
     #[account(mut,
-    )]  
-    token_account: Account<'info, TokenAccount>,
+        constraint = user_token_account.mint == stakan_state_account.mint_token,
+        constraint = user_token_account.owner == user_account.key(),
+    )]
+    user_token_account: Account<'info, TokenAccount>,
+    
+    /// CHECK:` pubkey of user wallet to receive lamports from program wallet
+    #[account(mut)]
+    user_wallet: AccountInfo<'info>,
 
-    associated_token_program: Program<'info, AssociatedToken>,
+    #[account(mut,
+        constraint = reward_funds_account.owner == stakan_state_account.key(),
+    )]
+    reward_funds_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    program_wallet: Signer<'info>,
+
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
     rent: Sysvar<'info, Rent>,
@@ -189,8 +194,42 @@ pub fn sign_up(ctx: Context<SignUpUser>,
     Ok(())
 }
 
-pub fn sign_out(ctx: Context<SignOutUser>,
+pub fn sign_out(ctx: Context<SignOutUser>, user_account_bump: u8
 ) -> Result<()> {
+    let token_amount = ctx.accounts.user_token_account.amount;
+    let temp_bump: [u8; 1] = user_account_bump.to_le_bytes();
+    let signer_seeds = [
+        b"user_account".as_ref(),
+        User::username_slice_for_seed(ctx.accounts.user_account.user.username.as_ref()),
+        User::arweave_storage_address_for_seed(ctx.accounts.user_account.user.arweave_storage_address.as_ref()),
+        
+        &temp_bump
+    ];
+    anchor_spl::token::transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+
+            anchor_spl::token::Transfer {
+                from: ctx.accounts.user_token_account.to_account_info(),
+                to: ctx.accounts.reward_funds_account.to_account_info(),
+                authority: ctx.accounts.user_account.to_account_info(),
+            },
+            &[&signer_seeds]
+        ), 
+        token_amount
+    )?;
+
+    solana_program::program::invoke(
+        &solana_program::system_instruction::transfer(
+            ctx.accounts.program_wallet.key, 
+            ctx.accounts.user_wallet.key, 
+            token_amount * crate::transactions::tokens::PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN),
+        &[
+            ctx.accounts.program_wallet.to_account_info(),
+            ctx.accounts.user_wallet.to_account_info(),
+            ctx.accounts.system_program.to_account_info()
+        ],
+    )?;
 
     Ok(())
 }
