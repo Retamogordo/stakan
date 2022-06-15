@@ -61,11 +61,16 @@ before(async () => {
   const userWallet = anchor.web3.Keypair.generate();
   const arweaveWallet = await arweave.wallets.generate();
 
-  user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ", provider.connection, userWallet, arweave, arweaveWallet);
+  const arweaveStorageAddress = await arweave.wallets.getAddress(arweaveWallet);
+
+  user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ", provider.connection, 
+    userWallet, arweave, arweaveWallet, arweaveStorageAddress);
 //  user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ০𝚸𝗤ՀꓢṰǓⅤ𝔚Ⲭ𝑌𝙕𝘢𝕤", userWallet);
 
   const arweaveWallet2 = await arweave.wallets.generate();
-  user2 = new stakanApi.User("superman", provider.connection, userWallet, arweave, arweaveWallet2);
+  const arweaveStorageAddress2 = await arweave.wallets.getAddress(arweaveWallet2);
+  user2 = new stakanApi.User("superman", provider.connection, 
+    userWallet, arweave, arweaveWallet2, arweaveStorageAddress2);
 });
 
 describe("stakan", () => {

@@ -1,9 +1,11 @@
 import * as anchor from "@project-serum/anchor";
 import * as spl from '@solana/spl-token';
 import Arweave from "arweave";
+import { JWKInterface } from 'arweave/node/lib/wallet'
 
 import { Stakan } from "../../target/types/stakan";
 import * as accountsSchema from "../../app/src/accountsSchema";
+import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 
 const axios = require('axios');
 
@@ -13,17 +15,17 @@ const { SystemProgram } = anchor.web3;
 
 export class StakanState {
     connection: anchor.web3.Connection
-    wallet
+    wallet: NodeWallet
     stateAccount: anchor.web3.PublicKey
     stateAccountBump: number;
     rewardFundsAccount: anchor.web3.PublicKey;
-    rewardFundsAccountBump: number;
+//    rewardFundsAccountBump: number;
     stakanMint: anchor.web3.PublicKey;
     stakanMintBump: number;
   
     constructor(
         connection: anchor.web3.Connection,
-        wallet,
+        wallet: NodeWallet,
         stateAccount: anchor.web3.PublicKey,
         stateAccountBump: number,
         rewardFundsAccount: anchor.web3.PublicKey,
@@ -90,13 +92,13 @@ export async function setUpStakan(connection: anchor.web3.Connection): Promise<S
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           systemProgram: SystemProgram.programId,
       })
-      .signers([program.provider.wallet.payer])
+      .signers([(program.provider.wallet as NodeWallet).payer])
       .rpc();
   
     console.log("after setup");
     const stakanState = new StakanState(
         connection,
-        program.provider.wallet,
+        program.provider.wallet as NodeWallet,
         stakanStateAccount,
         stakanStateAccountBump,
         rewardFundsAccount,
@@ -111,31 +113,28 @@ export class User {
     connection: anchor.web3.Connection;
     wallet: anchor.web3.Keypair;
     arweave: Arweave;
-    account: anchor.web3.PublicKey | undefined; // pda user state account
-    tokenAccount: anchor.web3.PublicKey | undefined; // pda user token account
-    arweaveWallet;
+    account?: anchor.web3.PublicKey; // pda user state account
+    tokenAccount?: anchor.web3.PublicKey; // pda user token account
+    arweaveWallet: JWKInterface;
     arweaveStorageAddress: string;
-    bump: number;
-    gameSessionAccount: anchor.web3.PublicKey | undefined; // pda of ongoing game session account
-    gameSessionAccountBump: number | undefined;
+    bump?: number;
+    gameSessionAccount?: anchor.web3.PublicKey; // pda of ongoing game session account
+    gameSessionAccountBump?: number;
   
     constructor(
         username: string, 
         connection: anchor.web3.Connection,
         wallet: anchor.web3.Keypair, 
         arweave: Arweave, 
-        arweaveWallet
+        arweaveWallet: JWKInterface,
+        arweaveStorageAddress: string,
     ) {
       this.username = username;
       this.connection = connection;
       this.wallet = wallet;
       this.arweave = arweave;
       this.arweaveWallet = arweaveWallet;
-
-      arweave.wallets.getAddress(arweaveWallet)
-        .then(arweaveStorageAddress => {
-            this.arweaveStorageAddress = arweaveStorageAddress;
-        });
+      this.arweaveStorageAddress = arweaveStorageAddress;
     }
     
     isSignedUp(): boolean {
@@ -147,21 +146,30 @@ export class User {
     }
     
     async getTokenBalance(): Promise<anchor.web3.RpcResponseAndContext<anchor.web3.TokenAmount>> {
-      return await this.connection.getTokenAccountBalance(this.tokenAccount);
+      return await this.connection.getTokenAccountBalance(this.tokenAccount as anchor.web3.PublicKey);
     }
   
-    setGameSession(gameSessionAccount, gameSessionAccountBump) {
+    setGameSession(
+      gameSessionAccount?: anchor.web3.PublicKey, 
+      gameSessionAccountBump?: number,
+    ) {
       this.gameSessionAccount = gameSessionAccount;
       this.gameSessionAccountBump = gameSessionAccountBump;
     }
-    async getGameSessionInfo() {
-      const accountInfo = await this.connection.getAccountInfo(this.gameSessionAccount);
-      let userAccountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
+    async getGameSessionInfo(): Promise<accountsSchema.GameSessionAccount | undefined> {
+      const accountInfo 
+        = await this.connection.getAccountInfo(this.gameSessionAccount as anchor.web3.PublicKey);
+      
+        let userAccountData 
+          = accountInfo ?
+            accountsSchema.GameSessionAccount.deserialize(accountInfo.data)
+            : undefined;
+
       return userAccountData;
     }
 }
   
-export async function signUpUser(user: User,stakanState: StakanState,) {  
+export async function signUpUser(user: User, stakanState: StakanState,) {  
 //    console.log("arweave wallet address:", user.arweaveStorageAddress, "len: ", user.arweaveStorageAddress.length);
 
     const tokens = user.arweave.ar.arToWinston('10')
@@ -246,7 +254,7 @@ export async function sellStakanTokens(
   
     await program.methods
       .sellTokens(
-        user.bump,
+        user.bump as number,
         new anchor.BN(tokenAmount),
       )
       .accounts({
@@ -300,7 +308,7 @@ export async function initGameSession(
     user.setGameSession(gameSessionAccount, gameSessionAccountBump);
   }
 
-  async function saveToArweave(user: User, data): Promise<string> {
+  async function saveToArweave(user: User, data: any): Promise<string | undefined> {
     const serializedData = accountsSchema.GameSessionArchive.serialize(data);
   
   //  GameSessionArchive.deserialize(serializedData);
@@ -308,7 +316,7 @@ export async function initGameSession(
       data: serializedData
     });
     tx.addTag('App-Name', 'Stakan');
-    tx.addTag('stakanApi.User', user.account.toString());
+    tx.addTag('stakanApi.User', (user.account as anchor.web3.PublicKey).toString());
     
     await user.arweave.transactions.sign(tx, user.arweaveWallet);
     await user.arweave.transactions.post(tx);
@@ -326,17 +334,24 @@ export async function initGameSession(
   ) {
     const gameSessionInfo = await user.getGameSessionInfo();
   
+    if (!gameSessionInfo) 
+      throw 'Cannot get Session Info';
+
     const txid = await saveToArweave(user, 
       {
-        score: gameSessionInfo['score'],
-        duration: gameSessionInfo['duration_millis'],
+        score: (gameSessionInfo as any)['score'],
+        duration: (gameSessionInfo as any)['duration_millis'] ,
       }
     );
-  
+
+    if (!txid) throw "Failed saving to Arweave";
+    let saveTxId: string = txid as string; 
+    let bump: number = user.bump as number;
+    
     await program.methods
       .finishGameSession(
-        txid,
-        user.bump,
+        saveTxId,
+        bump,
         stakanState.stateAccountBump,
       )
       .accounts({
@@ -383,7 +398,7 @@ export async function initGameSession(
   ) {
     await program.methods
       .signOutUser(
-        user.bump,
+        user.bump as number,
       )
       .accounts({
         stakanStateAccount: stakanState.stateAccount,

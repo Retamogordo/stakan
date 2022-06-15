@@ -1,10 +1,13 @@
+import * as anchor from "@project-serum/anchor";
 import Arweave from "arweave";
 import { serialize, deserialize } from "borsh";
 
-class Assignable {
-    constructor(properties) {
-      Object.keys(properties).map((key) => {
-        return (this[key] = properties[key]);
+class Assignable extends Function {
+    constructor(properties: any) {
+      super();
+      
+      Object.keys(properties).map((key: string) => {
+        return ((this as any)[key] = properties[key]);
       });
     }
   }
@@ -24,7 +27,7 @@ class Assignable {
         ]
       ]);
       const wrapped = deserialize(schema, UserAccountWrapped, buffer.slice(0, 8+2));
-      const inner_size = wrapped['inner_size'];
+      const inner_size = (wrapped as any)['inner_size'];
       return [inner_size, buffer.slice(8+2, 8+2+inner_size)];
     }
   }
@@ -82,7 +85,7 @@ class Assignable {
   }
   
   export class GameSessionArchive extends Assignable { 
-    static schema = new Map([
+    static schema: Map<GameSessionArchive, any> = new Map([
       [
         GameSessionArchive, 
         { 
@@ -95,7 +98,7 @@ class Assignable {
       ]
     ]);
   
-    public static serialize(data): Uint8Array {
+    public static serialize(data: any): Uint8Array {
       let buffer = serialize(GameSessionArchive.schema, new GameSessionArchive(data));
       return buffer;
     }
@@ -109,7 +112,11 @@ class Assignable {
         }
     }
   
-    public static async getArchiveIds(arweave: Arweave, userAccount, numberOfArchives) {
+    public static async getArchiveIds(
+      arweave: Arweave, 
+      userAccount: anchor.web3.PublicKey, 
+      numberOfArchives: number
+    ) {
       const queryObject = { query: `{
         transactions(first: ${numberOfArchives},
           tags: [
@@ -147,14 +154,18 @@ class Assignable {
   //    console.log("queryObject: ", queryObject);
       let results = await arweave.api.post('/graphql', queryObject);
   
-      return results.data.data.transactions.edges.map(edge => edge.node.id);
+      return results.data.data.transactions.edges.map((edge: any) => edge.node.id);
     }
   
-    public static async get(arweave, userAccount, numberOfArchives) {
+    public static async get(
+      arweave: Arweave, 
+      userAccount: anchor.web3.PublicKey, 
+      numberOfArchives: number
+    ) {
       const archiveIds = await this.getArchiveIds(arweave, userAccount, numberOfArchives);
   
   //    console.log("ARCHIVE IDS: ", archiveIds);    
-      const archivedData = archiveIds.map(async id => {
+      const archivedData = archiveIds.map(async (id: any) => {
         const buffer = await arweave.transactions.getData(id,
           { decode: true, string: false }
         );
