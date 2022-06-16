@@ -74,6 +74,7 @@ before(async () => {
 });
 
 describe("stakan", () => {
+
   it("Airdrop", async () => {
 /*    await provider.connection.confirmTransaction(
       await provider.connection.requestAirdrop(gameGlobalWallet.publicKey, 100000000000)
@@ -94,6 +95,11 @@ describe("stakan", () => {
     console.log("stakanApi.User ", userAccountData['username'], " signed up");
       //    await signUpUser("суперман", userWallet, stakanState.mint.publicKey);
 //    await signUpUser("superman&supergirl", userWallet, stakanState.mint.publicKey);
+  });
+
+  it("User accounts list", async () => {
+    const acc = await user.findOnChainUserAccount();
+    if (!acc) throw "Cannot find user on-chain account after signing up";
   });
 
   it("Sign up another user with the same wallet (allowed for now)", async () => {

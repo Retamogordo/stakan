@@ -12,7 +12,8 @@ class Assignable extends Function {
     }
   }
   
-  class UserAccountWrapped extends Assignable { 
+  export class UserAccountWrapped extends Assignable { 
+    public static innerOffset = 8 + 2;
     public static deserialize(buffer: Buffer): [number, Buffer] {
       const schema = new Map([
         [
@@ -26,9 +27,11 @@ class Assignable extends Function {
           }
         ]
       ]);
-      const wrapped = deserialize(schema, UserAccountWrapped, buffer.slice(0, 8+2));
+      const wrapped = deserialize(schema, UserAccountWrapped, buffer.slice(0, UserAccountWrapped.innerOffset));
       const inner_size = (wrapped as any)['inner_size'];
-      return [inner_size, buffer.slice(8+2, 8+2+inner_size)];
+      return [inner_size, 
+        buffer.slice( UserAccountWrapped.innerOffset, 
+                      UserAccountWrapped.innerOffset + inner_size)];
     }
   }
   
@@ -40,11 +43,10 @@ class Assignable extends Function {
           { 
             kind: 'struct', 
             fields: [
+              ['user_wallet', [32]],
               ['username', 'String'], 
               ['max_score', 'u64'], 
               ['saved_game_sessions', 'u64'],
-              ['user_wallet', [32]],
-  //            ['mint', [32]],
               ['token_account', [32]],
               ['arweave_storage_address', 'String'],
               ['has_active_game_session', 'u8'] 

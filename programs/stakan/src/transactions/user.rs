@@ -59,11 +59,11 @@ impl User {
 
 #[derive(Clone, AnchorSerialize, AnchorDeserialize)]
 pub struct UserInner {
+    pub user_wallet: Pubkey,
     pub username: Vec<u8>,
     
     pub max_score: u64,
     pub saved_game_sessions: u64,
-    pub user_wallet: Pubkey,
     pub token_account: Pubkey,
     pub arweave_storage_address: Vec<u8>, 
     pub has_active_game_session: bool,
@@ -99,7 +99,6 @@ impl UserInner {
 #[derive(Accounts)]
 #[instruction(username: String, arweave_storage_address: String)]
 pub struct SignUpUser<'info> {
-    stakan_state_account: Account<'info, StakanGlobalState>,
 
     #[account(init, 
         constraint = username.len() < UserInner::MAX_USERNAME_LEN,
@@ -113,6 +112,8 @@ pub struct SignUpUser<'info> {
         bump,
     )]
     user_account: Account<'info, User>,
+
+    stakan_state_account: Account<'info, StakanGlobalState>,
     
     #[account(mut)]
     user_wallet: Signer<'info>,

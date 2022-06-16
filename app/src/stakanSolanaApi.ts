@@ -156,6 +156,7 @@ export class User {
       this.gameSessionAccount = gameSessionAccount;
       this.gameSessionAccountBump = gameSessionAccountBump;
     }
+
     async getGameSessionInfo(): Promise<accountsSchema.GameSessionAccount | undefined> {
       const accountInfo 
         = await this.connection.getAccountInfo(this.gameSessionAccount as anchor.web3.PublicKey);
@@ -166,6 +167,32 @@ export class User {
             : undefined;
 
       return userAccountData;
+    }
+    // after user is signed up their user_account is present on-chain
+    async findOnChainUserAccount(): Promise<accountsSchema.UserAccount | undefined> {
+      const accounts 
+        = await this.connection.getParsedProgramAccounts(
+            program.programId,
+            {
+              filters: [
+                { memcmp: { offset: accountsSchema.UserAccountWrapped.innerOffset, 
+                            bytes: this.wallet.publicKey.toBase58() 
+                          } 
+                }, 
+              ],
+            }
+      );
+      for (let acc of accounts) {
+        // deserialization success indicates this account is that we looked for
+        try {
+          const userAccountData 
+            = accountsSchema.UserAccount.deserialize(acc.account.data as Buffer);
+          return userAccountData;
+        }
+        catch {
+        }
+      }
+      return undefined;
     }
 }
   
