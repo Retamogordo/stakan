@@ -3,13 +3,13 @@ import { createTetrimino, createTetriminoByValue } from './tetrimino'
 import { setupStakan, stamp, clearRows, isFull, canMove, STAKAN_BORDER_VALUE } from './stakanLogic'
 import CanvasButton from './CanvasButton'
 
-const drawScore = (ctx, x, y, width, score) => {
+const drawValue = (ctx, x, y, width, label, value) => {
   ctx.font = 'IBM Plex Mono';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
 //  ctx.textBaseline = 'middle';
   ctx.fillStyle = 'white';
-  const text = 'score ' + score.toString();
+  const text = label + value.toString();
   ctx.fillText(text, x, y);
 }
 
@@ -150,9 +150,10 @@ class StakanView extends React.Component {
 
       this.currentPiece = null;
       
-      this.props.evEntryNewPiece();
+      this.props.evEntryNewPiece(linesCleared);
     } else {
-      this.props.onGameOver()
+      this.currentPiece = null;
+      this.props.onFull()
     }
   }
 
@@ -222,12 +223,18 @@ class StakanView extends React.Component {
       const context = this.canvasRef.current.getContext('2d')
       
       drawTiles(context, this.tiles, this.tileSize)
-    
-      if (this.session !== null && this.currentPiece !== null) {
+
+      if (this.session !== null ) {
+        drawValue(context, this.tileSize*(this.props.cols+3), this.tileSize, 
+          2*this.tileSize, 'score ', this.session.score);
+        drawValue(context, this.tileSize*(this.props.cols+3), this.tileSize*2, 
+          2*this.tileSize, 'lines cleared ', this.session.linesCleared);
         
-        drawPiece(context, this.tiles, this.tileSize, this.currentPiece.piece[this.rotationPosition], 
-          this.pieceXOffset, this.pieceYOffset, this.currentPiece.color
+        if (this.currentPiece !== null ) {
+          drawPiece(context, this.tiles, this.tileSize, this.currentPiece.piece[this.rotationPosition], 
+              this.pieceXOffset, this.pieceYOffset, this.currentPiece.color
           )
+        }
       }
     }
 

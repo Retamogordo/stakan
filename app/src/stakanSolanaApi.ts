@@ -168,7 +168,9 @@ export class User {
 
       return userAccountData;
     }
-    // after user is signed up their user_account is present on-chain
+    // after user is signed up their user_account is present on-chain.
+    // this function is useful for searching users account when they
+    // connect their wallet using wallet adapter.
     async findOnChainUserAccount(): Promise<accountsSchema.UserAccount | undefined> {
       const accounts 
         = await this.connection.getParsedProgramAccounts(

@@ -87,6 +87,6 @@ export function setupStakan(rows, cols) {
         }
       }
     }
-    return rowsToClear;
+    return rowsToClear.length;
   }
     
