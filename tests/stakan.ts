@@ -58,6 +58,9 @@ before(async () => {
     
   stakanState = await stakanApi.setUpStakan(provider.connection);
 
+  const acc = await stakanApi.findOnChainStakanAccount(provider.connection);
+  console.log("After setup, found on-chain: ", acc);
+
   const userWallet = anchor.web3.Keypair.generate();
   const arweaveWallet = await arweave.wallets.generate();
 
@@ -147,7 +150,8 @@ describe("stakan", () => {
   it("Sell tokens", async () => {
     console.log("before selling tokens...");
     console.log("userWallet balance: ", await user.getBalance());
-    console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
+//    console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
+    console.log("program escrow balance: ", await provider.connection.getBalance(stakanState.escrowAccount));
     console.log("userMintAccount balance: ", await user.getTokenBalance());
     let rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
       console.log("reward funds token balance: ", rewardFundsAccountBalance);
@@ -156,7 +160,8 @@ describe("stakan", () => {
 
     console.log("after selling tokens");
     console.log("userWallet balance: ", await user.getBalance());
-    console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
+//    console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
+    console.log("program escrow balance: ", await provider.connection.getBalance(stakanState.escrowAccount));
     
     const userTokenBalance = await user.getTokenBalance();
     console.log("user token balance: ", userTokenBalance);
@@ -225,7 +230,7 @@ describe("stakan", () => {
 
     console.log("after signing user out");
     console.log("userWallet balance: ", await user.getBalance());
-    console.log("programWallet balance: ", await stakanState.getBalance());
+//    console.log("programWallet balance: ", await stakanState.getBalance());
     
     const userTokenBalance = await user.getTokenBalance();
     console.log("user token balance: ", userTokenBalance);

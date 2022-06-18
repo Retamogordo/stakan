@@ -15,9 +15,10 @@ const { SystemProgram } = anchor.web3;
 
 export class StakanState {
     connection: anchor.web3.Connection
-    wallet: NodeWallet
+//    wallet: NodeWallet
     stateAccount: anchor.web3.PublicKey
     stateAccountBump: number;
+    escrowAccount: anchor.web3.PublicKey;
     rewardFundsAccount: anchor.web3.PublicKey;
 //    rewardFundsAccountBump: number;
     stakanMint: anchor.web3.PublicKey;
@@ -25,31 +26,61 @@ export class StakanState {
   
     constructor(
         connection: anchor.web3.Connection,
-        wallet: NodeWallet,
+//        wallet: NodeWallet,
         stateAccount: anchor.web3.PublicKey,
         stateAccountBump: number,
+        escrowAccount: anchor.web3.PublicKey,
         rewardFundsAccount: anchor.web3.PublicKey,
         stakanMint: anchor.web3.PublicKey,
         stakanMintBump: number,
     ) {
         this.connection = connection;
-        this.wallet = wallet;
+//        this.wallet = wallet;
         this.stateAccount = stateAccount;
         this.stateAccountBump = stateAccountBump;
+        this.escrowAccount = escrowAccount;
         this.rewardFundsAccount = rewardFundsAccount;
         this.stakanMint = stakanMint;
         this.stakanMintBump = stakanMintBump;
     }
-    
+/*    
     async getBalance(): Promise<number> {
         return await this.connection.getBalance(this.wallet.publicKey);
     }
-  
+*/  
     async getRewardFundsBalance(): Promise<anchor.web3.RpcResponseAndContext<anchor.web3.TokenAmount>> {
       return await this.connection.getTokenAccountBalance(this.rewardFundsAccount);
     }
+}
+
+export async function findOnChainStakanAccount(connection: anchor.web3.Connection): Promise<accountsSchema.StakanStateSchema | undefined> {
+  const Base58 = require("base-58");
+  const accounts 
+    = await connection.getParsedProgramAccounts(
+        program.programId,
+        {
+          filters: [ 
+            { memcmp: { offset: 8 + 4, 
+                        bytes: Base58.encode(Buffer.from(program.programId.toBase58()))
+                      } 
+            }, 
+          ],
+        }
+  );
+  for (let acc of accounts) {
+//    console.log(acc);
+    // deserialization success indicates this account is that we looked for
+    try {
+      const stakanAccountData 
+        = accountsSchema.StakanStateSchema.deserialize(acc.account.data as Buffer);
+      return stakanAccountData;
+    }
+    catch {
+    }
   }
-  
+  return undefined;
+}
+
 export async function setUpStakan(connection: anchor.web3.Connection): Promise<StakanState> {
     const stakanTokensAmount = 1000;
     
@@ -60,7 +91,15 @@ export async function setUpStakan(connection: anchor.web3.Connection): Promise<S
         ],
         program.programId
       );
-    
+    const [stakanEscrowAccount, stakanEscrowAccountBump] =
+      await anchor.web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from('stakan_escrow_account'), 
+        ],
+        program.programId
+      );
+
+  
     const [stakanMint, stakanMintBump] = await anchor.web3.PublicKey.findProgramAddress(
       [
         Buffer.from('stakan_mint'),
@@ -79,9 +118,11 @@ export async function setUpStakan(connection: anchor.web3.Connection): Promise<S
     await program.methods
       .setUpStakan(
         stakanStateAccountBump,
+        stakanEscrowAccountBump,
       )
       .accounts({
           stakanStateAccount,
+          escrowAccount: stakanEscrowAccount,
           mint: stakanMint,
           rewardFundsAccount,
   
@@ -96,11 +137,18 @@ export async function setUpStakan(connection: anchor.web3.Connection): Promise<S
       .rpc();
   
     console.log("after setup");
+
+    await connection.confirmTransaction( 
+      await connection.requestAirdrop(stakanEscrowAccount, 1000000000)
+    );
+    console.log("stakan Escrow Account balance: ", await connection.getBalance(stakanEscrowAccount));
+
     const stakanState = new StakanState(
         connection,
-        program.provider.wallet as NodeWallet,
+//        program.provider.wallet as NodeWallet,
         stakanStateAccount,
         stakanStateAccountBump,
+        stakanEscrowAccount,
         rewardFundsAccount,
         stakanMint,
         stakanMintBump,
@@ -262,11 +310,12 @@ export async function purchaseStakanTokens(
       )
       .accounts({
         stakanStateAccount: stakanState.stateAccount,
+        stakanEscrowAccount: stakanState.escrowAccount,
         mint: stakanState.stakanMint,
         userAccount: user.account,
         userTokenAccount: user.tokenAccount,
         userWallet: user.wallet.publicKey,
-        programWallet: stakanState.wallet.publicKey,
+//        programWallet: stakanState.wallet.publicKey,
   
         tokenProgram: spl.TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
@@ -285,19 +334,22 @@ export async function sellStakanTokens(
       .sellTokens(
         user.bump as number,
         new anchor.BN(tokenAmount),
+        stakanState.stateAccountBump as number,
       )
       .accounts({
         stakanStateAccount: stakanState.stateAccount,
+        stakanEscrowAccount: stakanState.escrowAccount,
         userAccount: user.account,
         userTokenAccount: user.tokenAccount,
         userWallet: user.wallet.publicKey,
-        programWallet: stakanState.wallet.publicKey,
+//        programWallet: stakanState.wallet.publicKey,
         rewardFundsAccount: stakanState.rewardFundsAccount,
   
         tokenProgram: spl.TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
       })
-      .signers([stakanState.wallet.payer])
+      .signers([])
       .rpc();  
   }
   
@@ -431,16 +483,18 @@ export async function initGameSession(
       )
       .accounts({
         stakanStateAccount: stakanState.stateAccount,
+        stakanEscrowAccount: stakanState.escrowAccount,
         userAccount: user.account,
         userTokenAccount: user.tokenAccount,
         userWallet: user.wallet.publicKey,
-        programWallet: stakanState.wallet.publicKey,
+//        programWallet: stakanState.wallet.publicKey,
         rewardFundsAccount: stakanState.rewardFundsAccount,
   
         tokenProgram: spl.TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
-      .signers([stakanState.wallet.payer])
+      .signers([])
+//      .signers([stakanState.wallet.payer])
       .rpc();  
   }
   

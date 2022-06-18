@@ -17,8 +17,9 @@ pub mod stakan {
     pub fn set_up_stakan(
         ctx: Context<SetupStakan>,
         stakan_state_account_bump: u8,
+        stakan_escrow_account_bump: u8,
     ) -> Result<()> {
-        crate::transactions::set_up_stakan::set_up_stakan(ctx, stakan_state_account_bump)
+        crate::transactions::set_up_stakan::set_up_stakan(ctx, stakan_state_account_bump, stakan_escrow_account_bump)
     }
 
     pub fn sign_up_user(
@@ -41,8 +42,9 @@ pub mod stakan {
         ctx: Context<SellTokens>,
         user_account_bump: u8,
         token_amount: u64, 
+        stakan_state_account_bump: u8,
     ) -> Result<()> {
-        crate::transactions::tokens::sell(ctx, user_account_bump, token_amount)
+        crate::transactions::tokens::sell(ctx, user_account_bump, token_amount, stakan_state_account_bump)
     }
 
     pub fn init_game_session(ctx: Context<InitGameSession>, stake: u64) -> Result<()> {

@@ -510,6 +510,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"base-58@npm:^0.0.1":
+  version: 0.0.1
+  resolution: "base-58@npm:0.0.1"
+  checksum: 7062f287e462d2518c65d7526b0fac1bae8e4bdb2f205fd53d36602d927858cdfe2749c50d8903c3760a5e48708f07d9986f1af32c3b7203a26fd67eb26cdd6d
+  languageName: node
+  linkType: hard
+
 "base-x@npm:^3.0.2":
   version: 3.0.9
   resolution: "base-x@npm:3.0.9"
@@ -2872,6 +2879,7 @@ __metadata:
     "@solana/spl-token": ^0.1.8
     "@types/chai": ^4.3.0
     "@types/mocha": ^9.1.0
+    base-58: ^0.0.1
     bip39: ^3.0.4
     chai: ^4.3.6
     mocha: ^9.2.2

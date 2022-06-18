@@ -17,6 +17,15 @@ pub enum StakanError {
     #[msg("Insufficient tokens on account, can't stake.")]
     InsufficientTokensOnAccount,
 
+    #[msg("Stakan Escrow Account Depleted - should not happen - bug.")]
+    GlobalEscrowAccountDepleted,
+
+    #[msg("Negative balance")]
+    NegativeBalance,
+
+    #[msg("Balance overflow")]
+    BalanceOverflow,
+
     #[msg("Stake is higher than fund can accept.")]
     StakeTooHigh,
 

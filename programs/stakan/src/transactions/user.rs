@@ -160,8 +160,17 @@ pub struct SignOutUser<'info> {
     )]
     reward_funds_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+ /*   #[account(mut)]
     program_wallet: Signer<'info>,
+    */
+
+    /// CHECK:` PDA account used as a program wallet for receiving lamports 
+    /// when a user purchases tokens
+    #[account(mut,
+        constraint = stakan_state_account.escrow_account == stakan_escrow_account.key(),
+    )]
+    stakan_escrow_account: AccountInfo<'info>,
+
 
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
@@ -219,7 +228,25 @@ pub fn sign_out(ctx: Context<SignOutUser>, user_account_bump: u8
         ), 
         token_amount
     )?;
+    // give lamports back to user
+    let escrow_account = &mut ctx.accounts.stakan_escrow_account;
+    let lamports_delta = token_amount * crate::transactions::tokens::PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN;
+    let escrow_balance_after = escrow_account.lamports()
+        .checked_sub(lamports_delta)
+        .ok_or(crate::errors::StakanError::NegativeBalance)?;
 
+    if !ctx.accounts.rent.is_exempt(escrow_balance_after, escrow_account.data_len()) {
+        // should never happen
+        return Err(crate::errors::StakanError::GlobalEscrowAccountDepleted.into());
+    }    
+
+    **escrow_account.lamports.borrow_mut() = escrow_balance_after;
+    **ctx.accounts.user_wallet.lamports.borrow_mut() =
+        ctx.accounts.user_wallet.lamports()
+            .checked_add(lamports_delta)
+            .ok_or(crate::errors::StakanError::BalanceOverflow)?;
+
+/*
     solana_program::program::invoke(
         &solana_program::system_instruction::transfer(
             ctx.accounts.program_wallet.key, 
@@ -231,6 +258,6 @@ pub fn sign_out(ctx: Context<SignOutUser>, user_account_bump: u8
             ctx.accounts.system_program.to_account_info()
         ],
     )?;
-
+*/
     Ok(())
 }

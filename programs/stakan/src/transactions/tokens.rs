@@ -7,6 +7,13 @@ use crate::transactions::user::User;
 pub struct PurchaseTokens<'info> {
     stakan_state_account: Account<'info, StakanGlobalState>,
 
+    /// CHECK:` PDA account used as a program wallet for receiving lamports 
+    /// when a user purchases tokens
+    #[account(mut,
+        constraint = stakan_state_account.escrow_account == stakan_escrow_account.key(),
+    )]
+    stakan_escrow_account: AccountInfo<'info>,
+
     #[account(mut,
 //        constraint = mint.key() == stakan_state_account.mint_token,
     )]
@@ -26,9 +33,9 @@ pub struct PurchaseTokens<'info> {
     #[account(mut)]
     user_wallet: Signer<'info>,
 
-    /// CHECK:` pubkey of programs wallet to receive lamports from user wallet
-    #[account(mut)]
-    program_wallet: AccountInfo<'info>,
+//    /// CHECK:` pubkey of programs wallet to receive lamports from user wallet
+//    #[account(mut)]
+//    program_wallet: AccountInfo<'info>,
 
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
@@ -41,12 +48,14 @@ impl PurchaseTokens<'_> {
 #[derive(Accounts)]
 pub struct SellTokens<'info> {
     stakan_state_account: Account<'info, StakanGlobalState>,
-/*
+
+    /// CHECK:` PDA account used as a program wallet for receiving lamports 
+    /// when a user purchases tokens
     #[account(mut,
-//        constraint = mint.key() == stakan_state_account.mint_token,
+        constraint = stakan_state_account.escrow_account == stakan_escrow_account.key(),
     )]
-    mint: Account<'info, Mint>, 
-*/
+    stakan_escrow_account: AccountInfo<'info>,
+
     #[account(
         constraint = user_account.user.user_wallet == user_wallet.key(),
     )]
@@ -67,11 +76,13 @@ pub struct SellTokens<'info> {
     )]
     reward_funds_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
-    program_wallet: Signer<'info>,
+//    #[account(mut)]
+//    program_wallet: Signer<'info>,
 
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
+    rent: Sysvar<'info, Rent>,
+
 }
 
 pub fn purchase(
@@ -79,15 +90,18 @@ pub fn purchase(
     stakan_state_account_bump: u8,
     token_amount: u64, 
 ) -> Result<()> {
-//        solana_program::
     solana_program::program::invoke(
         &solana_program::system_instruction::transfer(
             ctx.accounts.user_wallet.key, 
-            ctx.accounts.program_wallet.key, 
+            &ctx.accounts.stakan_state_account.escrow_account,
+//            ctx.accounts.stakan_state_account.to_account_info().key,
+//            ctx.accounts.program_wallet.key, 
             token_amount * PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN),
         &[
             ctx.accounts.user_wallet.to_account_info(),
-            ctx.accounts.program_wallet.to_account_info(),
+            ctx.accounts.stakan_escrow_account.to_account_info(),
+//            ctx.accounts.stakan_state_account.to_account_info(),
+//            ctx.accounts.program_wallet.to_account_info(),
             ctx.accounts.system_program.to_account_info()
         ],
     )?;
@@ -118,6 +132,7 @@ pub fn sell(
     ctx: Context<SellTokens>,
     user_account_bump: u8,
     token_amount: u64, 
+    stakan_state_account_bump: u8,
 ) -> Result<()> {
     let temp_bump: [u8; 1] = user_account_bump.to_le_bytes();
     let signer_seeds = [
@@ -141,6 +156,47 @@ pub fn sell(
         token_amount
     )?;
 
+    let escrow_account = &mut ctx.accounts.stakan_escrow_account;
+    let lamports_delta = token_amount * PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN;
+    let escrow_balance_after = escrow_account.lamports()
+        .checked_sub(lamports_delta)
+        .ok_or(crate::errors::StakanError::NegativeBalance)?;
+
+    if !ctx.accounts.rent.is_exempt(escrow_balance_after, escrow_account.data_len()) {
+        // should never happen
+        return Err(crate::errors::StakanError::GlobalEscrowAccountDepleted.into());
+    }    
+
+    **escrow_account.lamports.borrow_mut() = escrow_balance_after;
+    **ctx.accounts.user_wallet.lamports.borrow_mut() =
+        ctx.accounts.user_wallet.lamports()
+            .checked_add(lamports_delta)
+            .ok_or(crate::errors::StakanError::BalanceOverflow)?;
+
+/*
+//    let temp_bump: [u8; 1] = stakan_state_account_bump.to_le_bytes();
+    let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.escrow_account_bump.to_le_bytes();
+    let signer_seeds = [
+//        b"stakan_state_account".as_ref(),
+        b"stakan_escrow_account".as_ref(),
+        &temp_bump
+    ];
+    solana_program::program::invoke_signed(
+        &solana_program::system_instruction::transfer(
+//            ctx.accounts.stakan_state_account.to_account_info().key, 
+            ctx.accounts.stakan_escrow_account.to_account_info().key, 
+            ctx.accounts.user_wallet.key, 
+            token_amount * PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN),
+        &[
+//            ctx.accounts.stakan_state_account.to_account_info(),
+            ctx.accounts.stakan_escrow_account.to_account_info(),
+            ctx.accounts.user_wallet.to_account_info(),
+            ctx.accounts.system_program.to_account_info()
+        ],
+        &[&signer_seeds]
+    )?;
+    */
+/*
     solana_program::program::invoke(
         &solana_program::system_instruction::transfer(
             ctx.accounts.program_wallet.key, 
@@ -152,6 +208,6 @@ pub fn sell(
             ctx.accounts.system_program.to_account_info()
         ],
     )?;
-
+*/
     Ok(())
 }

@@ -4,19 +4,28 @@ use anchor_spl::associated_token::{AssociatedToken, };
 
 #[account]
 pub(crate) struct StakanGlobalState {
+    pub id: Vec<u8>,
+    pub stakan_state_account: Pubkey,
     pub global_max_score: u64,
 //    funds: u64,
     pub mint_token: Pubkey,
-//    token_faucet: Pubkey,
+    pub escrow_account: Pubkey,
+//    pub escrow_account_bump: u8,
     pub reward_funds_account: Pubkey,
 } 
 
 impl StakanGlobalState {
+    const ID: &'static str = "StakanXf8bymj5JEgJYH4qUQ7xTtoR1W2BeHUbDjCJb";
+
     pub(crate) fn size_for_borsh() -> usize {
         use std::mem::size_of;
             8
+            + size_of::<u32>() + Self::ID.len()
+            + size_of::<Pubkey>()
             + size_of::<u64>()
             + size_of::<Pubkey>()
+            + size_of::<Pubkey>()
+            + size_of::<u8>()
             + size_of::<Pubkey>()
     }    
 }
@@ -31,6 +40,17 @@ pub struct SetupStakan<'info> {
         bump,
     )]
     stakan_state_account: Account<'info, StakanGlobalState>,
+
+    /// CHECK:` PDA account used as a program wallet for receiving lamports 
+    /// when a user purchases tokens
+    #[account(init, payer = program_wallet, 
+        space = 8,
+        seeds = [
+            b"stakan_escrow_account".as_ref(), 
+        ],
+        bump,
+    )]
+    escrow_account: AccountInfo<'info>,
 
     #[account(
         init,
@@ -63,6 +83,7 @@ impl SetupStakan<'_> {
 
 pub fn set_up_stakan(ctx: Context<SetupStakan>,
     stakan_state_account_bump: u8,
+    stakan_escrow_account_bump: u8,
 ) -> Result<()> {
 
     let temp_bump: [u8; 1] = stakan_state_account_bump.to_le_bytes();
@@ -85,7 +106,11 @@ pub fn set_up_stakan(ctx: Context<SetupStakan>,
     )?;
 
     let acc = &mut ctx.accounts.stakan_state_account;
+    acc.id = StakanGlobalState::ID.as_bytes().to_vec();
+    acc.stakan_state_account = acc.key();
     acc.mint_token = ctx.accounts.mint.key();
+    acc.escrow_account = ctx.accounts.escrow_account.key();
+//    acc.escrow_account_bump = stakan_escrow_account_bump;
 //        acc.token_faucet = ctx.accounts.token_faucet.key();
     acc.reward_funds_account = ctx.accounts.reward_funds_account.key(); 
     acc.global_max_score = 0;

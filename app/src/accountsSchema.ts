@@ -11,7 +11,34 @@ class Assignable extends Function {
       });
     }
   }
-  
+
+  export class StakanStateSchema extends Assignable { 
+    public static deserialize(buffer: Buffer): StakanStateSchema {
+      const schema = new Map([
+        [
+          StakanStateSchema, 
+          { 
+            kind: 'struct', 
+            fields: [
+                ['discriminant', [8]],
+                ['id', 'String'], 
+                ['stakan_state_account', [32]],
+                ['global_max_score', 'u64'], 
+                ['mint_token', [32]],
+                ['escrow_account', [32]], 
+                ['reward_funds_account', [32]], 
+              ] 
+          }
+        ]
+      ]);
+      const acc = deserialize(schema, StakanStateSchema, 
+        buffer.slice(0, 8+(4+43)+32+8+32+32+32));
+
+//      console.log("deserialized: ", acc);
+      return acc;
+    }
+  }
+
   export class UserAccountWrapped extends Assignable { 
     public static innerOffset = 8 + 2;
     public static deserialize(buffer: Buffer): [number, Buffer] {
