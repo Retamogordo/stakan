@@ -23,16 +23,17 @@ class Assignable extends Function {
                 ['discriminant', [8]],
                 ['id', 'String'], 
                 ['stakan_state_account', [32]],
+                ['stakan_state_account_bump', [1]],
                 ['global_max_score', 'u64'], 
-                ['mint_token', [32]],
-                ['escrow_account', [32]], 
                 ['reward_funds_account', [32]], 
+                ['escrow_account', [32]], 
+                ['mint_token', [32]],
               ] 
           }
         ]
       ]);
       const acc = deserialize(schema, StakanStateSchema, 
-        buffer.slice(0, 8+(4+43)+32+8+32+32+32));
+        buffer.slice(0, 8+(4+43)+32+1+8+32+32+32));
 
 //      console.log("deserialized: ", acc);
       return acc;

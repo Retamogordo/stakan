@@ -56,10 +56,19 @@ before(async () => {
     logging: false,
   });
     
-  stakanState = await stakanApi.setUpStakan(provider.connection);
+  console.log("setting up stakan global state...");
+  await stakanApi.setUpStakan(provider.connection);
 
-  const acc = await stakanApi.findOnChainStakanAccount(provider.connection);
-  console.log("After setup, found on-chain: ", acc);
+  stakanState = await stakanApi.findOnChainStakanAccount(provider.connection);
+  stakanState && console.log("done");
+//  console.log("After setup, found on-chain: ", acc['id']);
+//  console.log("After setup, found on-chain: ", stakanState);
+  const amount = 1000000000;
+  console.log("airdropping ", amount, " to stakan global(escrow) account...");
+  await provider.connection.confirmTransaction( 
+    await provider.connection.requestAirdrop(stakanState.escrowAccount, amount)
+  );
+  console.log("stakan Escrow Account balance: ", await stakanState.getBalance());
 
   const userWallet = anchor.web3.Keypair.generate();
   const arweaveWallet = await arweave.wallets.generate();

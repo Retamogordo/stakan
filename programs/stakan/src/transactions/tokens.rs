@@ -87,7 +87,7 @@ pub struct SellTokens<'info> {
 
 pub fn purchase(
     ctx: Context<PurchaseTokens>,
-    stakan_state_account_bump: u8,
+//    stakan_state_account_bump: u8,
     token_amount: u64, 
 ) -> Result<()> {
     solana_program::program::invoke(
@@ -106,7 +106,7 @@ pub fn purchase(
         ],
     )?;
 
-    let temp_bump: [u8; 1] = stakan_state_account_bump.to_le_bytes();
+    let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.stakan_state_account_bump.to_le_bytes();
     let signer_seeds = [
         b"stakan_state_account".as_ref(),
         &temp_bump
@@ -132,7 +132,6 @@ pub fn sell(
     ctx: Context<SellTokens>,
     user_account_bump: u8,
     token_amount: u64, 
-    stakan_state_account_bump: u8,
 ) -> Result<()> {
     let temp_bump: [u8; 1] = user_account_bump.to_le_bytes();
     let signer_seeds = [

@@ -135,7 +135,7 @@ pub fn finish(ctx: Context<FinishGameSession>,
     // just to ensure arweave has confirmed storage transaction
     _dummy_arweave_storage_tx_id: Option<String>, 
     user_account_bump: u8,
-    stakan_state_account_bump: u8,
+//    stakan_state_account_bump: u8,
 ) -> Result<()> {
     let global_max_score = ctx.accounts.stakan_state_account.global_max_score;
     let game_session_score = ctx.accounts.game_session_account.score;
@@ -158,7 +158,7 @@ pub fn finish(ctx: Context<FinishGameSession>,
             if funds_div_2 > stake {
                 let reward = funds_div_2 - stake;
 
-                let temp_bump: [u8; 1] = stakan_state_account_bump.to_le_bytes();
+                let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.stakan_state_account_bump.to_le_bytes();
                 let signer_seeds = [
                     b"stakan_state_account".as_ref(),
                     &temp_bump

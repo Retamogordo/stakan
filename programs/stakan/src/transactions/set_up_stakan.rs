@@ -4,14 +4,15 @@ use anchor_spl::associated_token::{AssociatedToken, };
 
 #[account]
 pub(crate) struct StakanGlobalState {
-    pub id: Vec<u8>,
+    // use this id for searching this global account 
+    // with getParsedProgramAccounts on frontend side
+    pub id: Vec<u8>, 
     pub stakan_state_account: Pubkey,
+    pub stakan_state_account_bump: u8,
     pub global_max_score: u64,
-//    funds: u64,
-    pub mint_token: Pubkey,
-    pub escrow_account: Pubkey,
-//    pub escrow_account_bump: u8,
     pub reward_funds_account: Pubkey,
+    pub escrow_account: Pubkey,
+    pub mint_token: Pubkey,
 } 
 
 impl StakanGlobalState {
@@ -22,10 +23,11 @@ impl StakanGlobalState {
             8
             + size_of::<u32>() + Self::ID.len()
             + size_of::<Pubkey>()
+            + size_of::<u8>()
             + size_of::<u64>()
             + size_of::<Pubkey>()
             + size_of::<Pubkey>()
-            + size_of::<u8>()
+//            + size_of::<u8>()
             + size_of::<Pubkey>()
     }    
 }
@@ -83,7 +85,7 @@ impl SetupStakan<'_> {
 
 pub fn set_up_stakan(ctx: Context<SetupStakan>,
     stakan_state_account_bump: u8,
-    stakan_escrow_account_bump: u8,
+//    stakan_escrow_account_bump: u8,
 ) -> Result<()> {
 
     let temp_bump: [u8; 1] = stakan_state_account_bump.to_le_bytes();
@@ -108,6 +110,7 @@ pub fn set_up_stakan(ctx: Context<SetupStakan>,
     let acc = &mut ctx.accounts.stakan_state_account;
     acc.id = StakanGlobalState::ID.as_bytes().to_vec();
     acc.stakan_state_account = acc.key();
+    acc.stakan_state_account_bump = stakan_state_account_bump;
     acc.mint_token = ctx.accounts.mint.key();
     acc.escrow_account = ctx.accounts.escrow_account.key();
 //    acc.escrow_account_bump = stakan_escrow_account_bump;
