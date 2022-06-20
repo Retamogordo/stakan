@@ -86,7 +86,7 @@ export async function findOnChainStakanAccount(
           ],
         }
   );
-
+  console.log(program.programId.toBase58());
   for (let acc of accounts) {
     // deserialization success indicates this account is that we looked for
     try {

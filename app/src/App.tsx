@@ -15,7 +15,20 @@ import { useConnection, useWallet, useAnchorWallet, AnchorWallet } from '@solana
 import { clusterApiUrl } from '@solana/web3.js';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { devNetProgram } from './confProgram'
+/*
+interface AnchorWalletExtInterface extends AnchorWallet {
+  readonly payer: web3.Keypair;
+}
+class AnchorWalletExt implements AnchorWalletExtInterface {
+  readonly payer: web3.Keypair;
+  constructor() {
+    this.payer = undefined;
+  }
+}
 
+function from(anchorWallet: AnchorWallet): AnchorWalletExt {
+}
+*/
 function App() {
   const network = WalletAdapterNetwork.Devnet;
 
