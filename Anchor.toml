@@ -1,7 +1,10 @@
 [features]
 seeds = false
 [programs.localnet]
-stakan = "StakanXf8bymj5JEgJYH4qUQ7xTtoR1W2BeHUbDjCJb"
+stakan = "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
+
+[programs.devnet]
+stakan = "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
 
 [registry]
 url = "https://anchor.projectserum.com"

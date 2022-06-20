@@ -1,63 +1,86 @@
-import * as anchor from "@project-serum/anchor";
+import { web3, BN, Program, Wallet, Provider } from "@project-serum/anchor";
+import { AnchorWallet } from '@solana/wallet-adapter-react';
+
+//import * as anchor from "@project-serum/anchor";
 import * as spl from '@solana/spl-token';
 import Arweave from "arweave";
 import { JWKInterface } from 'arweave/node/lib/wallet'
 
-import { Stakan } from "../../target/types/stakan";
+//import { Stakan } from "../../target/types/stakan";
 import * as accountsSchema from "../../app/src/accountsSchema";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
+import { IDL, Stakan } from './idl/stakan'
 
 const axios = require('axios');
+/*
+const provider = new Provider(connection, Wallet.local(), opts);
 
-const program = anchor.workspace.Stakan as anchor.Program<Stakan>;
+//const program = anchor.workspace.Stakan as anchor.Program<Stakan>;
+const program = new Program<Stakan>(
+  IDL, 
+  "StakanXf8bymj5JEgJYH4qUQ7xTtoR1W2BeHUbDjCJb",
+  provider
+);
+*/
 //const programWallet = program.provider.wallet;
-const { SystemProgram } = anchor.web3;
+const { SystemProgram } = web3;
 
 export class StakanState {
-    connection: anchor.web3.Connection
+    program: Program<Stakan>;
+//    connection: web3.Connection
 //    wallet: NodeWallet
-    stateAccount: anchor.web3.PublicKey
+    stateAccount: web3.PublicKey
     stateAccountBump: number;
-    escrowAccount: anchor.web3.PublicKey;
-    rewardFundsAccount: anchor.web3.PublicKey;
-    stakanMint: anchor.web3.PublicKey;
+    escrowAccount: web3.PublicKey;
+    rewardFundsAccount: web3.PublicKey;
+    stakanMint: web3.PublicKey;
+    globalMaxScore: number;
   
     constructor(
-        connection: anchor.web3.Connection,
-        stateAccount: anchor.web3.PublicKey,
+        program: Program<Stakan>,
+//        connection: web3.Connection,
+        stateAccount: web3.PublicKey,
         stateAccountBump: number,
-        escrowAccount: anchor.web3.PublicKey,
-        rewardFundsAccount: anchor.web3.PublicKey,
-        stakanMint: anchor.web3.PublicKey,
+        escrowAccount: web3.PublicKey,
+        rewardFundsAccount: web3.PublicKey,
+        stakanMint: web3.PublicKey,
+        globalMaxScore: number,
     ) {
-        this.connection = connection;
+        this.program = program;
+//        this.program.provider.connection = connection;
         this.stateAccount = stateAccount;
         this.stateAccountBump = stateAccountBump;
         this.escrowAccount = escrowAccount;
         this.rewardFundsAccount = rewardFundsAccount;
         this.stakanMint = stakanMint;
+        this.globalMaxScore = globalMaxScore;
     }
     
     async getBalance(): Promise<number> {
-        return await this.connection.getBalance(this.escrowAccount);
+      return await this.program.provider.connection.getBalance(this.escrowAccount);
+//      return await this.program.provider.connection.getBalance(this.escrowAccount);
     }
   
-    async getRewardFundsBalance(): Promise<anchor.web3.RpcResponseAndContext<anchor.web3.TokenAmount>> {
-      return await this.connection.getTokenAccountBalance(this.rewardFundsAccount);
+    async getRewardFundsBalance(): Promise<web3.RpcResponseAndContext<web3.TokenAmount>> {
+      return await this.program.provider.connection.getTokenAccountBalance(this.rewardFundsAccount);
     }
 }
 
-export async function findOnChainStakanAccount(connection: anchor.web3.Connection): 
+export async function findOnChainStakanAccount(
+  program: Program<Stakan>,
+//  connection: web3.Connection
+  ): 
 //Promise<accountsSchema.StakanStateSchema | undefined> {
   Promise<StakanState | undefined> {
   const Base58 = require("base-58");
   const accounts 
-    = await connection.getParsedProgramAccounts(
+    = await program.provider.connection.getParsedProgramAccounts(
         program.programId,
         {
           filters: [ 
             { memcmp: { offset: 8 + 4, 
-                        bytes: Base58.encode(Buffer.from(program.programId.toBase58()))
+                        bytes: Base58.encode(Buffer.from(accountsSchema.StakanStateSchema.id))
+//                        bytes: Base58.encode(Buffer.from(program.programId.toBase58()))
                       } 
             }, 
           ],
@@ -71,37 +94,41 @@ export async function findOnChainStakanAccount(connection: anchor.web3.Connectio
         = accountsSchema.StakanStateSchema.deserialize(acc.account.data as Buffer);
 
       const stakanState = new StakanState(
-        connection,
-        new anchor.web3.PublicKey(Buffer.from(stakanAccountData['stakan_state_account'])),
+        program,
+//        connection,
+        new web3.PublicKey(Buffer.from(stakanAccountData['stakan_state_account'])),
         stakanAccountData['stakan_state_account_bump'],
-        new anchor.web3.PublicKey(Buffer.from(stakanAccountData['escrow_account'])),
-        new anchor.web3.PublicKey(Buffer.from(stakanAccountData['reward_funds_account'])),
-        new anchor.web3.PublicKey(Buffer.from(stakanAccountData['mint_token'])),
+        new web3.PublicKey(Buffer.from(stakanAccountData['escrow_account'])),
+        new web3.PublicKey(Buffer.from(stakanAccountData['reward_funds_account'])),
+        new web3.PublicKey(Buffer.from(stakanAccountData['mint_token'])),
         stakanAccountData['global_max_score'],
 
       )  
+//      console.log(stakanState);
       return stakanState;
 //      return stakanAccountData;
     }
-    catch {
+    catch(e) {
+//      console.log(e);
     }
   }
   return undefined;
 }
 
-export async function setUpStakan(connection: anchor.web3.Connection) {
+//export async function setUpStakan(program: Program<Stakan>, connection: web3.Connection) {
+export async function setUpStakan(program: Program<Stakan>) {
 //: Promise<StakanState> {
     const stakanTokensAmount = 1000;
     
     const [stakanStateAccount, stakanStateAccountBump] =
-      await anchor.web3.PublicKey.findProgramAddress(
+      await web3.PublicKey.findProgramAddress(
         [
           Buffer.from('stakan_state_account'), 
         ],
         program.programId
       );
     const [stakanEscrowAccount, stakanEscrowAccountBump] =
-      await anchor.web3.PublicKey.findProgramAddress(
+      await web3.PublicKey.findProgramAddress(
         [
           Buffer.from('stakan_escrow_account'), 
         ],
@@ -109,7 +136,7 @@ export async function setUpStakan(connection: anchor.web3.Connection) {
       );
 
   
-    const [stakanMint, stakanMintBump] = await anchor.web3.PublicKey.findProgramAddress(
+    const [stakanMint, stakanMintBump] = await web3.PublicKey.findProgramAddress(
       [
         Buffer.from('stakan_mint'),
       ],
@@ -123,7 +150,7 @@ export async function setUpStakan(connection: anchor.web3.Connection) {
       stakanStateAccount,
       true,
     );
-  
+/*  
     await program.methods
       .setUpStakan(
         stakanStateAccountBump,
@@ -138,50 +165,63 @@ export async function setUpStakan(connection: anchor.web3.Connection) {
           
           tokenProgram: spl.TOKEN_PROGRAM_ID,
           associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID, //tokenProgramID,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+          rent: web3.SYSVAR_RENT_PUBKEY,
           systemProgram: SystemProgram.programId,
       })
       .signers([(program.provider.wallet as NodeWallet).payer])
       .rpc();
-  
-/*
-    const stakanState = new StakanState(
-        connection,
-//        program.provider.wallet as NodeWallet,
-        stakanStateAccount,
+  */
+      const tx = program.transaction.setUpStakan(
         stakanStateAccountBump,
-        stakanEscrowAccount,
-        rewardFundsAccount,
-        stakanMint,
-//        stakanMintBump,
-    );
-    return stakanState;
-    */
+        {
+            accounts: {
+              stakanStateAccount,
+              escrowAccount: stakanEscrowAccount,
+              mint: stakanMint,
+              rewardFundsAccount,
+      
+              programWallet: program.provider.wallet.publicKey,
+              
+              tokenProgram: spl.TOKEN_PROGRAM_ID,
+              associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID, //tokenProgramID,
+              rent: web3.SYSVAR_RENT_PUBKEY,
+              systemProgram: SystemProgram.programId,
+            },
+            signers: [],
+        }
+      )
+      tx.feePayer = program.provider.wallet.publicKey
+      tx.recentBlockhash = (await program.provider.connection.getLatestBlockhash()).blockhash
+      const signedTx = await program.provider.wallet.signTransaction(tx)
+      const txId = await program.provider.connection.sendRawTransaction(signedTx.serialize())
+      await program.provider.connection.confirmTransaction(txId)
 }
 
 export class User {
     username: string;
-    connection: anchor.web3.Connection;
-    wallet: anchor.web3.Keypair;
+    program: Program<Stakan>;
+//    connection: web3.Connection;
+    wallet: web3.Keypair;
     arweave: Arweave;
-    account?: anchor.web3.PublicKey; // pda user state account
-    tokenAccount?: anchor.web3.PublicKey; // pda user token account
+    account?: web3.PublicKey; // pda user state account
+    tokenAccount?: web3.PublicKey; // pda user token account
     arweaveWallet: JWKInterface;
     arweaveStorageAddress: string;
     bump?: number;
-    gameSessionAccount?: anchor.web3.PublicKey; // pda of ongoing game session account
+    gameSessionAccount?: web3.PublicKey; // pda of ongoing game session account
     gameSessionAccountBump?: number;
   
     constructor(
         username: string, 
-        connection: anchor.web3.Connection,
-        wallet: anchor.web3.Keypair, 
+        program: Program<Stakan>,
+        //        connection: web3.Connection,
+        wallet: web3.Keypair, 
         arweave: Arweave, 
         arweaveWallet: JWKInterface,
         arweaveStorageAddress: string,
     ) {
       this.username = username;
-      this.connection = connection;
+      this.program = program;
       this.wallet = wallet;
       this.arweave = arweave;
       this.arweaveWallet = arweaveWallet;
@@ -193,15 +233,15 @@ export class User {
     }
 
     async getBalance(): Promise<number> {
-      return await this.connection.getBalance(this.wallet.publicKey);
+      return await this.program.provider.connection.getBalance(this.wallet.publicKey);
     }
     
-    async getTokenBalance(): Promise<anchor.web3.RpcResponseAndContext<anchor.web3.TokenAmount>> {
-      return await this.connection.getTokenAccountBalance(this.tokenAccount as anchor.web3.PublicKey);
+    async getTokenBalance(): Promise<web3.RpcResponseAndContext<web3.TokenAmount>> {
+      return await this.program.provider.connection.getTokenAccountBalance(this.tokenAccount as web3.PublicKey);
     }
   
     setGameSession(
-      gameSessionAccount?: anchor.web3.PublicKey, 
+      gameSessionAccount?: web3.PublicKey, 
       gameSessionAccountBump?: number,
     ) {
       this.gameSessionAccount = gameSessionAccount;
@@ -210,7 +250,7 @@ export class User {
 
     async getGameSessionInfo(): Promise<accountsSchema.GameSessionAccount | undefined> {
       const accountInfo 
-        = await this.connection.getAccountInfo(this.gameSessionAccount as anchor.web3.PublicKey);
+        = await this.program.provider.connection.getAccountInfo(this.gameSessionAccount as web3.PublicKey);
       
         let userAccountData 
           = accountInfo ?
@@ -224,8 +264,8 @@ export class User {
     // connect their wallet using wallet adapter.
     async findOnChainUserAccount(): Promise<accountsSchema.UserAccount | undefined> {
       const accounts 
-        = await this.connection.getParsedProgramAccounts(
-            program.programId,
+        = await this.program.provider.connection.getParsedProgramAccounts(
+            this.program.programId,
             {
               filters: [
                 { memcmp: { offset: accountsSchema.UserAccountWrapped.innerOffset, 
@@ -258,13 +298,13 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
 //    const balance = await arweave.wallets.getBalance(user.arweaveStorageAddress);
 //    assert(balance, 10);
 
-    const [userAccount, userAccountBump] = await anchor.web3.PublicKey.findProgramAddress(
+    const [userAccount, userAccountBump] = await web3.PublicKey.findProgramAddress(
         [
             Buffer.from('user_account'), 
             Buffer.from(user.username).slice(0, 20),
             Buffer.from(user.arweaveStorageAddress).slice(0, 20),
         ],
-        program.programId
+        stakanState.program.programId
     );
 
     const tokenAccount = await spl.Token.getAssociatedTokenAddress(
@@ -275,7 +315,7 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
         true,
     );
 
-    await program.methods
+    await stakanState.program.methods
         .signUpUser(
         user.username,
         user.arweaveStorageAddress,
@@ -289,7 +329,7 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
 
             tokenProgram: spl.TOKEN_PROGRAM_ID,
             associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID, 
-            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+            rent: web3.SYSVAR_RENT_PUBKEY,
             systemProgram: SystemProgram.programId,
         })
         .signers([user.wallet])
@@ -306,9 +346,9 @@ export async function purchaseStakanTokens(
     tokenAmount: number,
 ) {
   
-    await program.methods
+    await stakanState.program.methods
       .purchaseTokens(
-        new anchor.BN(tokenAmount),
+        new BN(tokenAmount),
       )
       .accounts({
         stakanStateAccount: stakanState.stateAccount,
@@ -331,10 +371,10 @@ export async function sellStakanTokens(
     tokenAmount: number,
   ) {
   
-    await program.methods
+    await stakanState.program.methods
       .sellTokens(
         user.bump as number,
-        new anchor.BN(tokenAmount),
+        new BN(tokenAmount),
       )
       .accounts({
         stakanStateAccount: stakanState.stateAccount,
@@ -346,7 +386,7 @@ export async function sellStakanTokens(
   
         tokenProgram: spl.TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        rent: web3.SYSVAR_RENT_PUBKEY,
       })
       .signers([])
       .rpc();  
@@ -358,18 +398,18 @@ export async function initGameSession(
     stake: number,
 ) {
     const [gameSessionAccount, gameSessionAccountBump] =
-      await anchor.web3.PublicKey.findProgramAddress(
+      await web3.PublicKey.findProgramAddress(
         [
           Buffer.from('game_session_account'), 
           Buffer.from(user.username).slice(0, 20),
           Buffer.from(user.arweaveStorageAddress).slice(0, 20),
         ],
-        program.programId
+        stakanState.program.programId
       );
     
-    await program.methods
+    await stakanState.program.methods
       .initGameSession(
-        new anchor.BN(stake),
+        new BN(stake),
       )
       .accounts({
           stakanStateAccount: stakanState.stateAccount,
@@ -396,7 +436,7 @@ export async function initGameSession(
       data: serializedData
     });
     tx.addTag('App-Name', 'Stakan');
-    tx.addTag('stakanApi.User', (user.account as anchor.web3.PublicKey).toString());
+    tx.addTag('stakanApi.User', (user.account as web3.PublicKey).toString());
     
     await user.arweave.transactions.sign(tx, user.arweaveWallet);
     await user.arweave.transactions.post(tx);
@@ -428,7 +468,7 @@ export async function initGameSession(
     let saveTxId: string = txid as string; 
     let bump: number = user.bump as number;
     
-    await program.methods
+    await stakanState.program.methods
       .finishGameSession(
         saveTxId,
         bump,
@@ -456,10 +496,10 @@ export async function initGameSession(
     duration: number,
   ) {
   
-    await program.methods
+    await user.program.methods
       .updateGameSession(
-        new anchor.BN(score),
-        new anchor.BN(duration),
+        new BN(score),
+        new BN(duration),
       )
       .accounts({
           userAccount: user.account,
@@ -475,7 +515,7 @@ export async function initGameSession(
     user: User,
     stakanState: StakanState,
   ) {
-    await program.methods
+    await stakanState.program.methods
       .signOutUser(
         user.bump as number,
       )

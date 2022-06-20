@@ -9,7 +9,7 @@ import * as stakanApi from "../app/src/stakanSolanaApi";
 import { Stakan } from "../target/types/stakan";
 
 import Arweave from "arweave";
-import { serialize, deserialize } from "borsh";
+import { localNetProgram } from "../app/src/confProgram"
 //import ArLocal from 'arlocal';
 const axios = require('axios');
 
@@ -17,21 +17,6 @@ import Bip39 from 'bip39';
 
 let duration = 0;
 let arweave: Arweave = undefined;
-
-function simulateGameLoop(
-  program: Program<Stakan>,
-  gameSessionAccount: any,
-  interval: number
-) {
-
-  const intervalId = setInterval( async () => {
-    duration += interval;
-
-    console.log("Game session running:  ", duration, " ms");
-  }, interval);
-
-  return intervalId;
-}
 
 
 let assert = require('assert');
@@ -56,11 +41,23 @@ before(async () => {
     logging: false,
   });
     
-  console.log("setting up stakan global state...");
-  await stakanApi.setUpStakan(provider.connection);
+  console.log("searching stakan global state on chain...");
+  stakanState = await stakanApi.findOnChainStakanAccount(program);
 
-  stakanState = await stakanApi.findOnChainStakanAccount(provider.connection);
-  stakanState && console.log("done");
+  if (!stakanState) {
+    console.log("not found, trying to initialize stakan global state...");
+
+    await stakanApi.setUpStakan(program);
+  
+    stakanState = await stakanApi.findOnChainStakanAccount(program);
+    
+    if (!stakanState) {
+      console.log("Failed to set up stakan global state, exitting");
+      
+      throw "Failed to set up stakan global state";
+    }
+  }
+
 //  console.log("After setup, found on-chain: ", acc['id']);
 //  console.log("After setup, found on-chain: ", stakanState);
   const amount = 1000000000;
@@ -75,13 +72,13 @@ before(async () => {
 
   const arweaveStorageAddress = await arweave.wallets.getAddress(arweaveWallet);
 
-  user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ", provider.connection, 
+  user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ", program, 
     userWallet, arweave, arweaveWallet, arweaveStorageAddress);
 //  user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ০𝚸𝗤ՀꓢṰǓⅤ𝔚Ⲭ𝑌𝙕𝘢𝕤", userWallet);
 
   const arweaveWallet2 = await arweave.wallets.generate();
   const arweaveStorageAddress2 = await arweave.wallets.getAddress(arweaveWallet2);
-  user2 = new stakanApi.User("superman", provider.connection, 
+  user2 = new stakanApi.User("superman", program, 
     userWallet, arweave, arweaveWallet2, arweaveStorageAddress2);
 });
 

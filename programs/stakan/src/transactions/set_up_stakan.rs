@@ -16,11 +16,13 @@ pub(crate) struct StakanGlobalState {
 } 
 
 impl StakanGlobalState {
-    const ID: &'static str = "StakanXf8bymj5JEgJYH4qUQ7xTtoR1W2BeHUbDjCJb";
+//    const ID: &'static str = "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx";
+    const ID: &'static str = "StakanState";
 
     pub(crate) fn size_for_borsh() -> usize {
         use std::mem::size_of;
             8
+//            + size_of::<u32>() + crate::program_id().to_bytes().to_vec().len()
             + size_of::<u32>() + Self::ID.len()
             + size_of::<Pubkey>()
             + size_of::<u8>()
@@ -108,6 +110,8 @@ pub fn set_up_stakan(ctx: Context<SetupStakan>,
     )?;
 
     let acc = &mut ctx.accounts.stakan_state_account;
+    
+//    acc.id = crate::program_id().to_bytes().to_vec();
     acc.id = StakanGlobalState::ID.as_bytes().to_vec();
     acc.stakan_state_account = acc.key();
     acc.stakan_state_account_bump = stakan_state_account_bump;

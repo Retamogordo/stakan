@@ -8,9 +8,13 @@ use crate::transactions::user::*;
 use crate::transactions::tokens::*;
 use crate::transactions::game_session::*;
 
-declare_id!("StakanXf8bymj5JEgJYH4qUQ7xTtoR1W2BeHUbDjCJb");
-
-#[program]
+declare_id!("C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx");
+/*
+pub fn program_id() -> Pubkey {
+    id()
+}
+*/
+#[program] 
 pub mod stakan {
     use super::*;
 

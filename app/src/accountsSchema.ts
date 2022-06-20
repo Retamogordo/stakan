@@ -3,6 +3,8 @@ import Arweave from "arweave";
 import { serialize, deserialize } from "borsh";
 
 class Assignable extends Function {
+    [key: string]: any;
+    
     constructor(properties: any) {
       super();
       
@@ -13,7 +15,10 @@ class Assignable extends Function {
   }
 
   export class StakanStateSchema extends Assignable { 
+    static id = "StakanState";
+    
     public static deserialize(buffer: Buffer): StakanStateSchema {
+
       const schema = new Map([
         [
           StakanStateSchema, 
@@ -33,7 +38,7 @@ class Assignable extends Function {
         ]
       ]);
       const acc = deserialize(schema, StakanStateSchema, 
-        buffer.slice(0, 8+(4+43)+32+1+8+32+32+32));
+        buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+32));
 
 //      console.log("deserialized: ", acc);
       return acc;

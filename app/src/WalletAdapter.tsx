@@ -6,7 +6,9 @@ import React, { FC, useCallback } from 'react';
 //export const SendOneLamportToRandomAddress: FC = () => {
 export const StakeButton = () => {
     const { connection } = useConnection();
-    const { publicKey, sendTransaction } = useWallet();
+    const { publicKey, sendTransaction, wallet } = useWallet();
+
+//    console.log(connection);
 
     const onClick = useCallback(async () => {
         if (!publicKey) throw new WalletNotConnectedError();
