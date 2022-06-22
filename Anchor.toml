@@ -10,7 +10,7 @@ stakan = "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "/home/yury/.config/solana/id.json"
 
 [scripts]

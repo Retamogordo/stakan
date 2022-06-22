@@ -11,71 +11,23 @@ import { Connection } from '@solana/web3.js'
 import * as StakanApi from './stakanSolanaApi'
 import { IDL, Stakan } from './idl/stakan'
 //import { localNetProgram } from './confProgram'
-import { useConnection, useWallet, useAnchorWallet, AnchorWallet } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet, 
+  useAnchorWallet, AnchorWallet, 
+  ConnectionContextState, WalletContextState } from '@solana/wallet-adapter-react';
 import { clusterApiUrl } from '@solana/web3.js';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { devNetProgram } from './confProgram'
-/*
-interface AnchorWalletExtInterface extends AnchorWallet {
-  readonly payer: web3.Keypair;
-}
-class AnchorWalletExt implements AnchorWalletExtInterface {
-  readonly payer: web3.Keypair;
-  constructor() {
-    this.payer = undefined;
-  }
-}
+import { findOnChainStakanAccount } from './stakanSolanaApi'
+import  ArweaveConnectionProvider  from './ArweaveConnectionProvider'
+import * as stakanApi from "../src/stakanSolanaApi";
+//import { ArjsProvider, useArjs } from 'arjs-react'
 
-function from(anchorWallet: AnchorWallet): AnchorWalletExt {
-}
-*/
 function App() {
-  const network = WalletAdapterNetwork.Devnet;
 
-  // You can also provide a custom RPC endpoint.
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-  const { publicKey, sendTransaction } = useWallet();
 
-  const anchorWallet: AnchorWallet | undefined = useAnchorWallet();
-
-  if (anchorWallet) devNetProgram(endpoint, anchorWallet);
-/*  const rpcUrl = 'http://localhost:8899';
-  const connection = new Connection(rpcUrl, 'confirmed');
-  connection.getVersion().then(version => {
-    console.log('Connection to cluster established:', rpcUrl, version)
-  });
-
-  const opts: web3.ConfirmOptions =  {
-    commitment: 'processed',
-    preflightCommitment: "max",
-    skipPreflight: false
-  };
-
-  const provider = new Provider(connection, Wallet.local(), opts);
-
-//const program = anchor.workspace.Stakan as anchor.Program<Stakan>;
-  const program = new Program<Stakan>(
-    IDL, 
-    "StakanXf8bymj5JEgJYH4qUQ7xTtoR1W2BeHUbDjCJb",
-    provider
-  );
-*/
-/*
-const program = localNetProgram();
-
-  StakanApi.setUpStakan(program)
-    .then(() => {
-      StakanApi.findOnChainStakanAccount(program)
-    })
-    */
-//    .then( stakanState => console.log(stakanState) );
-
-//  stakanState = await stakanApi.findOnChainStakanAccount(provider.connection);
-//  stakanState && console.log("done");
-
-  
   const stakanControlsRef = useRef<typeof StakanControls>(null);
   const stakePanelRef = useRef<StakePanel>(null);
+  const [stakanProgram, setStakanProgram] = useState<Program<Stakan> | null>(null);
 //  const [sessionStarted, setSessionStarted] = useState(false);
 
   const handleStartSession = () => {
@@ -91,6 +43,46 @@ const program = localNetProgram();
 //    if (stakePanelRef.current) stakePanelRef.current.visible = true;
   }
 
+  const reportConnectionChanged = (connCtx: ConnectionContextState) => {
+    console.log("connection endpoint -> ", connCtx.connection.rpcEndpoint);
+  }
+
+  const reportWalletChanged = (walletCtx: WalletContextState) => {
+    console.log("wallet ", 
+      walletCtx.publicKey ? walletCtx.publicKey.toBase58() : '', 
+      walletCtx.connecting ? " connecting..." 
+      : 
+      walletCtx.connected ? " connected" : " disconnected" 
+    );
+  }
+
+  const reportProgramChanged = (program: Program<Stakan> | null) => {
+
+    if (program !== null) {
+      console.log("program id -> ", program.programId.toBase58());
+  
+      findOnChainStakanAccount(program)
+        .then((stakanState) => {
+          if (stakanState) {
+            console.log("state account located, pubkey -> ", stakanState.pubKey.toBase58());
+          } else {
+            console.log("state account not found on chain", );
+          }
+        });
+    }
+    setStakanProgram(program);
+  }
+
+  const handleArweaveAddressGenerated = (address: string) => {
+    let user:  stakanApi.User | null;
+
+    if (stakanProgram !== null) {
+//      user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ", stakanProgram, 
+//        userWallet, arweave, arweaveWallet, arweaveStorageAddress);
+    }
+
+  }
+
 /*
   useEffect(() => {
     console.log('App -> sessionStarted effect: ', sessionStarted);
@@ -98,13 +90,22 @@ const program = localNetProgram();
   }, [sessionStarted]);
 //  <StakePanel ref={stakePanelRef} onStartSessionClick={handleStartSession}/>   
 */
+/*
+<ArweaveConnectionProvider 
+onAddressGenerated={handleArweaveAddressGenerated}
+/>
+*/
   return (
     <div className="App">
       <div className="main-wrapper">
         <div className='left-panel'></div>
         <StakanControls onGameOver={handleGameOver} />       
         <div className="side" >
-          <WalletConnectionProvider />
+          <WalletConnectionProvider 
+            onConnectionChanged={reportConnectionChanged}
+            onWalletChanged={reportWalletChanged}
+            onProgramChanged={reportProgramChanged}
+          />
         </div>
 
       </div>

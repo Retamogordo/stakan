@@ -26,14 +26,13 @@ import InitWorkspace from './UseWorkspace';
 // Default styles that can be overridden by your app
 require('@solana/wallet-adapter-react-ui/styles.css');
 
-export const WalletConnectionProvider = () => {
+export const WalletConnectionProvider = (props: any) => {
     // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
     const network = WalletAdapterNetwork.Devnet;
 
     // You can also provide a custom RPC endpoint.
     const endpoint = useMemo(() => clusterApiUrl(network), [network]);
 
-    console.log("Endpoint: ", endpoint);
     // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking and lazy loading --
     // Only the wallets you configure here will be compiled into your application, and only the dependencies
     // of wallets that your users connect to will be loaded.
@@ -42,7 +41,7 @@ export const WalletConnectionProvider = () => {
             new PhantomWalletAdapter(),
 //            new GlowWalletAdapter(),
 //            new SlopeWalletAdapter(),
-            new SolflareWalletAdapter({ network }),
+            new SolflareWalletAdapter(),
 //            new TorusWalletAdapter(),
         ],
         [network]
@@ -54,7 +53,11 @@ export const WalletConnectionProvider = () => {
                 <WalletModalProvider>
                     <WalletMultiButton />
                     <WalletDisconnectButton />
-                    <InitWorkspace />
+                    <InitWorkspace 
+                        onConnectionChanged={props.onConnectionChanged}
+                        onWalletChanged={props.onWalletChanged}
+                        onProgramChanged={props.onProgramChanged}
+                    />
                 </WalletModalProvider>
             </WalletProvider>
         </ConnectionProvider>
