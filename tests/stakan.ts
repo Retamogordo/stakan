@@ -9,7 +9,20 @@ import * as stakanApi from "../app/src/stakanSolanaApi";
 import { Stakan } from "../target/types/stakan";
 
 import Arweave from "arweave";
-import { localNetProgram } from "../app/src/confProgram"
+import ArLocal from 'arlocal';
+
+(async () => {
+  const arLocal = new ArLocal();
+
+  // Start is a Promise, we need to start it inside an async function.
+  await arLocal.start();
+
+  // Your tests here...
+
+  // After we are done with our tests, let's close the connection.
+  await arLocal.stop();
+})();
+//import { localNetProgram } from "../app/src/confProgram"
 //import ArLocal from 'arlocal';
 const axios = require('axios');
 
@@ -29,7 +42,13 @@ let user:  stakanApi.User;
 let user2: stakanApi.User;
 let stakanState: stakanApi.StakanState;
 
+const arLocal = new ArLocal();
+
 before(async () => {
+
+  // Start is a Promise, we need to start it inside an async function.
+  await arLocal.start();
+
   anchor.setProvider(provider);
   programWallet = program.provider.wallet;
 
@@ -82,6 +101,10 @@ before(async () => {
     userWallet, arweave, arweaveWallet2, arweaveStorageAddress2);
 });
 
+after(() => {
+  arLocal.stop();
+});
+
 describe("stakan", () => {
 
   it("Airdrop", async () => {
@@ -106,9 +129,13 @@ describe("stakan", () => {
 //    await signUpUser("superman&supergirl", userWallet, stakanState.mint.publicKey);
   });
 
-  it("User accounts list", async () => {
-    const acc = await user.findOnChainUserAccount();
-    if (!acc) throw "Cannot find user on-chain account after signing up";
+  it("Check logging user", async () => {
+    user = await stakanApi.loginUser(user.wallet, stakanState, arweave);
+
+    const accountInfo = await provider.connection.getAccountInfo(user.account);
+    let userAccountData = accountsSchema.UserAccount.deserialize(accountInfo.data);
+
+    console.log("stakanApi.User ", userAccountData['username'], " signed up");
   });
 
   it("Sign up another user with the same wallet (allowed for now)", async () => {

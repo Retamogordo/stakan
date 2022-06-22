@@ -8,7 +8,7 @@ import { JWKInterface } from 'arweave/node/lib/wallet'
 import fs from 'fs';
 
 //import { Stakan } from "../../target/types/stakan";
-import * as accountsSchema from "../../app/src/accountsSchema";
+import * as accountsSchema from "./accountsSchema";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import { IDL, Stakan } from './idl/stakan'
 
@@ -198,7 +198,7 @@ export async function setUpStakan(program: Program<Stakan>) {
 }
 
 export class User {
-    static localDir = "user_local_files/"
+    static localDir = __dirname + '/user_local_files/';
 
     username: string;
     program: Program<Stakan>;
@@ -222,7 +222,7 @@ export class User {
         arweaveWallet: JWKInterface,
         arweaveStorageAddress: string,
     ) {
-      var dir = __dirname + '/' + User.localDir;
+      var dir = User.localDir;
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
       }
@@ -356,6 +356,8 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
         .signers([user.wallet])
         .rpc();
 
+//    const bump_file = User.localDir + user.username + '_bump.json';
+    
     fs.writeFileSync(User.localDir + user.username + '_bump.json', JSON.stringify(userAccountBump.toString()));
     fs.writeFileSync(User.localDir + user.username + '_arweave_wallet.json', JSON.stringify(user.arweaveWallet));
 
