@@ -48,7 +48,7 @@ const InitWorkspace = (props: any) => {
     [anchorConnection.connection.rpcEndpoint]);
     
     useEffect(() => {
-        props.onWalletChanged && props.onWalletChanged(walletCtx);
+        props.onWalletChanged && props.onWalletChanged(walletCtx, anchorWallet);
         reconnect();
     },
     [walletCtx.connected, walletCtx.connecting]);

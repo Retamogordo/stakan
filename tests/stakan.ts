@@ -27,9 +27,10 @@ import ArLocal from 'arlocal';
 const axios = require('axios');
 
 import Bip39 from 'bip39';
+import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 
 let duration = 0;
-let arweave: Arweave = undefined;
+let arweave: Arweave | undefined = undefined;
 
 
 let assert = require('assert');
@@ -38,8 +39,8 @@ const program = anchor.workspace.Stakan as Program<Stakan>;
 const provider = anchor.Provider.env();
 let programWallet;
 
-let user:  stakanApi.User;
-let user2: stakanApi.User;
+let user:  stakanApi.User | undefined;
+let user2: stakanApi.User | undefined;
 let stakanState: stakanApi.StakanState;
 
 const arLocal = new ArLocal();
@@ -61,14 +62,14 @@ before(async () => {
   });
     
   console.log("searching stakan global state on chain...");
-  stakanState = await stakanApi.findOnChainStakanAccount(program);
+  stakanState = await stakanApi.findOnChainStakanAccount(program) as stakanApi.StakanState;
 
   if (!stakanState) {
     console.log("not found, trying to initialize stakan global state...");
 
     await stakanApi.setUpStakan(program);
   
-    stakanState = await stakanApi.findOnChainStakanAccount(program);
+    stakanState = await stakanApi.findOnChainStakanAccount(program) as stakanApi.StakanState;
     
     if (!stakanState) {
       console.log("Failed to set up stakan global state, exitting");
@@ -86,7 +87,7 @@ before(async () => {
   );
   console.log("stakan Escrow Account balance: ", await stakanState.getBalance());
 
-  const userWallet = anchor.web3.Keypair.generate();
+  const userWallet = new NodeWallet(anchor.web3.Keypair.generate());
   const arweaveWallet = await arweave.wallets.generate();
 
   const arweaveStorageAddress = await arweave.wallets.getAddress(arweaveWallet);
@@ -101,8 +102,8 @@ before(async () => {
     userWallet, arweave, arweaveWallet2, arweaveStorageAddress2);
 });
 
-after(() => {
-  arLocal.stop();
+after(async () => {
+  await arLocal.stop();
 });
 
 describe("stakan", () => {
@@ -111,18 +112,26 @@ describe("stakan", () => {
 /*    await provider.connection.confirmTransaction(
       await provider.connection.requestAirdrop(gameGlobalWallet.publicKey, 100000000000)
     );
-*/    
+*/ 
+    const currUser = user as stakanApi.User;  
     await provider.connection.confirmTransaction( 
-      await provider.connection.requestAirdrop(user.wallet.publicKey, 1000000000)
+      await provider.connection.requestAirdrop(currUser.wallet.publicKey, 1000000000)
     );
   });
 
   it("Sign up user", async () => {
-    await stakanApi.signUpUser(user, stakanState);
-//    await signUpUser(user, stakanState.getMintPublicKey());
+    const currUser = user as stakanApi.User;  
 
-    const accountInfo = await provider.connection.getAccountInfo(user.account);
-    let userAccountData = accountsSchema.UserAccount.deserialize(accountInfo.data);
+    await stakanApi.signUpUser(currUser, stakanState as stakanApi.StakanState);
+//    await signUpUser(user, stakanState.getMintPublicKey());
+    const userAccount = currUser.account as anchor.web3.PublicKey;
+    const accountInfo 
+      = await provider.connection.getAccountInfo(userAccount);
+    
+    if (!accountInfo) throw "accountInfo is null";
+
+    let userAccountData = accountsSchema.UserAccount.deserialize(
+      accountInfo.data);
 
     console.log("stakanApi.User ", userAccountData['username'], " signed up");
       //    await signUpUser("суперман", userWallet, stakanState.mint.publicKey);
@@ -130,30 +139,47 @@ describe("stakan", () => {
   });
 
   it("Check logging user", async () => {
-    user = await stakanApi.loginUser(user.wallet, stakanState, arweave);
+//    const nodeWallet = new NodeWallet(user.wallet);
+    user 
+      = await stakanApi.loginUser(
+        (user as stakanApi.User).wallet, 
+        stakanState as stakanApi.StakanState, 
+        arweave as Arweave);
+    const currUser = user as stakanApi.User;  
 
-    const accountInfo = await provider.connection.getAccountInfo(user.account);
+    const accountInfo = await provider.connection.getAccountInfo(currUser.account as anchor.web3.PublicKey);
+    
+    if (!accountInfo) throw "accountInfo is null"
     let userAccountData = accountsSchema.UserAccount.deserialize(accountInfo.data);
 
     console.log("stakanApi.User ", userAccountData['username'], " signed up");
   });
 
   it("Sign up another user with the same wallet (allowed for now)", async () => {
-    await stakanApi.signUpUser(user2, stakanState);
+    const currUser = user2 as stakanApi.User;  
+    
+    await stakanApi.signUpUser(currUser, stakanState);
  //   await signUpUser(user2, stakanState.getMintPublicKey());          
 
-    const accountInfo = await provider.connection.getAccountInfo(user2.account);
+    const accountInfo 
+      = await provider.connection.getAccountInfo(currUser.account as anchor.web3.PublicKey);
+
+    if (!accountInfo) throw "accountInfo is null"
     let userAccountData = accountsSchema.UserAccount.deserialize(accountInfo.data);
 
     console.log("stakanApi.User ", userAccountData['username'], " signed up");
   });
 
   it("SHOULD FAIL: Init game session (no tokens on account to stake)", async () => {
+    const currUser = user as stakanApi.User;  
     const stake = 1;
     try {
-      await stakanApi.initGameSession(user, stakanState, stake);
+      await stakanApi.initGameSession(currUser, stakanState, stake);
       
-      const accountInfo = await provider.connection.getAccountInfo(user.gameSessionAccount);
+      const accountInfo 
+        = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
+
+      if (!accountInfo) throw "accountInfo is null"
       let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
     
       console.log("Game session initialized: score: ", accountData['score'].toString());
@@ -164,39 +190,41 @@ describe("stakan", () => {
   });
 
   it("Purchase tokens", async () => {
+    const currUser = user as stakanApi.User;  
     console.log("before purchasing tokens...");
-    console.log("userWallet balance: ", await user.getBalance());
+    console.log("userWallet balance: ", await currUser.getBalance());
     console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
-    console.log("userMintAccount balance: ", await user.getTokenBalance());
+    console.log("userMintAccount balance: ", await currUser.getTokenBalance());
 
-    await stakanApi.purchaseStakanTokens(user, stakanState, 20);
+    await stakanApi.purchaseStakanTokens(currUser, stakanState, 20);
 
     console.log("after purchasing tokens");
-    console.log("userWallet balance: ", await user.getBalance());
+    console.log("userWallet balance: ", await currUser.getBalance());
     console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
     
-    const userTokenBalance = await user.getTokenBalance();
+    const userTokenBalance = await currUser.getTokenBalance();
     console.log("user token balance: ", userTokenBalance);
 //      assert(userTokenBalance, tokenAmount);
   })
 
   it("Sell tokens", async () => {
+    const currUser = user as stakanApi.User;  
     console.log("before selling tokens...");
-    console.log("userWallet balance: ", await user.getBalance());
+    console.log("userWallet balance: ", await currUser.getBalance());
 //    console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
     console.log("program escrow balance: ", await provider.connection.getBalance(stakanState.escrowAccount));
-    console.log("userMintAccount balance: ", await user.getTokenBalance());
+    console.log("userMintAccount balance: ", await currUser.getTokenBalance());
     let rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
       console.log("reward funds token balance: ", rewardFundsAccountBalance);
     
-    await stakanApi.sellStakanTokens(user, stakanState, 10);
+    await stakanApi.sellStakanTokens(currUser, stakanState, 10);
 
     console.log("after selling tokens");
-    console.log("userWallet balance: ", await user.getBalance());
+    console.log("userWallet balance: ", await currUser.getBalance());
 //    console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
     console.log("program escrow balance: ", await provider.connection.getBalance(stakanState.escrowAccount));
     
-    const userTokenBalance = await user.getTokenBalance();
+    const userTokenBalance = await currUser.getTokenBalance();
     console.log("user token balance: ", userTokenBalance);
     rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
     console.log("reward funds token balance: ", rewardFundsAccountBalance);  
@@ -204,13 +232,17 @@ describe("stakan", () => {
   })
 
   it("Init game session", async () => {
+    const currUser = user as stakanApi.User;  
     const stake = 1;
-    await stakanApi.initGameSession(user, stakanState, stake);
+    await stakanApi.initGameSession(currUser, stakanState, stake);
     
-    const accountInfo = await provider.connection.getAccountInfo(user.gameSessionAccount);
+    const accountInfo 
+      = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
+
+    if (!accountInfo) throw "accountInfo is null"
     let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
   
-    const gameSessionInfo = await user.getGameSessionInfo();
+    const gameSessionInfo = await currUser.getGameSessionInfo() as accountsSchema.GameSessionAccount;
 
     console.log("Game session initialized: score: ", 
       accountData['score'].toString(),
@@ -218,28 +250,39 @@ describe("stakan", () => {
   });
 
   it("Update game session 1", async () => {
-    await stakanApi.updateGameSession(user, 10, 100);      
+    const currUser = user as stakanApi.User;  
+    await stakanApi.updateGameSession(currUser, 10, 100);      
     
-    const accountInfo = await provider.connection.getAccountInfo(user.gameSessionAccount);
+    const accountInfo 
+      = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
+    if (!accountInfo) throw "accountInfo is null";
     let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
   
     console.log("Game session updated: score: ", accountData['score'].toString());  
   });
 
   it("Update game session 2", async () => {
-    await stakanApi.updateGameSession(user, 20, 200);      
+    const currUser = user as stakanApi.User;  
+    await stakanApi.updateGameSession(currUser, 20, 200);      
     
-    const accountInfo = await provider.connection.getAccountInfo(user.gameSessionAccount);
+    const accountInfo 
+      = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
+    if (!accountInfo) throw "accountInfo is null"
     let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
   
     console.log("Game session updated: score: ", accountData['score'].toString());  
   });
 
   it("Finish game session", async () => {
-    await stakanApi.finishGameSession(user, stakanState);      
+    const currUser = user as stakanApi.User;  
+    await stakanApi.finishGameSession(currUser, stakanState);      
 
     const numberOfArchives = 1;
-    const archivedData = await accountsSchema.GameSessionArchive.get(arweave, user.account, numberOfArchives);
+    const archivedData 
+      = await accountsSchema.GameSessionArchive.get(
+        arweave as Arweave, 
+        currUser.account as anchor.web3.PublicKey, 
+        numberOfArchives);
 
     Promise.all(
       archivedData
@@ -247,25 +290,26 @@ describe("stakan", () => {
       console.log("Archived score: ", data['score'].toString(), ", duration: ", data['duration'].toString());
     }));     
 
-    const userTokenBalance = await user.getTokenBalance();
+    const userTokenBalance = await currUser.getTokenBalance();
     console.log("stakanApi.User token balance: ", userTokenBalance);
   });
 
   it("Sign user out", async () => {
+    const currUser = user as stakanApi.User;  
     console.log("before signing out user...");
-    console.log("userWallet balance: ", await user.getBalance());
+    console.log("userWallet balance: ", await currUser.getBalance());
     console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
-    console.log("userMintAccount balance: ", await user.getTokenBalance());
+    console.log("userMintAccount balance: ", await currUser.getTokenBalance());
     let rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
       console.log("reward funds token balance: ", rewardFundsAccountBalance);
   
-    await stakanApi.signOutUser(user, stakanState);
+    await stakanApi.signOutUser(currUser, stakanState);
 
     console.log("after signing user out");
-    console.log("userWallet balance: ", await user.getBalance());
+    console.log("userWallet balance: ", await currUser.getBalance());
 //    console.log("programWallet balance: ", await stakanState.getBalance());
     
-    const userTokenBalance = await user.getTokenBalance();
+    const userTokenBalance = await currUser.getTokenBalance();
     console.log("user token balance: ", userTokenBalance);
     rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
     console.log("reward funds token balance: ", rewardFundsAccountBalance);
