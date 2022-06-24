@@ -335,27 +335,7 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
         userAccount,
         true,
     );
-/*
-    await stakanState.program.methods
-        .signUpUser(
-        user.username,
-        user.arweaveStorageAddress,
-        )
-        .accounts({
-            stakanStateAccount: stakanState.stateAccount,
-            userAccount,
-            userWallet: user.wallet.publicKey,
-            mint: stakanState.stakanMint,
-            tokenAccount,
 
-            tokenProgram: spl.TOKEN_PROGRAM_ID,
-            associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID, 
-            rent: web3.SYSVAR_RENT_PUBKEY,
-            systemProgram: SystemProgram.programId,
-        })
-        .signers([user.wallet])
-        .rpc();
-*/
     const tx = stakanState.program.transaction.signUpUser(
       user.username,
       arweaveStorageAddress,
@@ -438,25 +418,6 @@ export async function purchaseStakanTokens(
     stakanState: StakanState,
     tokenAmount: number,
 ) {
-/*  
-    await stakanState.program.methods
-      .purchaseTokens(
-        new BN(tokenAmount),
-      )
-      .accounts({
-        stakanStateAccount: stakanState.stateAccount,
-        stakanEscrowAccount: stakanState.escrowAccount,
-        mint: stakanState.stakanMint,
-        userAccount: user.account,
-        userTokenAccount: user.tokenAccount,
-        userWallet: user.wallet.publicKey,
-  
-        tokenProgram: spl.TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([user.wallet])
-      .rpc();
-*/
     if (!user.account || !user.tokenAccount) return;
     
     const tx = stakanState.program.transaction
@@ -510,35 +471,6 @@ export async function sellStakanTokens(
       })
       .signers([])
       .rpc();  
-/*
-      if (!user.account || !user.tokenAccount) return;
-
-      const tx = stakanState.program.transaction
-        .sellTokens(
-          user.bump as number,
-          new BN(tokenAmount),
-          {
-            accounts: {
-              stakanStateAccount: stakanState.stateAccount,
-              stakanEscrowAccount: stakanState.escrowAccount,
-              userAccount: user.account,
-              userTokenAccount: user.tokenAccount,
-              userWallet: user.wallet.publicKey,
-              rewardFundsAccount: stakanState.rewardFundsAccount,
-        
-              tokenProgram: spl.TOKEN_PROGRAM_ID,
-              systemProgram: SystemProgram.programId,
-              rent: web3.SYSVAR_RENT_PUBKEY,
-            },
-            signers: [],
-          }
-      )
-      tx.feePayer = stakanState.program.provider.wallet.publicKey
-      tx.recentBlockhash = (await stakanState.program.provider.connection.getLatestBlockhash()).blockhash
-      const signedTx = await stakanState.program.provider.wallet.signTransaction(tx)
-      const txId = await stakanState.program.provider.connection.sendRawTransaction(signedTx.serialize())
-      await stakanState.program.provider.connection.confirmTransaction(txId)
-      */
   }
   
 export async function initGameSession(
@@ -556,25 +488,6 @@ export async function initGameSession(
         ],
         stakanState.program.programId
       );
-/*    
-    await stakanState.program.methods
-      .initGameSession(
-        new BN(stake),
-      )
-      .accounts({
-          stakanStateAccount: stakanState.stateAccount,
-          rewardFundsAccount: stakanState.rewardFundsAccount,
-          userAccount: user.account,
-          userTokenAccount: user.tokenAccount,
-          gameSessionAccount,
-          userWallet: user.wallet.publicKey,
-  
-          tokenProgram: spl.TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-      })
-      .signers([user.wallet])
-      .rpc();
-*/
     if (!user.account || !user.tokenAccount) return;
     
     const tx = stakanState.program.transaction

@@ -93,11 +93,16 @@ function App() {
                 stakanState, 
                 arweave,
                 undefined, // arweave wallet - will assing 'use_wallet' internally
-                42, // todo: set bump
+                255, // todo: set bump
               )
               .then((user) => {
                 console.log("After login user: ", user);
-                if (!user) {
+                if (user) {
+                  console.log("Before signing out");
+                  stakanApi.signOutUser(user as stakanApi.User, stakanState)
+                    .then( () => console.log("User signed out") );
+                }  
+                else {
                   console.log("Trying to sign up user... ");
 
                   const currUser = new stakanApi.User(
@@ -117,10 +122,13 @@ function App() {
                         stakanState, 
                         arweave,
                         undefined, // arweave wallet - will assing 'use_wallet' internally
-                        42, // todo: set bump
+                        currUser.bump as number, 
                       )
-                      .then( user =>
-                        console.log("After login user: ", user)
+                      .then( user => {
+                          console.log("After login user: ", user)
+
+                          stakanApi.signOutUser(user as stakanApi.User, stakanState);
+                        }
                       )
 
                     });
