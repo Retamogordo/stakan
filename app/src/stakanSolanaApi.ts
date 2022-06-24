@@ -4,8 +4,8 @@ import { AnchorWallet } from '@solana/wallet-adapter-react';
 //import * as anchor from "@project-serum/anchor";
 import * as spl from '@solana/spl-token';
 import Arweave from "arweave";
+import TestWeave from 'testweave-sdk';
 import { JWKInterface } from 'arweave/node/lib/wallet'
-import fs from 'fs';
 
 //import { Stakan } from "../../target/types/stakan";
 import * as accountsSchema from "./accountsSchema";
@@ -204,10 +204,11 @@ export class User {
     program: Program<Stakan>;
     wallet: Wallet;
     arweave: Arweave;
+//    testWeave: TestWeave;
     account?: web3.PublicKey; // pda user state account
     tokenAccount?: web3.PublicKey; // pda user token account
-    arweaveWallet: JWKInterface;
-    arweaveStorageAddress: string;
+    arweaveWallet: JWKInterface | "use_wallet";
+//    arweaveStorageAddress: string;
     bump?: number;
     gameSessionAccount?: web3.PublicKey; // pda of ongoing game session account
     gameSessionAccountBump?: number;
@@ -217,19 +218,17 @@ export class User {
         program: Program<Stakan>,
         wallet: Wallet, 
         arweave: Arweave, 
-        arweaveWallet: JWKInterface,
-        arweaveStorageAddress: string,
+//        testWeave: TestWeave,
+        arweaveWallet: JWKInterface | undefined,
+//        arweaveStorageAddress: string,
     ) {
-      var dir = User.localDir;
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
-      }
       this.username = username;
       this.program = program;
       this.wallet = wallet;
       this.arweave = arweave;
-      this.arweaveWallet = arweaveWallet;
-      this.arweaveStorageAddress = arweaveStorageAddress;
+//      this.testWeave = testWeave;
+      this.arweaveWallet = arweaveWallet ? arweaveWallet : "use_wallet";
+//      this.arweaveStorageAddress = arweaveStorageAddress;
     }
     
     isSignedUp(): boolean {
@@ -284,6 +283,7 @@ export async function findOnChainUserAccount(walletPubkey: web3.PublicKey, staka
           ],
         }
   );
+//  console.log("findOnChainUserAccount: ", accounts)
   for (let acc of accounts) {
     // deserialization success indicates this account is that we looked for
     try {
@@ -310,18 +310,20 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
     
 //    const wallet = JSON.parse(fs.readFileSync(user.username + '_arweave_wallet.json', "utf-8"));
 //    console.log("Arweave wallet read from Json file: ", wallet);
-    
+    const arweaveStorageAddress = await user.arweave.wallets.getAddress(user.arweaveWallet);
     const tokens = user.arweave.ar.arToWinston('10')
-    await user.arweave.api.get(`/mint/${user.arweaveStorageAddress}/${tokens}`)
+    await user.arweave.api.get(`/mint/${arweaveStorageAddress}/${tokens}`)
+//    await user.arweave.api.get(`/mint/${user.arweaveStorageAddress}/${tokens}`)
 
-//    const balance = await arweave.wallets.getBalance(user.arweaveStorageAddress);
+    const balance = await user.arweave.wallets.getBalance(arweaveStorageAddress);
+    console.log("Arweave balance: ", balance)
 //    assert(balance, 10);
 
     const [userAccount, userAccountBump] = await web3.PublicKey.findProgramAddress(
         [
             Buffer.from('user_account'), 
             Buffer.from(user.username).slice(0, 20),
-            Buffer.from(user.arweaveStorageAddress).slice(0, 20),
+            Buffer.from(arweaveStorageAddress).slice(0, 20),
         ],
         stakanState.program.programId
     );
@@ -356,7 +358,7 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
 */
     const tx = stakanState.program.transaction.signUpUser(
       user.username,
-      user.arweaveStorageAddress,
+      arweaveStorageAddress,
       {
         accounts: {
           stakanStateAccount: stakanState.stateAccount,
@@ -381,35 +383,40 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
     await conn.confirmTransaction(txId)
 
 //    const bump_file = User.localDir + user.username + '_bump.json';
-    
-    fs.writeFileSync(User.localDir + user.username + '_bump.json', JSON.stringify(userAccountBump.toString()));
-    fs.writeFileSync(User.localDir + user.username + '_arweave_wallet.json', JSON.stringify(user.arweaveWallet));
-
     user.bump = userAccountBump;
     user.account = userAccount;
     user.tokenAccount = tokenAccount;
 }
 
 //export async function loginUser(userWallet: web3.Keypair, stakanState: StakanState, arweave: Arweave)
-export async function loginUser(userWallet: Wallet, stakanState: StakanState, arweave: Arweave)
+export async function loginUser(
+  userWallet: Wallet, 
+  stakanState: StakanState, 
+  arweave: Arweave,
+  arweaveWallet: JWKInterface | undefined,
+  userAccountBump: number,
+)
     : Promise<User | undefined> {
 
+  console.log("User wallet: ", userWallet.publicKey);
   const acc = await findOnChainUserAccount(userWallet.publicKey, stakanState);
   console.log("User acc: ", acc);
 
   if (acc) {
     const [accPubkey, userAccount] = acc;
     try {
-      const arweaveWallet = JSON.parse(fs.readFileSync(User.localDir + userAccount['username'] + '_arweave_wallet.json', "utf-8"));
-      const userAccountBump = JSON.parse(fs.readFileSync(User.localDir + userAccount['username'] + '_bump.json', "utf-8"));
+//      const arweaveWallet = JSON.parse(fs.readFileSync(User.localDir + userAccount['username'] + '_arweave_wallet.json', "utf-8"));
+//      const arweaveWallet = testWeave.rootJWK;
+//      const userAccountBump = JSON.parse(fs.readFileSync(User.localDir + userAccount['username'] + '_bump.json', "utf-8"));
 
       const user = new User(
         userAccount['username'],
         stakanState.program,
         userWallet,
         arweave,
+//        testWeave,
         arweaveWallet,
-        userAccount['arweave_storage_address'],
+//        userAccount['arweave_storage_address'],
       );
       user.bump = userAccountBump;
       user.account = accPubkey;
@@ -483,7 +490,7 @@ export async function sellStakanTokens(
     stakanState: StakanState,
     tokenAmount: number,
   ) {
-  
+//  console.log("sellStakanTokens, user: ", user);
     await stakanState.program.methods
       .sellTokens(
         user.bump as number,
@@ -539,12 +546,13 @@ export async function initGameSession(
     stakanState: StakanState,
     stake: number,
 ) {
+    const arweaveStorageAddress = await user.arweave.wallets.getAddress(user.arweaveWallet); 
     const [gameSessionAccount, gameSessionAccountBump] =
       await web3.PublicKey.findProgramAddress(
         [
           Buffer.from('game_session_account'), 
           Buffer.from(user.username).slice(0, 20),
-          Buffer.from(user.arweaveStorageAddress).slice(0, 20),
+          Buffer.from(arweaveStorageAddress).slice(0, 20),
         ],
         stakanState.program.programId
       );
@@ -597,22 +605,40 @@ export async function initGameSession(
   }
 
   async function saveToArweave(user: User, data: any): Promise<string | undefined> {
+    console.log("saveToArweave data: ", data);
+
     const serializedData = accountsSchema.GameSessionArchive.serialize(data);
+
+    console.log("saveToArweave serializedData: ", serializedData);
+    console.log("saveToArweave user account: ", (user.account as web3.PublicKey).toString());
+//    console.log("saveToArweave user.arweave: ", user.arweave);
   
   //  GameSessionArchive.deserialize(serializedData);
+  
     const tx = await user.arweave.createTransaction({
       data: serializedData
-    });
+//    });
+    }, user.arweaveWallet);
+    console.log("saveToArweave tx: ", tx);
+
     tx.addTag('App-Name', 'Stakan');
     tx.addTag('stakanApi.User', (user.account as web3.PublicKey).toString());
+
+    console.log("saveToArweave user arweave wallet: ", user.arweaveWallet);
     
     await user.arweave.transactions.sign(tx, user.arweaveWallet);
     await user.arweave.transactions.post(tx);
+
+    console.log("saveToArweave after post ");
     // mine transaction to simulate immediate confirmation
     await axios.get('http://localhost:1984/mine');
+//    console.log(user.testWeave);
+
+//    await user.testWeave.mine();
   
+
     const statusAfterPost = await user.arweave.transactions.getStatus(tx.id);
-  //  console.log("status after post: ", statusAfterPost.confirmed);
+    console.log("status after post: ", statusAfterPost);
     return statusAfterPost.status === 200 ? tx.id : undefined;
   }
 
@@ -625,6 +651,8 @@ export async function initGameSession(
     if (!gameSessionInfo) 
       throw 'Cannot get Session Info';
 
+    console.log("before saveToArweave");
+    
     const txid = await saveToArweave(user, 
       {
         score: (gameSessionInfo as any)['score'],
@@ -633,31 +661,12 @@ export async function initGameSession(
     );
 
     if (!txid) throw "Failed saving to Arweave";
+ 
     let saveTxId: string = txid as string; 
     let bump: number = user.bump as number;
   
     if (!user.account || !user.tokenAccount || !user.gameSessionAccount) return;
 
-    const tx = stakanState.program.transaction
-      .finishGameSession(
-        saveTxId,
-        bump,
-        {
-          accounts: {
-            stakanStateAccount: stakanState.stateAccount,
-            userAccount: user.account,
-            userTokenAccount: user.tokenAccount,
-            gameSessionAccount: user.gameSessionAccount,
-            userWallet: user.wallet.publicKey,
-            rewardFundsAccount: stakanState.rewardFundsAccount,
-    
-            tokenProgram: spl.TOKEN_PROGRAM_ID,
-            systemProgram: SystemProgram.programId,
-          },
-          signers: [],
-        }
-      )
-    
     await stakanState.program.methods
       .finishGameSession(
         saveTxId,

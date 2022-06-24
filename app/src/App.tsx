@@ -17,17 +17,25 @@ import { useConnection, useWallet,
 import { clusterApiUrl } from '@solana/web3.js';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { devNetProgram } from './confProgram'
-import { findOnChainStakanAccount } from './stakanSolanaApi'
+import * as stakanApi from './stakanSolanaApi'
 import  ArweaveConnectionProvider  from './ArweaveConnectionProvider'
-import * as stakanApi from "../src/stakanSolanaApi";
+import Arweave from 'arweave'
+//import * as ArConnect from 'arconnect'
 //import { ArjsProvider, useArjs } from 'arjs-react'
 
-function App() {
 
+function App() {
+  console.log("window.arweaveWallet: ", window.arweaveWallet);
+  if (window.arweaveWallet) window.arweaveWallet.getActiveAddress()
+    .then( activeAddress => {
+      console.log("window.arweaveWallet, address: ", activeAddress);
+    });
 
   const stakanControlsRef = useRef<typeof StakanControls>(null);
   const stakePanelRef = useRef<StakePanel>(null);
   const [stakanProgram, setStakanProgram] = useState<Program<Stakan> | null>(null);
+  const [userWalletCtx, setUserWalletCtx] = useState<WalletContextState | null>(null)
+  const [anchorWallet, setanchorWallet] = useState<AnchorWallet | null>(null)
 //  const [sessionStarted, setSessionStarted] = useState(false);
 
   const handleStartSession = () => {
@@ -47,13 +55,14 @@ function App() {
     console.log("connection endpoint -> ", connCtx.connection.rpcEndpoint);
   }
 
-  const reportWalletChanged = (walletCtx: WalletContextState) => {
+  const reportWalletChanged = (walletCtx: WalletContextState, anchorWallet: AnchorWallet) => {
     console.log("wallet ", 
       walletCtx.publicKey ? walletCtx.publicKey.toBase58() : '', 
       walletCtx.connecting ? " connecting..." 
       : 
       walletCtx.connected ? " connected" : " disconnected" 
     );
+    setUserWalletCtx(walletCtx);
   }
 
   const reportProgramChanged = (program: Program<Stakan> | null) => {
@@ -61,14 +70,70 @@ function App() {
     if (program !== null) {
       console.log("program id -> ", program.programId.toBase58());
   
-      findOnChainStakanAccount(program)
+      stakanApi.findOnChainStakanAccount(program)
         .then((stakanState) => {
           if (stakanState) {
-            console.log("state account located, pubkey -> ", stakanState.pubKey.toBase58());
+            console.log("stakan state account located, pubkey -> ", stakanState.pubKey.toBase58());          
+
+//            const arweave = Arweave.init({});
+
+            const arweave = Arweave.init({
+              host: 'localhost',
+              port: 1984,
+              protocol: 'http',
+              timeout: 20000,
+              logging: false,
+            });
+            
+          
+//            if (anchorWallet !== null) { 
+      
+              stakanApi.loginUser(
+                program.provider.wallet as Wallet, 
+                stakanState, 
+                arweave,
+                undefined, // arweave wallet - will assing 'use_wallet' internally
+                42, // todo: set bump
+              )
+              .then((user) => {
+                console.log("After login user: ", user);
+                if (!user) {
+                  console.log("Trying to sign up user... ");
+
+                  const currUser = new stakanApi.User(
+                    "noname", 
+                    program,
+                    program.provider.wallet as Wallet,
+                    arweave,
+                    undefined
+                  );
+
+                  stakanApi.signUpUser(currUser, stakanState)
+                    .then( () => {
+                      
+                      console.log("Logging in after user signed up... ");
+                      stakanApi.loginUser(
+                        program.provider.wallet as Wallet, 
+                        stakanState, 
+                        arweave,
+                        undefined, // arweave wallet - will assing 'use_wallet' internally
+                        42, // todo: set bump
+                      )
+                      .then( user =>
+                        console.log("After login user: ", user)
+                      )
+
+                    });
+                }
+              });
+              
+//            }
+            
           } else {
-            console.log("state account not found on chain", );
+            console.log("stakan state account not found on chain", );
           }
-        });
+        })
+
     }
     setStakanProgram(program);
   }

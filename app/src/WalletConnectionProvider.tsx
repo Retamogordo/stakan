@@ -46,6 +46,14 @@ export const WalletConnectionProvider = (props: any) => {
         ],
         [network]
     );
+/*
+                    <InitWorkspace 
+                        onConnectionChanged={props.onConnectionChanged}
+                        onWalletChanged={props.onWalletChanged}
+                        onProgramChanged={props.onProgramChanged}
+                    />
+
+*/
 
     return (
         <ConnectionProvider endpoint={endpoint}>

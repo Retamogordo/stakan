@@ -1,6 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import * as spl from '@solana/spl-token';
+import fs from 'fs';
 
 //import * as spl from '@solana/spl-token';
 //import { Connection } from "@solana/web3.js";
@@ -11,27 +12,18 @@ import { Stakan } from "../target/types/stakan";
 import Arweave from "arweave";
 import ArLocal from 'arlocal';
 
-(async () => {
-  const arLocal = new ArLocal();
-
-  // Start is a Promise, we need to start it inside an async function.
-  await arLocal.start();
-
-  // Your tests here...
-
-  // After we are done with our tests, let's close the connection.
-  await arLocal.stop();
-})();
 //import { localNetProgram } from "../app/src/confProgram"
 //import ArLocal from 'arlocal';
 const axios = require('axios');
 
 import Bip39 from 'bip39';
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
+//import TestWeave from "testweave-sdk";
+
 
 let duration = 0;
-let arweave: Arweave | undefined = undefined;
-
+let arweave: Arweave;
+//let testWeave: TestWeave;
 
 let assert = require('assert');
 
@@ -53,6 +45,12 @@ before(async () => {
   anchor.setProvider(provider);
   programWallet = program.provider.wallet;
 
+  const dir = stakanApi.User.localDir;
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+  }
+
+
   arweave = Arweave.init({
     host: 'localhost',
     port: 1984,
@@ -60,7 +58,9 @@ before(async () => {
     timeout: 20000,
     logging: false,
   });
+//  testWeave = await TestWeave.init(arweave);
     
+
   console.log("searching stakan global state on chain...");
   stakanState = await stakanApi.findOnChainStakanAccount(program) as stakanApi.StakanState;
 
@@ -90,16 +90,16 @@ before(async () => {
   const userWallet = new NodeWallet(anchor.web3.Keypair.generate());
   const arweaveWallet = await arweave.wallets.generate();
 
-  const arweaveStorageAddress = await arweave.wallets.getAddress(arweaveWallet);
+//  const arweaveStorageAddress = await arweave.wallets.getAddress(arweaveWallet);
 
   user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ", program, 
-    userWallet, arweave, arweaveWallet, arweaveStorageAddress);
+    userWallet, arweave, arweaveWallet);
 //  user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ০𝚸𝗤ՀꓢṰǓⅤ𝔚Ⲭ𝑌𝙕𝘢𝕤", userWallet);
 
   const arweaveWallet2 = await arweave.wallets.generate();
   const arweaveStorageAddress2 = await arweave.wallets.getAddress(arweaveWallet2);
   user2 = new stakanApi.User("superman", program, 
-    userWallet, arweave, arweaveWallet2, arweaveStorageAddress2);
+    userWallet, arweave, arweaveWallet2);
 });
 
 after(async () => {
@@ -107,6 +107,22 @@ after(async () => {
 });
 
 describe("stakan", () => {
+  it("Arweave create test transaction", async () => {
+    const arweave1 = Arweave.init({
+      host: 'localhost',
+      port: 1984,
+      protocol: 'http',
+      timeout: 20000,
+      logging: false,
+    });
+//    const testWeave1 = await TestWeave.init(arweave1);
+    //    const testWeave = await TestWeave.init(arweave);
+      let data = "test arweave transaction creation";
+  
+      const dataTransaction = await arweave1.createTransaction({
+        data
+      });
+  })    
 
   it("Airdrop", async () => {
 /*    await provider.connection.confirmTransaction(
@@ -119,11 +135,15 @@ describe("stakan", () => {
     );
   });
 
+
   it("Sign up user", async () => {
     const currUser = user as stakanApi.User;  
-
+    
     await stakanApi.signUpUser(currUser, stakanState as stakanApi.StakanState);
 //    await signUpUser(user, stakanState.getMintPublicKey());
+    fs.writeFileSync(stakanApi.User.localDir + currUser.username + '_bump.json', JSON.stringify(currUser.bump?.toString()));
+    fs.writeFileSync(stakanApi.User.localDir + currUser.username + '_arweave_wallet.json', JSON.stringify(currUser.arweaveWallet));
+
     const userAccount = currUser.account as anchor.web3.PublicKey;
     const accountInfo 
       = await provider.connection.getAccountInfo(userAccount);
@@ -140,11 +160,18 @@ describe("stakan", () => {
 
   it("Check logging user", async () => {
 //    const nodeWallet = new NodeWallet(user.wallet);
+      const arweaveWallet = JSON.parse(fs.readFileSync(stakanApi.User.localDir + user?.username + '_arweave_wallet.json', "utf-8"));
+//      const arweaveWallet = testWeave.rootJWK;
+      const userAccountBump = JSON.parse(fs.readFileSync(stakanApi.User.localDir + user?.username + '_bump.json', "utf-8"));
+
     user 
       = await stakanApi.loginUser(
         (user as stakanApi.User).wallet, 
         stakanState as stakanApi.StakanState, 
-        arweave as Arweave);
+        arweave,
+        arweaveWallet,
+        userAccountBump
+      );
     const currUser = user as stakanApi.User;  
 
     const accountInfo = await provider.connection.getAccountInfo(currUser.account as anchor.web3.PublicKey);
@@ -160,6 +187,8 @@ describe("stakan", () => {
     
     await stakanApi.signUpUser(currUser, stakanState);
  //   await signUpUser(user2, stakanState.getMintPublicKey());          
+    fs.writeFileSync(stakanApi.User.localDir + currUser.username + '_bump.json', JSON.stringify(currUser.bump?.toString()));
+    fs.writeFileSync(stakanApi.User.localDir + currUser.username + '_arweave_wallet.json', JSON.stringify(currUser.arweaveWallet));
 
     const accountInfo 
       = await provider.connection.getAccountInfo(currUser.account as anchor.web3.PublicKey);
@@ -280,7 +309,7 @@ describe("stakan", () => {
     const numberOfArchives = 1;
     const archivedData 
       = await accountsSchema.GameSessionArchive.get(
-        arweave as Arweave, 
+        arweave, 
         currUser.account as anchor.web3.PublicKey, 
         numberOfArchives);
 

@@ -197,9 +197,10 @@ class Assignable extends Function {
       userAccount: anchor.web3.PublicKey, 
       numberOfArchives: number
     ) {
+      console.log("Before getArchiveIds: ");    
       const archiveIds = await this.getArchiveIds(arweave, userAccount, numberOfArchives);
   
-  //    console.log("ARCHIVE IDS: ", archiveIds);    
+      console.log("ARCHIVE IDS: ", archiveIds);    
       const archivedData = archiveIds.map(async (id: any) => {
         const buffer = await arweave.transactions.getData(id,
           { decode: true, string: false }
