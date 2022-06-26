@@ -20,7 +20,7 @@ import {
 
 import { clusterApiUrl } from '@solana/web3.js';
 import { StakeButton } from './WalletAdapter';
-import InitWorkspace from './UseWorkspace';
+import LoginProvider from './LoginProvider';
 
 
 // Default styles that can be overridden by your app
@@ -62,7 +62,7 @@ export const WalletConnectionProvider = (props: any) => {
                     <WalletMultiButton />
                     <WalletDisconnectButton />
                 </WalletModalProvider>
-                <InitWorkspace 
+                <LoginProvider 
                         userToSignUp={props.userToSignUp}
                         onConnectionChanged={props.onConnectionChanged}
                         onWalletChanged={props.onWalletChanged}
