@@ -33,9 +33,10 @@ function App() {
 
   const stakanControlsRef = useRef<typeof StakanControls>(null);
   const stakePanelRef = useRef<StakePanel>(null);
+  const [userToSignUp, setUserToSignUp] = useState<string | null>(null);
   const [stakanProgram, setStakanProgram] = useState<Program<Stakan> | null>(null);
   const [userWalletCtx, setUserWalletCtx] = useState<WalletContextState | null>(null)
-  const [anchorWallet, setanchorWallet] = useState<AnchorWallet | null>(null)
+  const [anchorWallet, setAnchorWallet] = useState<AnchorWallet | null>(null)
 //  const [sessionStarted, setSessionStarted] = useState(false);
 
   const handleStartSession = () => {
@@ -65,8 +66,18 @@ function App() {
     setUserWalletCtx(walletCtx);
   }
 
-  const reportProgramChanged = (program: Program<Stakan> | null) => {
+  const handleUserChanged = (user: stakanApi.User | null) => {
+    if (user) {
+      console.log("handleUserChanged -> user: ", user);
+//      setCurrUser(user);
+    } else {
+      const currUser = "spiderman";
+      setUserToSignUp(currUser);
+    }
+  }
 
+  const reportProgramChanged = (program: Program<Stakan> | null) => {
+/*
     if (program !== null) {
       console.log("program id -> ", program.programId.toBase58());
   
@@ -84,8 +95,6 @@ function App() {
               timeout: 20000,
               logging: false,
             });
-            
-          
 //            if (anchorWallet !== null) { 
       
               stakanApi.loginUser(
@@ -93,7 +102,6 @@ function App() {
                 stakanState, 
                 arweave,
                 undefined, // arweave wallet - will assing 'use_wallet' internally
-//                255, // todo: set bump
               )
               .then((user) => {
                 console.log("After login user: ", user);
@@ -145,6 +153,7 @@ function App() {
         })
 
     }
+    */
     setStakanProgram(program);
   }
 
@@ -158,13 +167,14 @@ function App() {
 
   }
 
-/*
+
   useEffect(() => {
-    console.log('App -> sessionStarted effect: ', sessionStarted);
-  //  if (stakePanelRef.current !== null) stakePanelRef.current.visible = !sessionStarted;
-  }, [sessionStarted]);
+    console.log('App ->  effect: ');
+
+//    setUserToSignUp("batman");
+  }, []);
 //  <StakePanel ref={stakePanelRef} onStartSessionClick={handleStartSession}/>   
-*/
+
 /*
 <ArweaveConnectionProvider 
 onAddressGenerated={handleArweaveAddressGenerated}
@@ -177,9 +187,11 @@ onAddressGenerated={handleArweaveAddressGenerated}
         <StakanControls onGameOver={handleGameOver} />       
         <div className="side" >
           <WalletConnectionProvider 
+            userToSignUp={userToSignUp}
             onConnectionChanged={reportConnectionChanged}
             onWalletChanged={reportWalletChanged}
             onProgramChanged={reportProgramChanged}
+            onUserChanged={handleUserChanged}
           />
         </div>
 

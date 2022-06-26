@@ -61,12 +61,13 @@ export const WalletConnectionProvider = (props: any) => {
                 <WalletModalProvider>
                     <WalletMultiButton />
                     <WalletDisconnectButton />
-                    <InitWorkspace 
+                </WalletModalProvider>
+                <InitWorkspace 
+                        userToSignUp={props.userToSignUp}
                         onConnectionChanged={props.onConnectionChanged}
                         onWalletChanged={props.onWalletChanged}
                         onProgramChanged={props.onProgramChanged}
                     />
-                </WalletModalProvider>
             </WalletProvider>
         </ConnectionProvider>
     );
