@@ -113,6 +113,10 @@
           "type": "string"
         },
         {
+          "name": "userAccountBump",
+          "type": "u8"
+        },
+        {
           "name": "arweaveStorageAddress",
           "type": "string"
         }
@@ -416,12 +420,7 @@
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "userAccountBump",
-          "type": "u8"
-        }
-      ]
+      "args": []
     }
   ],
   "accounts": [
@@ -481,6 +480,10 @@
           {
             "name": "username",
             "type": "bytes"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           },
           {
             "name": "maxScore",
@@ -572,5 +575,8 @@
       "name": "DurationCantDecrease",
       "msg": "Duration can't decrease"
     }
-  ]
+  ],
+  "metadata": {
+    "address": "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
+  }
 }

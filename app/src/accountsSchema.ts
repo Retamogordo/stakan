@@ -78,6 +78,7 @@ class Assignable extends Function {
             fields: [
               ['user_wallet', [32]],
               ['username', 'String'], 
+              ['bump', 'u8'], 
               ['max_score', 'u64'], 
               ['saved_game_sessions', 'u64'],
               ['token_account', [32]],

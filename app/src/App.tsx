@@ -93,7 +93,7 @@ function App() {
                 stakanState, 
                 arweave,
                 undefined, // arweave wallet - will assing 'use_wallet' internally
-                255, // todo: set bump
+//                255, // todo: set bump
               )
               .then((user) => {
                 console.log("After login user: ", user);
@@ -106,23 +106,25 @@ function App() {
                   console.log("Trying to sign up user... ");
 
                   const currUser = new stakanApi.User(
-                    "noname", 
+                    "spiderman", 
                     program,
                     program.provider.wallet as Wallet,
                     arweave,
                     undefined
                   );
+                  console.log("currUser wallet: ", currUser.wallet.publicKey.toBase58());
 
                   stakanApi.signUpUser(currUser, stakanState)
                     .then( () => {
                       
                       console.log("Logging in after user signed up... ");
+
                       stakanApi.loginUser(
                         program.provider.wallet as Wallet, 
                         stakanState, 
                         arweave,
-                        undefined, // arweave wallet - will assing 'use_wallet' internally
-                        currUser.bump as number, 
+                        undefined, // arweave wallet - will assign 'use_wallet' internally
+//                        currUser.bump as number, 
                       )
                       .then( user => {
                           console.log("After login user: ", user)

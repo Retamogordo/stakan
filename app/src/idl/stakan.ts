@@ -113,6 +113,10 @@ export type Stakan = {
           "type": "string"
         },
         {
+          "name": "userAccountBump",
+          "type": "u8"
+        },
+        {
           "name": "arweaveStorageAddress",
           "type": "string"
         }
@@ -416,12 +420,7 @@ export type Stakan = {
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "userAccountBump",
-          "type": "u8"
-        }
-      ]
+      "args": []
     }
   ],
   "accounts": [
@@ -481,6 +480,10 @@ export type Stakan = {
           {
             "name": "username",
             "type": "bytes"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           },
           {
             "name": "maxScore",
@@ -690,6 +693,10 @@ export const IDL: Stakan = {
           "type": "string"
         },
         {
+          "name": "userAccountBump",
+          "type": "u8"
+        },
+        {
           "name": "arweaveStorageAddress",
           "type": "string"
         }
@@ -993,12 +1000,7 @@ export const IDL: Stakan = {
           "isSigner": false
         }
       ],
-      "args": [
-        {
-          "name": "userAccountBump",
-          "type": "u8"
-        }
-      ]
+      "args": []
     }
   ],
   "accounts": [
@@ -1058,6 +1060,10 @@ export const IDL: Stakan = {
           {
             "name": "username",
             "type": "bytes"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           },
           {
             "name": "maxScore",

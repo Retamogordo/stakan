@@ -61,6 +61,7 @@ impl User {
 pub struct UserInner {
     pub user_wallet: Pubkey,
     pub username: Vec<u8>,
+    pub bump: u8,
     
     pub max_score: u64,
     pub saved_game_sessions: u64,
@@ -81,11 +82,12 @@ impl UserInner {
     pub(crate) fn size_for_init(username_len: usize, arweave_storage_address_len: usize) -> usize {
         use std::mem::size_of;
 
+        size_of::<Pubkey>()
         // borsh serializes strings as: repr(s.len() as u32) repr(s as Vec<u8>) 
-        size_of::<u32>() + username_len 
+        + size_of::<u32>() + username_len 
+        + size_of::<u8>()
         + size_of::<u64>()
         + size_of::<u64>()
-        + size_of::<Pubkey>()
         + size_of::<Pubkey>()
         + size_of::<u32>() + arweave_storage_address_len
         + size_of::<bool>()
@@ -97,7 +99,7 @@ impl UserInner {
 }
 
 #[derive(Accounts)]
-#[instruction(username: String, arweave_storage_address: String)]
+#[instruction(username: String, user_account_bump: u8, arweave_storage_address: String)]
 pub struct SignUpUser<'info> {
 
     #[account(init, 
@@ -171,7 +173,6 @@ pub struct SignOutUser<'info> {
     )]
     stakan_escrow_account: AccountInfo<'info>,
 
-
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
     rent: Sysvar<'info, Rent>,
@@ -180,6 +181,7 @@ pub struct SignOutUser<'info> {
 
 pub fn sign_up(ctx: Context<SignUpUser>,
     username: String, 
+    user_account_bump: u8,
     arweave_storage_address: String,
 ) -> Result<()> {
     if UserInner::MAX_USERNAME_LEN < username.len() {
@@ -189,10 +191,11 @@ pub fn sign_up(ctx: Context<SignUpUser>,
     let user_account = &mut ctx.accounts.user_account;
     
     user_account.user = UserInner {
-        username: username.into_bytes(),          
+        user_wallet: ctx.accounts.user_wallet.key(),
+        username: username.into_bytes(),   
+        bump: user_account_bump,      
         max_score: 0,
         saved_game_sessions: 0,
-        user_wallet: ctx.accounts.user_wallet.key(),
 //                mint: ctx.accounts.stakan_state_account.mint_token.key(),
         token_account: ctx.accounts.token_account.key(),
         arweave_storage_address: arweave_storage_address.into_bytes(),
@@ -204,10 +207,12 @@ pub fn sign_up(ctx: Context<SignUpUser>,
     Ok(())
 }
 
-pub fn sign_out(ctx: Context<SignOutUser>, user_account_bump: u8
+pub fn sign_out(ctx: Context<SignOutUser>, 
+    //user_account_bump: u8
 ) -> Result<()> {
     let token_amount = ctx.accounts.user_token_account.amount;
-    let temp_bump: [u8; 1] = user_account_bump.to_le_bytes();
+    let temp_bump: [u8; 1] = ctx.accounts.user_account.user.bump.to_le_bytes();
+//    let temp_bump: [u8; 1] = user_account_bump.to_le_bytes();
     let signer_seeds = [
         b"user_account".as_ref(),
         User::username_slice_for_seed(ctx.accounts.user_account.user.username.as_ref()),

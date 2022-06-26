@@ -29,9 +29,10 @@ pub mod stakan {
     pub fn sign_up_user(
         ctx: Context<SignUpUser>,
         username: String, 
+        user_account_bump: u8,
         arweave_storage_address: String,
     ) -> Result<()> {
-        crate::transactions::user::sign_up(ctx, username, arweave_storage_address)
+        crate::transactions::user::sign_up(ctx, username, user_account_bump, arweave_storage_address)
     }
 
     pub fn purchase_tokens(
@@ -74,8 +75,8 @@ pub mod stakan {
 
     pub fn sign_out_user(
         ctx: Context<SignOutUser>,
-        user_account_bump: u8,
+//        user_account_bump: u8,
     ) -> Result<()> {
-        crate::transactions::user::sign_out(ctx, user_account_bump)
+        crate::transactions::user::sign_out(ctx)
     }
 }

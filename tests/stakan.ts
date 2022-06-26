@@ -27,8 +27,11 @@ let arweave: Arweave;
 
 let assert = require('assert');
 
-const program = anchor.workspace.Stakan as Program<Stakan>;
 const provider = anchor.Provider.env();
+anchor.setProvider(provider);
+
+const program = anchor.workspace.Stakan as Program<Stakan>;
+
 let programWallet;
 
 let user:  stakanApi.User | undefined;
@@ -42,7 +45,6 @@ before(async () => {
   // Start is a Promise, we need to start it inside an async function.
   await arLocal.start();
 
-  anchor.setProvider(provider);
   programWallet = program.provider.wallet;
 
   const dir = stakanApi.User.localDir;
@@ -125,10 +127,6 @@ describe("stakan", () => {
   })    
 
   it("Airdrop", async () => {
-/*    await provider.connection.confirmTransaction(
-      await provider.connection.requestAirdrop(gameGlobalWallet.publicKey, 100000000000)
-    );
-*/ 
     const currUser = user as stakanApi.User;  
     await provider.connection.confirmTransaction( 
       await provider.connection.requestAirdrop(currUser.wallet.publicKey, 1000000000)
@@ -158,29 +156,6 @@ describe("stakan", () => {
 //    await signUpUser("superman&supergirl", userWallet, stakanState.mint.publicKey);
   });
 
-  it("Sign user out", async () => {
-    const currUser = user as stakanApi.User;  
-    console.log("before signing out user...");
-    console.log("userWallet balance: ", await currUser.getBalance());
-    console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
-    console.log("userMintAccount balance: ", await currUser.getTokenBalance());
-    let rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
-      console.log("reward funds token balance: ", rewardFundsAccountBalance);
-  
-    await stakanApi.signOutUser(currUser, stakanState);
-
-    console.log("after signing user out");
-    console.log("userWallet balance: ", await currUser.getBalance());
-//    console.log("programWallet balance: ", await stakanState.getBalance());
-    
-    const userTokenBalance = await currUser.getTokenBalance();
-    console.log("user token balance: ", userTokenBalance);
-    rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
-    console.log("reward funds token balance: ", rewardFundsAccountBalance);
-//    assert(userTokenBalance, tokenAmount);
-//      await provider.connection.getTokenAccountBalance(user.tokenAccount)); 
-  });
-
   it("Check logging user", async () => {
 //    const nodeWallet = new NodeWallet(user.wallet);
       const arweaveWallet = JSON.parse(fs.readFileSync(stakanApi.User.localDir + user?.username + '_arweave_wallet.json', "utf-8"));
@@ -193,7 +168,7 @@ describe("stakan", () => {
         stakanState as stakanApi.StakanState, 
         arweave,
         arweaveWallet,
-        userAccountBump
+//        userAccountBump
       );
     const currUser = user as stakanApi.User;  
 

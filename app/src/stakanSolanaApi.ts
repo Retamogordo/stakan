@@ -264,9 +264,9 @@ export class User {
     }
 }
 
-    // after user is signed up their user_account is present on-chain.
-    // this function is useful for searching users account when they
-    // connect their wallet using wallet adapter.
+// after user is signed up their user_account is present on-chain.
+// this function is useful for searching users account when they
+// connect their wallet using wallet adapter.
 export async function findOnChainUserAccount(walletPubkey: web3.PublicKey, stakanState: StakanState)
 : Promise<[web3.PublicKey, accountsSchema.UserAccount] | undefined> {
 //  : Promise<web3.AccountInfo<Buffer | web3.ParsedAccountData> | undefined> {
@@ -275,23 +275,29 @@ export async function findOnChainUserAccount(walletPubkey: web3.PublicKey, staka
     = await program.provider.connection.getParsedProgramAccounts(
         program.programId,
         {
-          filters: [
+  /*        filters: [
             { memcmp: { offset: accountsSchema.UserAccountWrapped.innerOffset, 
                         bytes: walletPubkey.toBase58() 
                       } 
             }, 
-          ],
+          ],*/
         }
   );
-//  console.log("findOnChainUserAccount: ", accounts)
+  console.log("findOnChainUserAccount: ", accounts)
+  accounts.map(acc => console.log(acc.pubkey.toBase58()));
+
   for (let acc of accounts) {
     // deserialization success indicates this account is that we looked for
     try {
       const userAccountData 
         = accountsSchema.UserAccount.deserialize(acc.account.data as Buffer);
+
+//        console.log("findOnChainUserAccount, deserialized: ", userAccountData)
+      
       return [acc.pubkey, userAccountData];
     }
-    catch {
+    catch(e) {
+//      console.log(e);
     }
   }
   return undefined;
@@ -311,13 +317,14 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
 //    const wallet = JSON.parse(fs.readFileSync(user.username + '_arweave_wallet.json', "utf-8"));
 //    console.log("Arweave wallet read from Json file: ", wallet);
     const arweaveStorageAddress = await user.arweave.wallets.getAddress(user.arweaveWallet);
+/*
     const tokens = user.arweave.ar.arToWinston('10')
     await user.arweave.api.get(`/mint/${arweaveStorageAddress}/${tokens}`)
-//    await user.arweave.api.get(`/mint/${user.arweaveStorageAddress}/${tokens}`)
 
     const balance = await user.arweave.wallets.getBalance(arweaveStorageAddress);
     console.log("Arweave balance: ", balance)
-//    assert(balance, 10);
+*/
+    //    assert(balance, 10);
 
     const [userAccount, userAccountBump] = await web3.PublicKey.findProgramAddress(
         [
@@ -327,6 +334,7 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
         ],
         stakanState.program.programId
     );
+    console.log("currUser account: ", userAccount.toBase58());
 
     const tokenAccount = await spl.Token.getAssociatedTokenAddress(
         spl.ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -338,6 +346,7 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
 
     const tx = stakanState.program.transaction.signUpUser(
       user.username,
+      userAccountBump,
       arweaveStorageAddress,
       {
         accounts: {
@@ -374,11 +383,11 @@ export async function loginUser(
   stakanState: StakanState, 
   arweave: Arweave,
   arweaveWallet: JWKInterface | undefined,
-  userAccountBump: number,
+//  userAccountBump: number,
 )
     : Promise<User | undefined> {
 
-  console.log("User wallet: ", userWallet.publicKey);
+  console.log("User wallet: ", userWallet.publicKey.toBase58());
   const acc = await findOnChainUserAccount(userWallet.publicKey, stakanState);
   console.log("User acc: ", acc);
 
@@ -398,7 +407,8 @@ export async function loginUser(
         arweaveWallet,
 //        userAccount['arweave_storage_address'],
       );
-      user.bump = userAccountBump;
+//      user.bump = userAccountBump;
+      user.bump = userAccount['bump'];
       user.account = accPubkey;
   //    console.log("!!!!!!!!!!!!!!!!!!! ", userAccount);
       user.tokenAccount = new web3.PublicKey(userAccount['token_account']);
@@ -406,7 +416,7 @@ export async function loginUser(
     return user;
 
     } catch(e) {
-      console.log(e);
+//      console.log(e);
       return undefined;
     }
   }
@@ -451,7 +461,7 @@ export async function sellStakanTokens(
     stakanState: StakanState,
     tokenAmount: number,
   ) {
-//  console.log("sellStakanTokens, user: ", user);
+  console.log("sellStakanTokens, user.bump: ", user.bump);
     await stakanState.program.methods
       .sellTokens(
         user.bump as number,
@@ -630,7 +640,7 @@ export async function initGameSession(
 
     await stakanState.program.methods
       .signOutUser(
-        user.bump as number,
+//        user.bump as number,
       )
       .accounts({
         stakanStateAccount: stakanState.stateAccount,
