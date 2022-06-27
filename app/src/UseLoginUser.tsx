@@ -8,7 +8,7 @@ import Arweave from 'arweave'
 
 import { IDL, Stakan } from './idl/stakan'
 
-class UserConnectionContextState {
+export class UserConnectionContextState {
     user: stakanApi.User | null;
     stakanProgram: Program<Stakan> | null;
     stakanState: stakanApi.StakanState | null
@@ -113,7 +113,7 @@ const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextSta
     }
     
     const tryToSignUp = async (user: stakanApi.User, arweave: Arweave) => {
-        console.log("tryToSigneUp: ", user);
+        console.log("tryToSignUp: ", user);
 
         if (stakanState && arweave) {
             await stakanApi.signUpUser(user, stakanState);

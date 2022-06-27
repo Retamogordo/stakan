@@ -7,7 +7,7 @@ const STEP_DELAY = 300;
 const ROTATION_DELAY = 50;
 const SHORTER_DELAY = 10;
 
-class StakanSession {
+export class StakanSession {
   active: boolean;
   score: number;
   linesCleared: number;
@@ -34,7 +34,7 @@ class StakanSession {
   }
 } 
 
-function StakanControls(props: any) {
+export function StakanControls(props: any) {
     const stakanRef = useRef<StakanView>(null);
   
     const [session, setSession] = useState<StakanSession | null>(null);
@@ -189,20 +189,25 @@ function StakanControls(props: any) {
         return null;
       })
 */
-      props.onGameOver();
+      props.onGameOver(stakanRef.current?.tiles.tiles);
+    }
+
+    const beforeSessionStarted = () => {
+      props.onBeforeSessionStarted(session);
     }
   
     const startSession = () => {
       setSession((prevSession: StakanSession | null) => {
         if (prevSession !== null && prevSession.active) throw 'Session already started';
         if (stakanRef.current === null) throw 'in sendStartSession stakanRef.current is null';
-//        if (stakePanelRef.current === null) throw 'in sendStartSession stakePanelRef.current is null';
-        
+
+        //        if (stakePanelRef.current === null) throw 'in sendStartSession stakePanelRef.current is null';       
 //        stakePanelRef.current.visible = false;
         stakanRef.current.focus();
         window.addEventListener('keydown', handleKeyDown)
   
         const session = newSession();      
+
         return session;
       })
     }
@@ -265,7 +270,10 @@ function StakanControls(props: any) {
   
     return (
       <div className="stakan-wrapper">
-        <StakePanel visible={session===null || !session.active} onStartSessionClick={startSession}/>   
+        <StakePanel 
+          visible={session===null || !session.active} 
+          onStartSessionClick={beforeSessionStarted}
+        />   
         <StakanView 
           ref={stakanRef}
           rows={rows} 
@@ -278,5 +286,3 @@ function StakanControls(props: any) {
       </div>
   )
 }
-
-export default StakanControls;

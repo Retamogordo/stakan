@@ -45,7 +45,7 @@ const LoginProvider = (props: any) => {
 
     useEffect(() => {
         console.log("^^^^^^^^^^^^^^^^^^^^^^^^LoginProvider.userConnectionCtx: ", userConnectionCtx);
-        props.loggedUserChanged && props.loggedUserChanged(userConnectionCtx.user);
+        props.loggedUserChanged && props.loggedUserChanged(userConnectionCtx);
     },
     [userConnectionCtx.user])
 
@@ -55,7 +55,8 @@ const LoginProvider = (props: any) => {
                 type="text" 
                 defaultValue={
                     userConnectionCtx.user &&
-                    userConnectionCtx.user?.username ? userConnectionCtx.user?.username : ''}
+                    userConnectionCtx.user?.username ? userConnectionCtx.user?.username : ''
+                }
                 onChange={handleChange} 
                 onKeyUp={handleKeyUp}
                 disabled={!userConnectionCtx.connected || userConnectionCtx.user !== null }>

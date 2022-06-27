@@ -2,7 +2,7 @@
 import { web3, BN, Program, Wallet, Provider } from "@project-serum/anchor";
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import './App.css';
-import StakanControls from './StakanControls';
+import {StakanControls, StakanSession} from './StakanControls';
 import StakePanel from './StakePanel'
 import RecordPanel from './RecordPanel'
 import { WalletConnectionProvider } from './WalletConnectionProvider';
@@ -20,6 +20,7 @@ import { devNetProgram } from './confProgram'
 import * as stakanApi from './stakanSolanaApi'
 import  ArweaveConnectionProvider  from './ArweaveConnectionProvider'
 import Arweave from 'arweave'
+import {UserConnectionContextState} from './UseLoginUser'
 //import * as ArConnect from 'arconnect'
 //import { ArjsProvider, useArjs } from 'arjs-react'
 
@@ -38,7 +39,7 @@ function App() {
   const [userWalletCtx, setUserWalletCtx] = useState<WalletContextState | null>(null)
 //  const [anchorWallet, setAnchorWallet] = useState<AnchorWallet | null>(null)
 //  const [sessionStarted, setSessionStarted] = useState(false);
-  const [user, setUser] = useState<stakanApi.User | null>(null);
+  const [userConnectionCtx, setUserConnectionCtx] = useState<UserConnectionContextState | null>(null);
 
   const [displayedBalance, setDisplayedBalance] = useState(0);
   const [arweaveBalance, setArweaveBalance] = useState('0');
@@ -49,8 +50,15 @@ function App() {
 //    setSessionStarted(true);
 //    stakanControlsRef.current.startSession();
   }
+  
+  const handleBeforeSessionStarted = async (session: StakanSession) => {
+    const stake = 0;
+    userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState
+      && await stakanApi.initGameSession(userConnectionCtx.user, userConnectionCtx.stakanState, stake);
+  }
 
-  const handleGameOver = () => {
+  const handleGameOver = (tiles: Array<Array<number>>) => {
+    console.log("ON GAME OVER, tiles: ", tiles);
 //    setSessionStarted(false);
 
 //    if (stakePanelRef.current) stakePanelRef.current.visible = true;
@@ -70,10 +78,10 @@ function App() {
     setUserWalletCtx(walletCtx);
   }
 
-  const handleUserChanged = (loggedUser: stakanApi.User | null) => {
-    console.log("handleUserChanged -> user: ", loggedUser);
+  const handleUserChanged = (loggedUserConnetctionCtx: UserConnectionContextState) => {
+    console.log("handleUserChanged -> user: ", loggedUserConnetctionCtx);
 
-    setUser(loggedUser);
+    setUserConnectionCtx(loggedUserConnetctionCtx);
   }
 
   useEffect(() => {
@@ -82,30 +90,30 @@ function App() {
 
   useEffect(() => {
     (async () => {
-      const userBalance = await user?.getBalance();
+      const userBalance = await userConnectionCtx?.user?.getBalance();
       setDisplayedBalance(userBalance ? userBalance : 0);
 //      console.log("App->userBalance: ", userBalance);
-
       try {
-        await user?.arweaveAirdrop('1');
+        await userConnectionCtx?.user?.arweaveAirdrop('1');
     
-        const arBalance = await user?.getArweaveBalance();
+        const arBalance = await userConnectionCtx?.user?.getArweaveBalance();
         setArweaveBalance(arBalance ? arBalance : '0');
       } catch (e) {
         console.log("ARWEAVE NOT CONNECTED");
         setArweaveBalance('0');
       }
-
-
     })();
-  }, [user]);
+  }, [userConnectionCtx?.user]);
   //  <StakePanel ref={stakePanelRef} onStartSessionClick={handleStartSession}/>   
 
   return (
     <div className="App">
       <div className="main-wrapper">
         <div className='left-panel'></div>
-        <StakanControls onGameOver={handleGameOver} />       
+        <StakanControls 
+          onBeforeSessionStarted={handleBeforeSessionStarted} 
+          onGameOver={handleGameOver}
+        />       
         <div className="side" >
           <WalletConnectionProvider 
             loggedUserChanged={handleUserChanged}

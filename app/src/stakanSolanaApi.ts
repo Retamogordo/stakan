@@ -285,12 +285,12 @@ export async function findOnChainUserAccount(walletPubkey: web3.PublicKey, staka
     = await program.provider.connection.getParsedProgramAccounts(
         program.programId,
         {
-  /*        filters: [
+          filters: [
             { memcmp: { offset: accountsSchema.UserAccountWrapped.innerOffset, 
                         bytes: walletPubkey.toBase58() 
                       } 
             }, 
-          ],*/
+          ],
         }
   );
   console.log("findOnChainUserAccount: ", accounts)
@@ -378,6 +378,9 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
     tx.feePayer = user.wallet.publicKey;
     tx.recentBlockhash = (await conn.getLatestBlockhash()).blockhash
     const signedTx = await user.wallet.signTransaction(tx)
+    
+//    console.log("Signed TX: ", signedTx.serialize());
+    
     const txId = await conn.sendRawTransaction(signedTx.serialize())
     await conn.confirmTransaction(txId)
 
@@ -626,12 +629,16 @@ export async function initGameSession(
     user: User,
     score: number,
     duration: number,
+    tiles: Array<Array<number>>,
   ) {
-  
+    const cols = tiles.length;
+//    const rows = 
+    const tilesBuf = tiles[0]
     await user.program.methods
       .updateGameSession(
         new BN(score),
         new BN(duration),
+//        tiles,
       )
       .accounts({
           userAccount: user.account,
