@@ -208,7 +208,6 @@ export class User {
     account?: web3.PublicKey; // pda user state account
     tokenAccount?: web3.PublicKey; // pda user token account
     arweaveWallet: JWKInterface | "use_wallet";
-//    arweaveStorageAddress: string;
     bump?: number;
     gameSessionAccount?: web3.PublicKey; // pda of ongoing game session account
     gameSessionAccountBump?: number;
@@ -220,7 +219,6 @@ export class User {
         arweave: Arweave, 
 //        testWeave: TestWeave,
         arweaveWallet: JWKInterface | undefined,
-//        arweaveStorageAddress: string,
     ) {
       this.username = username;
       this.program = program;
@@ -228,7 +226,6 @@ export class User {
       this.arweave = arweave;
 //      this.testWeave = testWeave;
       this.arweaveWallet = arweaveWallet ? arweaveWallet : "use_wallet";
-//      this.arweaveStorageAddress = arweaveStorageAddress;
     }
     
     isSignedUp(): boolean {
@@ -242,7 +239,20 @@ export class User {
     async getTokenBalance(): Promise<web3.RpcResponseAndContext<web3.TokenAmount>> {
       return await this.program.provider.connection.getTokenAccountBalance(this.tokenAccount as web3.PublicKey);
     }
-  
+    
+    async arweaveAirdrop(ar: string) {
+      const tokens = this.arweave.ar.arToWinston(ar)
+      const arweaveStorageAddress = await this.arweave.wallets.getAddress(this.arweaveWallet);
+
+      await this.arweave.api.get(`/mint/${arweaveStorageAddress}/${tokens}`)
+    }
+
+    async getArweaveBalance(): Promise<string> {
+      const arweaveStorageAddress = await this.arweave.wallets.getAddress(this.arweaveWallet);
+      const balance = await this.arweave.wallets.getBalance(arweaveStorageAddress);
+      return balance;
+    }
+
     setGameSession(
       gameSessionAccount?: web3.PublicKey, 
       gameSessionAccountBump?: number,

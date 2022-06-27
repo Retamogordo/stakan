@@ -33,11 +33,15 @@ function App() {
 
   const stakanControlsRef = useRef<typeof StakanControls>(null);
   const stakePanelRef = useRef<StakePanel>(null);
-  const [userToSignUp, setUserToSignUp] = useState<string | null>(null);
-  const [stakanProgram, setStakanProgram] = useState<Program<Stakan> | null>(null);
+//  const [userToSignUp, setUserToSignUp] = useState<string | null>(null);
+//  const [stakanProgram, setStakanProgram] = useState<Program<Stakan> | null>(null);
   const [userWalletCtx, setUserWalletCtx] = useState<WalletContextState | null>(null)
-  const [anchorWallet, setAnchorWallet] = useState<AnchorWallet | null>(null)
+//  const [anchorWallet, setAnchorWallet] = useState<AnchorWallet | null>(null)
 //  const [sessionStarted, setSessionStarted] = useState(false);
+  const [user, setUser] = useState<stakanApi.User | null>(null);
+
+  const [displayedBalance, setDisplayedBalance] = useState(0);
+  const [arweaveBalance, setArweaveBalance] = useState('0');
 
   const handleStartSession = () => {
 //    if (stakePanelRef.current) stakePanelRef.current.visible = false;
@@ -66,120 +70,37 @@ function App() {
     setUserWalletCtx(walletCtx);
   }
 
-  const handleUserChanged = (user: stakanApi.User | null) => {
-    if (user) {
-      console.log("handleUserChanged -> user: ", user);
-//      setCurrUser(user);
-    } else {
-      const currUser = "spiderman";
-      setUserToSignUp(currUser);
-    }
+  const handleUserChanged = (loggedUser: stakanApi.User | null) => {
+    console.log("handleUserChanged -> user: ", loggedUser);
+
+    setUser(loggedUser);
   }
-
-  const reportProgramChanged = (program: Program<Stakan> | null) => {
-/*
-    if (program !== null) {
-      console.log("program id -> ", program.programId.toBase58());
-  
-      stakanApi.findOnChainStakanAccount(program)
-        .then((stakanState) => {
-          if (stakanState) {
-            console.log("stakan state account located, pubkey -> ", stakanState.pubKey.toBase58());          
-
-//            const arweave = Arweave.init({});
-
-            const arweave = Arweave.init({
-              host: 'localhost',
-              port: 1984,
-              protocol: 'http',
-              timeout: 20000,
-              logging: false,
-            });
-//            if (anchorWallet !== null) { 
-      
-              stakanApi.loginUser(
-                program.provider.wallet as Wallet, 
-                stakanState, 
-                arweave,
-                undefined, // arweave wallet - will assing 'use_wallet' internally
-              )
-              .then((user) => {
-                console.log("After login user: ", user);
-                if (user) {
-                  console.log("Before signing out");
-                  stakanApi.signOutUser(user as stakanApi.User, stakanState)
-                    .then( () => console.log("User signed out") );
-                }  
-                else {
-                  console.log("Trying to sign up user... ");
-
-                  const currUser = new stakanApi.User(
-                    "spiderman", 
-                    program,
-                    program.provider.wallet as Wallet,
-                    arweave,
-                    undefined
-                  );
-                  console.log("currUser wallet: ", currUser.wallet.publicKey.toBase58());
-
-                  stakanApi.signUpUser(currUser, stakanState)
-                    .then( () => {
-                      
-                      console.log("Logging in after user signed up... ");
-
-                      stakanApi.loginUser(
-                        program.provider.wallet as Wallet, 
-                        stakanState, 
-                        arweave,
-                        undefined, // arweave wallet - will assign 'use_wallet' internally
-//                        currUser.bump as number, 
-                      )
-                      .then( user => {
-                          console.log("After login user: ", user)
-
-                          stakanApi.signOutUser(user as stakanApi.User, stakanState);
-                        }
-                      )
-
-                    });
-                }
-              });
-              
-//            }
-            
-          } else {
-            console.log("stakan state account not found on chain", );
-          }
-        })
-
-    }
-    */
-    setStakanProgram(program);
-  }
-
-  const handleArweaveAddressGenerated = (address: string) => {
-    let user:  stakanApi.User | null;
-
-    if (stakanProgram !== null) {
-//      user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ", stakanProgram, 
-//        userWallet, arweave, arweaveWallet, arweaveStorageAddress);
-    }
-
-  }
-
 
   useEffect(() => {
-    console.log('App ->  effect: ');
-
-//    setUserToSignUp("batman");
+//    console.log('App ->  effect: ');
   }, []);
-//  <StakePanel ref={stakePanelRef} onStartSessionClick={handleStartSession}/>   
 
-/*
-<ArweaveConnectionProvider 
-onAddressGenerated={handleArweaveAddressGenerated}
-/>
-*/
+  useEffect(() => {
+    (async () => {
+      const userBalance = await user?.getBalance();
+      setDisplayedBalance(userBalance ? userBalance : 0);
+//      console.log("App->userBalance: ", userBalance);
+
+      try {
+        await user?.arweaveAirdrop('1');
+    
+        const arBalance = await user?.getArweaveBalance();
+        setArweaveBalance(arBalance ? arBalance : '0');
+      } catch (e) {
+        console.log("ARWEAVE NOT CONNECTED");
+        setArweaveBalance('0');
+      }
+
+
+    })();
+  }, [user]);
+  //  <StakePanel ref={stakePanelRef} onStartSessionClick={handleStartSession}/>   
+
   return (
     <div className="App">
       <div className="main-wrapper">
@@ -187,12 +108,14 @@ onAddressGenerated={handleArweaveAddressGenerated}
         <StakanControls onGameOver={handleGameOver} />       
         <div className="side" >
           <WalletConnectionProvider 
-            userToSignUp={userToSignUp}
-            onConnectionChanged={reportConnectionChanged}
-            onWalletChanged={reportWalletChanged}
-            onProgramChanged={reportProgramChanged}
-            onUserChanged={handleUserChanged}
+            loggedUserChanged={handleUserChanged}
           />
+          <div>
+            Balance {displayedBalance}
+          </div>
+          <div>
+            Arweave Balance {arweaveBalance}
+          </div>
         </div>
 
       </div>

@@ -63,11 +63,13 @@ export const WalletConnectionProvider = (props: any) => {
                     <WalletDisconnectButton />
                 </WalletModalProvider>
                 <LoginProvider 
-                        userToSignUp={props.userToSignUp}
+                    loggedUserChanged={props.loggedUserChanged}
+/*                        userToSignUp={props.userToSignUp}
                         onConnectionChanged={props.onConnectionChanged}
                         onWalletChanged={props.onWalletChanged}
                         onProgramChanged={props.onProgramChanged}
-                    />
+                        */
+                />
             </WalletProvider>
         </ConnectionProvider>
     );

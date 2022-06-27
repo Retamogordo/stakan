@@ -10,19 +10,17 @@ const LoginProvider = (props: any) => {
     const [userName, setUserName] = useState<string | null>(
         null
     );
-
-    console.log("LoginProvider, userName: ", userName);
+//    console.log("LoginProvider, userName: ", userName);
     const userConnectionCtx = useLoginUser(userName);
     
-    console.log("LoginProvider: ",  userConnectionCtx);
-
+//    console.log("LoginProvider: ",  userConnectionCtx);
 //    userConnectionCtx.user = null;
     
 //    console.log("LoginProvider: ",  userConnectionCtx.user?.username);
 //    console.log("LoginProvider: username ",  userName);
            
     const handleChange = (ev: any) => {
-        console.log("LoginProvider.handleChange: ", ev.target.value, "keycode: ", ev.target.keyCode);
+//        console.log("LoginProvider.handleChange: ", ev.target.value, "keycode: ", ev.target.keyCode);
     }
     const handleKeyUp = (ev: any) => {
         if (ev.keyCode === 13) {
@@ -41,9 +39,15 @@ const LoginProvider = (props: any) => {
     [])
                 
     useEffect(() => {
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!LoginProvider.userName: ", userName);
+        console.log("LoginProvider.userName: ", userName);
     },
     [userName])
+
+    useEffect(() => {
+        console.log("^^^^^^^^^^^^^^^^^^^^^^^^LoginProvider.userConnectionCtx: ", userConnectionCtx);
+        props.loggedUserChanged && props.loggedUserChanged(userConnectionCtx.user);
+    },
+    [userConnectionCtx.user])
 
     return (
         <div>
@@ -54,7 +58,6 @@ const LoginProvider = (props: any) => {
                     userConnectionCtx.user?.username ? userConnectionCtx.user?.username : ''}
                 onChange={handleChange} 
                 onKeyUp={handleKeyUp}
-//                onSubmit={handleSubmit}
                 disabled={!userConnectionCtx.connected || userConnectionCtx.user !== null }>
             </input>
         </div>
