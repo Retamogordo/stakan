@@ -178,16 +178,6 @@ export function StakanControls(props: any) {
         session.active = false;
         setSession(session);
       }
-     /* 
-      setSession( (prevSession: StakanSession | null) => {
-        if (prevSession !== null) {
-          let session = Object.assign({}, prevSession);
-          session.active = false;
-          return session;
-        }
-        return null;
-      })
-*/
       props.onGameOver(stakanRef.current?.tiles.tiles);
     }
 

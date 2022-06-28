@@ -70,7 +70,7 @@ class Assignable extends Function {
   
   export class UserAccount extends Assignable { 
     public static deserialize(buffer: Buffer): UserAccount {
-      const schema = new Map([
+      const schemaWithoutGameSession = new Map([
         [
           UserAccount, 
           { 
@@ -83,15 +83,43 @@ class Assignable extends Function {
               ['saved_game_sessions', 'u64'],
               ['token_account', [32]],
               ['arweave_storage_address', 'String'],
-              ['has_active_game_session', 'u8'] 
+              ['game_session_opt_variant', 'u8'], 
             ] 
           }
         ]
       ]);
+      const schemaWithGameSession = new Map([
+        [
+          UserAccount, 
+          { 
+            kind: 'struct', 
+            fields: [
+              ['user_wallet', [32]],
+              ['username', 'String'], 
+              ['bump', 'u8'], 
+              ['max_score', 'u64'], 
+              ['saved_game_sessions', 'u64'],
+              ['token_account', [32]],
+              ['arweave_storage_address', 'String'],
+              ['game_session_opt_variant', 'u8'], 
+              ['game_session', [32]] 
+            ] 
+          }
+        ]
+      ]);
+
+
       const [data_size, inner_buffer] = UserAccountWrapped.deserialize(buffer);
   //    console.log("----------- DATA SIZE: ", data_size);
-      let data = deserialize(schema, UserAccount, inner_buffer);
-  //    let data = deserialize(schema, UserAccount, buffer.slice(8+2, buffer.length));
+      let data;
+      try { 
+        data = deserialize(schemaWithoutGameSession, UserAccount, inner_buffer);
+      } catch {
+//      if (data['game_session_opt_variant'] !== 0) { // not None
+          data = deserialize(schemaWithGameSession, UserAccount, inner_buffer);
+//      }
+      }
+      //    let data = deserialize(schema, UserAccount, buffer.slice(8+2, buffer.length));
   //    console.log("----------- DATA: ", data);
       return data;
     }

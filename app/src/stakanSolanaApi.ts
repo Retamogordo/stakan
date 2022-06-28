@@ -426,6 +426,9 @@ export async function loginUser(
   //    console.log("!!!!!!!!!!!!!!!!!!! ", userAccount);
       user.tokenAccount = new web3.PublicKey(userAccount['token_account']);
       
+      if (userAccount['has_active_game_session']) {
+      }
+      
     return user;
 
     } catch(e) {
@@ -512,6 +515,8 @@ export async function initGameSession(
         stakanState.program.programId
       );
     if (!user.account || !user.tokenAccount) return;
+
+//    user.setGameSession(gameSessionAccount, gameSessionAccountBump);
     
     const tx = stakanState.program.transaction
       .initGameSession(
@@ -541,7 +546,7 @@ export async function initGameSession(
   }
 
   async function saveToArweave(user: User, data: any): Promise<string | undefined> {
-    console.log("saveToArweave data: ", data);
+//    console.log("saveToArweave data: ", data);
 
     const serializedData = accountsSchema.GameSessionArchive.serialize(data);
 
@@ -555,12 +560,12 @@ export async function initGameSession(
       data: serializedData
 //    });
     }, user.arweaveWallet);
-    console.log("saveToArweave tx: ", tx);
+//    console.log("saveToArweave tx: ", tx);
 
     tx.addTag('App-Name', 'Stakan');
     tx.addTag('stakanApi.User', (user.account as web3.PublicKey).toString());
 
-    console.log("saveToArweave user arweave wallet: ", user.arweaveWallet);
+//    console.log("saveToArweave user arweave wallet: ", user.arweaveWallet);
     
     await user.arweave.transactions.sign(tx, user.arweaveWallet);
     await user.arweave.transactions.post(tx);
@@ -629,11 +634,11 @@ export async function initGameSession(
     user: User,
     score: number,
     duration: number,
-    tiles: Array<Array<number>>,
+//    tiles: Array<Array<number>>,
   ) {
-    const cols = tiles.length;
+//    const cols = tiles.length;
 //    const rows = 
-    const tilesBuf = tiles[0]
+//    const tilesBuf = tiles[0]
     await user.program.methods
       .updateGameSession(
         new BN(score),

@@ -38,6 +38,12 @@ impl User {
 
         &arweave_storage_address[..len]
     }
+
+    pub(crate) fn set_game_session(&mut self, game_session: Option<Pubkey>) {
+        self.user.game_session = game_session;
+
+        self.inner_size = self.user.size_for_borsh() as u16;
+    }
 /*
     pub(crate) fn compose_user_account_seeds_with_bump<'a>(&self,
         bump_vec: &'a [u8; 1],
@@ -67,7 +73,8 @@ pub struct UserInner {
     pub saved_game_sessions: u64,
     pub token_account: Pubkey,
     pub arweave_storage_address: Vec<u8>, 
-    pub has_active_game_session: bool,
+//    pub has_active_game_session: bool,
+    pub game_session: Option<Pubkey>,
 } 
 
 impl UserInner {
@@ -90,11 +97,18 @@ impl UserInner {
         + size_of::<u64>()
         + size_of::<Pubkey>()
         + size_of::<u32>() + arweave_storage_address_len
-        + size_of::<bool>()
+        + (1)
     }    
 
     fn size_for_borsh(&self) -> u16 {
-        Self::size_for_init(self.username.len(), self.arweave_storage_address.len()) as u16
+        if self.game_session.is_none() {
+            Self::size_for_init(self.username.len(), self.arweave_storage_address.len()) as u16
+        } else {
+            (Self::size_for_init(
+                self.username.len(), 
+                self.arweave_storage_address.len()
+            ) + std::mem::size_of::<Pubkey>()) as u16
+        }
     }    
 }
 
@@ -143,7 +157,8 @@ pub struct SignOutUser<'info> {
 
     #[account(mut, 
         close = user_wallet,
-        constraint = user_account.user.has_active_game_session == false,
+//        constraint = user_account.user.has_active_game_session == false,
+        constraint = user_account.user.game_session == None,
     )]
     user_account: Account<'info, User>,
 
@@ -199,7 +214,7 @@ pub fn sign_up(ctx: Context<SignUpUser>,
 //                mint: ctx.accounts.stakan_state_account.mint_token.key(),
         token_account: ctx.accounts.token_account.key(),
         arweave_storage_address: arweave_storage_address.into_bytes(),
-        has_active_game_session: false,
+        game_session: None,
     };
 
     user_account.inner_size = user_account.user.size_for_borsh() as u16;

@@ -286,6 +286,14 @@ describe("stakan", () => {
     let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
   
     console.log("Game session updated: score: ", accountData['score'].toString());  
+
+    const userAccountInfo = await provider.connection.getAccountInfo(currUser.account as anchor.web3.PublicKey);
+    
+    if (!userAccountInfo) throw "accountInfo is null"
+    let userAccountData = accountsSchema.UserAccount.deserialize(userAccountInfo.data);
+
+    console.log("stakanApi.User ", userAccountData);
+
   });
 
   it("Update game session 2", async () => {

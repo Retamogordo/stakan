@@ -28,7 +28,7 @@ impl GameSession {
 pub struct InitGameSession<'info> {
     stakan_state_account: Account<'info, StakanGlobalState>,
 
-    #[account(
+    #[account(mut,
         constraint = user_account.user.user_wallet == user_wallet.key(),
     )]
     user_account: Account<'info, User>,
@@ -68,7 +68,9 @@ pub struct UpdateGameSession<'info> {
     user_account: Account<'info, User>,
 
     #[account(mut,
-        constraint = game_session_account.user_account == user_account.key()
+        constraint = game_session_account.user_account == user_account.key(),
+//        constraint = user_account.user.game_session == None
+        constraint = user_account.user.game_session == Some(game_session_account.key())
     )]
     game_session_account: Account<'info, GameSession>,
 
@@ -126,7 +128,7 @@ pub fn init(ctx: Context<InitGameSession>, stake: u64) -> Result<()> {
     game_session_account.duration_millis = 0;
     game_session_account.score = 0;
 
-    ctx.accounts.user_account.user.has_active_game_session = true;
+    ctx.accounts.user_account.set_game_session(Some(game_session_account.key()));
 
     Ok(())
 }
@@ -208,7 +210,8 @@ pub fn finish(ctx: Context<FinishGameSession>,
         ctx.accounts.user_account.user.max_score = game_session_score;
     }
     ctx.accounts.user_account.user.saved_game_sessions += 1;
-    ctx.accounts.user_account.user.has_active_game_session = false;
+
+    ctx.accounts.user_account.set_game_session(None);
 
     Ok(())
 }

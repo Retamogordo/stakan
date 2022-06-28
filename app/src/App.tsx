@@ -63,8 +63,11 @@ function App() {
     setSignalStartSession(true);
   }
 
-  const handleGameOver = (tiles: Array<Array<number>>) => {
+  const handleGameOver = async (tiles: Array<Array<number>>) => {
     console.log("ON GAME OVER, tiles: ", tiles);
+
+    userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState
+      && await stakanApi.finishGameSession(userConnectionCtx.user, userConnectionCtx.stakanState);
 //    setSessionStarted(false);
 
 //    if (stakePanelRef.current) stakePanelRef.current.visible = true;
@@ -130,7 +133,6 @@ function App() {
 
             <StakanControls 
               startSession={signalStartSession}
-//              onBeforeSessionStarted={handleBeforeSessionStarted} 
               onGameOver={handleGameOver}
             />       
           </div>
