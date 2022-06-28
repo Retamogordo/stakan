@@ -43,6 +43,7 @@ function App() {
 
   const [displayedBalance, setDisplayedBalance] = useState(0);
   const [arweaveBalance, setArweaveBalance] = useState('0');
+  const [signalStartSession, setSignalStartSession] = useState(false);
 
   const handleStartSession = () => {
 //    if (stakePanelRef.current) stakePanelRef.current.visible = false;
@@ -53,8 +54,13 @@ function App() {
   
   const handleBeforeSessionStarted = async (session: StakanSession) => {
     const stake = 0;
-    userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState
-      && await stakanApi.initGameSession(userConnectionCtx.user, userConnectionCtx.stakanState, stake);
+    try {
+      userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState
+        && await stakanApi.initGameSession(userConnectionCtx.user, userConnectionCtx.stakanState, stake);
+    } catch(e) {
+      console.log(e);
+    }
+    setSignalStartSession(true);
   }
 
   const handleGameOver = (tiles: Array<Array<number>>) => {
@@ -106,14 +112,28 @@ function App() {
   }, [userConnectionCtx?.user]);
   //  <StakePanel ref={stakePanelRef} onStartSessionClick={handleStartSession}/>   
 
+  useEffect(() => {
+    if (signalStartSession) {
+      setSignalStartSession(false);
+    } 
+  }, [signalStartSession]);
+    
   return (
     <div className="App">
       <div className="main-wrapper">
         <div className='left-panel'></div>
-        <StakanControls 
-          onBeforeSessionStarted={handleBeforeSessionStarted} 
-          onGameOver={handleGameOver}
-        />       
+          <div className="stakan-wrapper">
+            <StakePanel 
+//              visible={session===null || !session.active} 
+              onStartSessionClick={handleBeforeSessionStarted}
+            />   
+
+            <StakanControls 
+              startSession={signalStartSession}
+//              onBeforeSessionStarted={handleBeforeSessionStarted} 
+              onGameOver={handleGameOver}
+            />       
+          </div>
         <div className="side" >
           <WalletConnectionProvider 
             loggedUserChanged={handleUserChanged}

@@ -44,11 +44,11 @@ export function StakanControls(props: any) {
     const [moveDelay, setMoveDelay] = useState<ReturnType<typeof setInterval> | null>(null);
     const [disableControls, setDisableControls] = useState(true);
     const [childWillRender, setChildWillRender] = useState(0);
-//    const [sessionStarted, setSessionStarted] = useState(props.started);
+//    const [triggerStartSession, setTriggerStartSession] = useState(props.startSession);
   
     const rows = 16;
     const cols = 10;
-  
+    
     const handleKeyDown = useCallback( (event: KeyboardEvent) => {
     //    console.log("keydown: ", event.keyCode);
         setKeydown(event.keyCode);
@@ -56,7 +56,6 @@ export function StakanControls(props: any) {
     []);
   
     const handleResize = useCallback( () => {
-      console.log("handleResize: ");
       stakanRef.current && stakanRef.current.fitToParent()
     },
     []);
@@ -206,33 +205,27 @@ export function StakanControls(props: any) {
         stakanRef.current.focus();
         window.addEventListener('keydown', handleKeyDown)
   
-        const session = newSession();      
+        const session = new StakanSession();      
 
         return session;
       })
     }
   
-    const newSession = (): StakanSession => {
-      return new StakanSession();    
-    };
-  
     useEffect(() => {
-      console.log("Stakan Controls use effect, started: ", props.started);
-
       window.addEventListener('resize', handleResize);
-/*
-      if (props.started) {
-        startSession();
-      } else {
-        handleGameOver()
-      }
-*/
+
       return () => {
 //        handleGameOver();
         window.removeEventListener('resize', handleResize);
       }
     },
     [])
+
+    useEffect(() => {
+      if (props.startSession) startSession()
+    },
+    [props.startSession])
+      
   
     useEffect(() => {
       if (!disableControls) {
@@ -269,11 +262,12 @@ export function StakanControls(props: any) {
     [stakanRef])
   
     return (
+      /*
       <div className="stakan-wrapper">
         <StakePanel 
           visible={session===null || !session.active} 
           onStartSessionClick={beforeSessionStarted}
-        />   
+        />   */
         <StakanView 
           ref={stakanRef}
           rows={rows} 
@@ -283,6 +277,6 @@ export function StakanControls(props: any) {
           willRender={() => setChildWillRender(prev => prev + 1)}
           onFull={handleGameOver}
         />
-      </div>
+//      </div>
   )
 }
