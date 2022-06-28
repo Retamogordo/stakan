@@ -243,7 +243,7 @@ export type Stakan = {
         },
         {
           "name": "userAccount",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -281,6 +281,14 @@ export type Stakan = {
         {
           "name": "stake",
           "type": "u64"
+        },
+        {
+          "name": "tilesCols",
+          "type": "u8"
+        },
+        {
+          "name": "tilesRows",
+          "type": "u8"
         }
       ]
     },
@@ -311,6 +319,10 @@ export type Stakan = {
         {
           "name": "durationMillis",
           "type": "u64"
+        },
+        {
+          "name": "tiles",
+          "type": "bytes"
         }
       ]
     },
@@ -444,6 +456,18 @@ export type Stakan = {
           {
             "name": "stake",
             "type": "u64"
+          },
+          {
+            "name": "tilesCols",
+            "type": "u8"
+          },
+          {
+            "name": "tilesRows",
+            "type": "u8"
+          },
+          {
+            "name": "tiles",
+            "type": "bytes"
           }
         ]
       }
@@ -502,8 +526,10 @@ export type Stakan = {
             "type": "bytes"
           },
           {
-            "name": "hasActiveGameSession",
-            "type": "bool"
+            "name": "gameSession",
+            "type": {
+              "option": "publicKey"
+            }
           }
         ]
       }
@@ -823,7 +849,7 @@ export const IDL: Stakan = {
         },
         {
           "name": "userAccount",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -861,6 +887,14 @@ export const IDL: Stakan = {
         {
           "name": "stake",
           "type": "u64"
+        },
+        {
+          "name": "tilesCols",
+          "type": "u8"
+        },
+        {
+          "name": "tilesRows",
+          "type": "u8"
         }
       ]
     },
@@ -891,6 +925,10 @@ export const IDL: Stakan = {
         {
           "name": "durationMillis",
           "type": "u64"
+        },
+        {
+          "name": "tiles",
+          "type": "bytes"
         }
       ]
     },
@@ -1024,6 +1062,18 @@ export const IDL: Stakan = {
           {
             "name": "stake",
             "type": "u64"
+          },
+          {
+            "name": "tilesCols",
+            "type": "u8"
+          },
+          {
+            "name": "tilesRows",
+            "type": "u8"
+          },
+          {
+            "name": "tiles",
+            "type": "bytes"
           }
         ]
       }
@@ -1082,8 +1132,10 @@ export const IDL: Stakan = {
             "type": "bytes"
           },
           {
-            "name": "hasActiveGameSession",
-            "type": "bool"
+            "name": "gameSession",
+            "type": {
+              "option": "publicKey"
+            }
           }
         ]
       }

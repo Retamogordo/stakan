@@ -261,13 +261,13 @@ export class User {
       this.gameSessionAccountBump = gameSessionAccountBump;
     }
 
-    async getGameSessionInfo(): Promise<accountsSchema.GameSessionAccount | undefined> {
+    async getGameSessionInfo(tiles_cols: number, tiles_rows: number): Promise<accountsSchema.GameSessionAccount | undefined> {
       const accountInfo 
         = await this.program.provider.connection.getAccountInfo(this.gameSessionAccount as web3.PublicKey);
       
         let userAccountData 
           = accountInfo ?
-            accountsSchema.GameSessionAccount.deserialize(accountInfo.data)
+            accountsSchema.GameSessionAccount.deserialize(accountInfo.data, tiles_cols, tiles_rows)
             : undefined;
 
       return userAccountData;
@@ -503,6 +503,8 @@ export async function initGameSession(
     user: User,
     stakanState: StakanState,
     stake: number,
+    tiles_cols: number,
+    tiles_rows: number,
 ) {
     const arweaveStorageAddress = await user.arweave.wallets.getAddress(user.arweaveWallet); 
     const [gameSessionAccount, gameSessionAccountBump] =
@@ -521,6 +523,8 @@ export async function initGameSession(
     const tx = stakanState.program.transaction
       .initGameSession(
         new BN(stake),
+        tiles_cols,
+        tiles_rows,
         {
           accounts: {
             stakanStateAccount: stakanState.stateAccount,
@@ -586,8 +590,9 @@ export async function initGameSession(
   export async function finishGameSession(
     user: User,
     stakanState: StakanState,
+    tiles_cols: number, tiles_rows: number
   ) {
-    const gameSessionInfo = await user.getGameSessionInfo();
+    const gameSessionInfo = await user.getGameSessionInfo(tiles_cols, tiles_rows);
   
     if (!gameSessionInfo) 
       throw 'Cannot get Session Info';
@@ -634,16 +639,16 @@ export async function initGameSession(
     user: User,
     score: number,
     duration: number,
+    tiles: any,
 //    tiles: Array<Array<number>>,
   ) {
-//    const cols = tiles.length;
-//    const rows = 
-//    const tilesBuf = tiles[0]
+    const tilesArray = tiles.flat();
+
     await user.program.methods
       .updateGameSession(
         new BN(score),
         new BN(duration),
-//        tiles,
+        Buffer.from(tilesArray),
       )
       .accounts({
           userAccount: user.account,

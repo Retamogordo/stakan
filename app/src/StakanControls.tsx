@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import StakanView from './StakanView'
-import StakePanel from './StakePanel'
 
 const ENTRY_DELAY = 700;
 const STEP_DELAY = 300;

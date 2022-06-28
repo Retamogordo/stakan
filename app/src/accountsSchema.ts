@@ -108,7 +108,6 @@ class Assignable extends Function {
         ]
       ]);
 
-
       const [data_size, inner_buffer] = UserAccountWrapped.deserialize(buffer);
   //    console.log("----------- DATA SIZE: ", data_size);
       let data;
@@ -126,7 +125,7 @@ class Assignable extends Function {
   }
   
   export class GameSessionAccount extends Assignable { 
-    public static deserialize(buffer: Buffer): GameSessionAccount {
+    public static deserialize(buffer: Buffer, tiles_cols: number, tiles_rows: number): GameSessionAccount {
       const schema = new Map([
         [
           GameSessionAccount, 
@@ -138,12 +137,16 @@ class Assignable extends Function {
                 ['score', 'u64'], 
                 ['duration_millis', 'u64'], 
                 ['stake', 'u64'], 
+                ['tiles_cols', 'u8'], 
+                ['tiles_rows', 'u8'], 
+                ['tiles_size', 'u32'], 
+                ['tiles', [tiles_cols*tiles_rows]], 
               ] 
           }
         ]
       ]);
       const acc = deserialize(schema, GameSessionAccount, 
-        buffer.slice(0, 8+32+8+8+8));
+        buffer.slice(0, 8 + 32 + 8 + 8 + 8 + 1 + 1 + 4 + tiles_cols*tiles_rows));
       return acc;
     }
   }

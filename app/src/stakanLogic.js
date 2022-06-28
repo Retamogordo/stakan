@@ -9,7 +9,7 @@ export function setupStakan(rows, cols) {
         { length: cols + 2*SIDE_THICKNESS }, 
         (_, column) => {   
           return Array.from(
-              { length: rows + TOP_OFFSET + 1 }, 
+              { length: rows + TOP_OFFSET + BOTTOM_THICKNESS }, 
               (_, row) => {
                 if (column < SIDE_THICKNESS || column > (cols + 2*SIDE_THICKNESS - SIDE_THICKNESS - 1) ) return STAKAN_BORDER_VALUE 
                 else return (0 === row) ? STAKAN_BORDER_VALUE : 0 
@@ -32,7 +32,6 @@ export function setupStakan(rows, cols) {
   
     };
   }
-
 
   export function canMove(piece, stakan, xOffset, yOffset) {
     for ( let i = 0; i < 4; i++ ) {

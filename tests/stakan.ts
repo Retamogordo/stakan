@@ -18,10 +18,18 @@ const axios = require('axios');
 
 import Bip39 from 'bip39';
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
+//import {setupStakan} from '../app/src/stakanLogic'
 //import TestWeave from "testweave-sdk";
+const stakanMatrix = Array.from(
+  { length: 10 }, 
+  (_, column) => {   
+    return Array.from(
+        { length: 16 }, 
+        (_, row) => { 
+          return 0;
+    })
+}) 
 
-
-let duration = 0;
 let arweave: Arweave;
 //let testWeave: TestWeave;
 
@@ -200,14 +208,16 @@ describe("stakan", () => {
   it("SHOULD FAIL: Init game session (no tokens on account to stake)", async () => {
     const currUser = user as stakanApi.User;  
     const stake = 1;
+    const cols = 10;
+    const rows = 16;
     try {
-      await stakanApi.initGameSession(currUser, stakanState, stake);
+      await stakanApi.initGameSession(currUser, stakanState, stake, cols, rows);
       
       const accountInfo 
         = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
 
       if (!accountInfo) throw "accountInfo is null"
-      let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
+      let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data, cols, rows);
     
       console.log("Game session initialized: score: ", accountData['score'].toString());
     } catch {
@@ -261,29 +271,39 @@ describe("stakan", () => {
   it("Init game session", async () => {
     const currUser = user as stakanApi.User;  
     const stake = 1;
-    await stakanApi.initGameSession(currUser, stakanState, stake);
+    const cols = 10;
+    const rows = 16;
+    await stakanApi.initGameSession(currUser, stakanState, stake, cols, rows);
     
     const accountInfo 
       = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
 
     if (!accountInfo) throw "accountInfo is null"
-    let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
+    let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data, cols, rows);
   
-    const gameSessionInfo = await currUser.getGameSessionInfo() as accountsSchema.GameSessionAccount;
+    const gameSessionInfo = await currUser.getGameSessionInfo(cols, rows) as accountsSchema.GameSessionAccount;
 
     console.log("Game session initialized: score: ", 
       accountData['score'].toString(),
-      ", stake: ", gameSessionInfo['stake']);
+      ", stake: ", gameSessionInfo['stake'],
+      ", tiles_cols: ", gameSessionInfo['tiles_cols'],
+      ", tiles_rows: ", gameSessionInfo['tiles_rows'],
+      ", tiles: ", gameSessionInfo,
+      );
   });
 
   it("Update game session 1", async () => {
+    const cols = 10;
+    const rows = 16;
+    const tiles = stakanMatrix;
+
     const currUser = user as stakanApi.User;  
-    await stakanApi.updateGameSession(currUser, 10, 100);      
+    await stakanApi.updateGameSession(currUser, 10, 100, tiles);      
     
     const accountInfo 
       = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
     if (!accountInfo) throw "accountInfo is null";
-    let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
+    let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data, cols, rows);
   
     console.log("Game session updated: score: ", accountData['score'].toString());  
 
@@ -297,20 +317,26 @@ describe("stakan", () => {
   });
 
   it("Update game session 2", async () => {
+    const cols = 10;
+    const rows = 16;
+    const tiles = stakanMatrix;
+
     const currUser = user as stakanApi.User;  
-    await stakanApi.updateGameSession(currUser, 20, 200);      
+    await stakanApi.updateGameSession(currUser, 20, 200, tiles);      
     
     const accountInfo 
       = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
     if (!accountInfo) throw "accountInfo is null"
-    let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
+    let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data, cols, rows);
   
     console.log("Game session updated: score: ", accountData['score'].toString());  
   });
 
   it("Finish game session", async () => {
     const currUser = user as stakanApi.User;  
-    await stakanApi.finishGameSession(currUser, stakanState);      
+    const cols = 10;
+    const rows = 16;
+    await stakanApi.finishGameSession(currUser, stakanState, cols, rows);      
 
     const numberOfArchives = 1;
     const archivedData 

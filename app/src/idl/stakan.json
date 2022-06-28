@@ -243,7 +243,7 @@
         },
         {
           "name": "userAccount",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -281,6 +281,14 @@
         {
           "name": "stake",
           "type": "u64"
+        },
+        {
+          "name": "tilesCols",
+          "type": "u8"
+        },
+        {
+          "name": "tilesRows",
+          "type": "u8"
         }
       ]
     },
@@ -311,6 +319,10 @@
         {
           "name": "durationMillis",
           "type": "u64"
+        },
+        {
+          "name": "tiles",
+          "type": "bytes"
         }
       ]
     },
@@ -444,6 +456,18 @@
           {
             "name": "stake",
             "type": "u64"
+          },
+          {
+            "name": "tilesCols",
+            "type": "u8"
+          },
+          {
+            "name": "tilesRows",
+            "type": "u8"
+          },
+          {
+            "name": "tiles",
+            "type": "bytes"
           }
         ]
       }
@@ -502,8 +526,10 @@
             "type": "bytes"
           },
           {
-            "name": "hasActiveGameSession",
-            "type": "bool"
+            "name": "gameSession",
+            "type": {
+              "option": "publicKey"
+            }
           }
         ]
       }

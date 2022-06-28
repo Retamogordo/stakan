@@ -10,10 +10,13 @@ pub struct GameSession {
     score: u64,
     duration_millis: u64,
     stake: u64,
-} 
+    tiles_cols: u8,
+    tiles_rows: u8,
+    tiles: Vec<u8>,
+}
 
 impl GameSession {
-    pub(crate) fn size_for_init() -> usize {
+    pub(crate) fn size_for_init(tiles_cols: u8, tiles_rows: u8) -> usize {
         use std::mem::size_of;
 
         8
@@ -21,10 +24,16 @@ impl GameSession {
         + size_of::<u64>()
         + size_of::<u64>()
         + size_of::<u64>()
+        + size_of::<u8>()
+        + size_of::<u8>()
+        + (size_of::<u32>() + (tiles_cols as usize * tiles_rows as usize)*size_of::<u8>())
+//        + (tiles_cols as usize * tiles_rows as usize)*size_of::<u8>()
     }
 }
 
 #[derive(Accounts)]
+#[instruction(stake: u64, tiles_cols: u8, tiles_rows: u8)]
+
 pub struct InitGameSession<'info> {
     stakan_state_account: Account<'info, StakanGlobalState>,
 
@@ -45,7 +54,7 @@ pub struct InitGameSession<'info> {
     reward_funds_account: Account<'info, TokenAccount>,
 
     #[account(
-        init, space = GameSession::size_for_init(),
+        init, space = GameSession::size_for_init(tiles_cols, tiles_rows),
         payer = user_wallet,
         seeds = [
             b"game_session_account".as_ref(),
@@ -109,7 +118,12 @@ pub struct FinishGameSession<'info> {
     system_program: Program<'info, System>,
 }
 
-pub fn init(ctx: Context<InitGameSession>, stake: u64) -> Result<()> {
+pub fn init(
+    ctx: Context<InitGameSession>, 
+    stake: u64,
+    tiles_cols: u8,
+    tiles_rows: u8,
+) -> Result<()> {
     let reward_tokens_funds = ctx.accounts.reward_funds_account.amount;
 
     if ctx.accounts.user_token_account.amount < stake {
@@ -127,6 +141,9 @@ pub fn init(ctx: Context<InitGameSession>, stake: u64) -> Result<()> {
     game_session_account.stake = stake;
     game_session_account.duration_millis = 0;
     game_session_account.score = 0;
+    game_session_account.tiles_cols = tiles_cols;
+    game_session_account.tiles_rows = tiles_rows;
+    game_session_account.tiles = vec![0; (tiles_cols as usize)*(tiles_rows as usize)];
 
     ctx.accounts.user_account.set_game_session(Some(game_session_account.key()));
 
@@ -219,6 +236,7 @@ pub fn finish(ctx: Context<FinishGameSession>,
 pub fn update(ctx: Context<UpdateGameSession>,
     score: u64,
     duration_millis: u64,
+    tiles: Vec<u8>,
 ) -> Result<()> {
 
     if ctx.accounts.game_session_account.score >= score {
@@ -229,6 +247,7 @@ pub fn update(ctx: Context<UpdateGameSession>,
     }
     ctx.accounts.game_session_account.score = score;
     ctx.accounts.game_session_account.duration_millis = duration_millis;
+    ctx.accounts.game_session_account.tiles = tiles;
 
     Ok(())
 }
