@@ -187,7 +187,7 @@ describe("stakan", () => {
 
     console.log("stakanApi.User ", userAccountData['username'], " signed up");
   });
-
+/*
   it("Sign up another user with the same wallet (allowed for now)", async () => {
     const currUser = user2 as stakanApi.User;  
     
@@ -267,16 +267,19 @@ describe("stakan", () => {
     console.log("reward funds token balance: ", rewardFundsAccountBalance);  
 //      assert(userTokenBalance, tokenAmount);
   })
-
+*/
   it("Init game session", async () => {
     const currUser = user as stakanApi.User;  
-    const stake = 1;
+    const stake = 0;
+//    const stake = 1;
     const cols = 10;
     const rows = 16;
     await stakanApi.initGameSession(currUser, stakanState, stake, cols, rows);
     
     const accountInfo 
       = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
+
+    console.log("§§§§§§§§§§§§§§ account Info:", accountInfo?.data);
 
     if (!accountInfo) throw "accountInfo is null"
     let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data, cols, rows);
@@ -291,7 +294,7 @@ describe("stakan", () => {
       ", tiles: ", gameSessionInfo,
       );
   });
-
+/*
   it("Update game session 1", async () => {
     const cols = 10;
     const rows = 16;
@@ -331,7 +334,7 @@ describe("stakan", () => {
   
     console.log("Game session updated: score: ", accountData['score'].toString());  
   });
-
+*/
   it("Finish game session", async () => {
     const currUser = user as stakanApi.User;  
     const cols = 10;

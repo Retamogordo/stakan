@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 
 class StakePanel extends React.Component {
-    
-    constructor(props) {
+    props: any;
+    constructor(props: any) {
         super(props);
+
+        this.props = props;
 //        this.visible = true;
     }
 
@@ -18,10 +20,17 @@ class StakePanel extends React.Component {
             <div className='stake-panel' style={style}>
             <div className='header'></div>
             <div>
-                <input type='button' value='Start' onClick={props.onStartSessionClick}></input>
+                <input type='button' 
+                    value={this.props.startButtonLabel} 
+                    onClick={this.props.onStartSessionClick}>
+                </input>
             </div>
             <div>
-                <input type='button' value='Stop' onClick={props.sendStopSessionClick}></input>
+                <input type='button' value='Stop' onClick={this.props.sendStopSessionClick}></input>
+            </div>
+            <div>
+                <input type='button' value='Delete User' disabled={true} onClick={this.props.onDeleteUserClick}></input>
+
             </div>
             </div>
         )

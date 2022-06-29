@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import StakanView from './StakanView'
+import StakePanel from './StakePanel'
 
 const ENTRY_DELAY = 700;
 const STEP_DELAY = 300;
@@ -177,7 +178,7 @@ export function StakanControls(props: any) {
         session.active = false;
         setSession(session);
       }
-      props.onGameOver(stakanRef.current?.tiles.tiles);
+      props.onGameOver(stakanRef.current?.tiles);
     }
 
     const beforeSessionStarted = () => {

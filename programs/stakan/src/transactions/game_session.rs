@@ -88,9 +88,10 @@ pub struct UpdateGameSession<'info> {
 
 #[derive(Accounts)]
 pub struct FinishGameSession<'info> {
+    #[account(mut)]
     stakan_state_account: Account<'info, StakanGlobalState>,
 
-    #[account(
+    #[account(mut,
         constraint = user_account.user.user_wallet == user_wallet.key(),
     )]
     user_account: Account<'info, User>,
@@ -146,7 +147,10 @@ pub fn init(
     game_session_account.tiles = vec![0; (tiles_cols as usize)*(tiles_rows as usize)];
 
     ctx.accounts.user_account.set_game_session(Some(game_session_account.key()));
-
+/*
+    ctx.accounts.user_account.user.game_session = Some(game_session_account.key());
+    ctx.accounts.user_account.inner_size = ctx.accounts.user_account.user.size_for_borsh() as u16;
+*/
     Ok(())
 }
 
@@ -156,11 +160,13 @@ pub fn finish(ctx: Context<FinishGameSession>,
     user_account_bump: u8,
 //    stakan_state_account_bump: u8,
 ) -> Result<()> {
+//    return Ok(());
+
     let global_max_score = ctx.accounts.stakan_state_account.global_max_score;
     let game_session_score = ctx.accounts.game_session_account.score;
     let stake = ctx.accounts.game_session_account.stake;
-    let username = &ctx.accounts.user_account.user.username;
-    let arweave_storage_address = &ctx.accounts.user_account.user.arweave_storage_address;
+    let username = ctx.accounts.user_account.user.username.clone();
+    let arweave_storage_address = ctx.accounts.user_account.user.arweave_storage_address.clone();
     
     let record_hit = game_session_score > global_max_score;
 
@@ -223,13 +229,18 @@ pub fn finish(ctx: Context<FinishGameSession>,
             )?;
         }
     }
-    if game_session_score > ctx.accounts.user_account.user.max_score {
-        ctx.accounts.user_account.user.max_score = game_session_score;
+    let user_account = &mut ctx.accounts.user_account;
+    
+    if game_session_score > user_account.user.max_score {
+        user_account.user.max_score = game_session_score;
     }
-    ctx.accounts.user_account.user.saved_game_sessions += 1;
+    //let 
+    user_account.user.saved_game_sessions += 1;
 
-    ctx.accounts.user_account.set_game_session(None);
-
+    user_account.set_game_session(None);
+/*    user_account.user.game_session = None;
+    user_account.inner_size = user_account.user.size_for_borsh() as u16;
+*/
     Ok(())
 }
 

@@ -211,6 +211,9 @@ export class User {
     bump?: number;
     gameSessionAccount?: web3.PublicKey; // pda of ongoing game session account
     gameSessionAccountBump?: number;
+    savedGameSessions: number;
+    maxScore: number;
+//    arweaveStorageAddress?: string;
   
     constructor(
         username: string, 
@@ -226,6 +229,9 @@ export class User {
       this.arweave = arweave;
 //      this.testWeave = testWeave;
       this.arweaveWallet = arweaveWallet ? arweaveWallet : "use_wallet";
+      this.savedGameSessions = 0;
+      this.maxScore = 0;
+
     }
     
     isSignedUp(): boolean {
@@ -272,12 +278,37 @@ export class User {
 
       return userAccountData;
     }
+
+    async reloadFromChain(stakanState: StakanState, username: string | undefined) {
+      console.log("User wallet: ", this.wallet.publicKey.toBase58());
+      const acc = await findOnChainUserAccount(this.wallet.publicKey, stakanState, username);
+      console.log("User acc: ", acc);
+    
+      if (!acc) throw 'Can not reload User from chain, account: ' + this.account?.toBase58();
+
+      const [accPubkey, userAccount] = acc;
+
+      this.account = accPubkey;
+      this.username = userAccount['username'];
+      this.bump = userAccount['bump'];
+      this.maxScore = (userAccount['max_score'] as BN).toNumber();
+      this.savedGameSessions = (userAccount['saved_game_sessions'] as BN).toNumber();
+      this.tokenAccount = new web3.PublicKey(userAccount['token_account']);
+//      this.arweaveStorageAddress = userAccount['arweave_storage_address'];
+      if (userAccount['game_session_opt_variant'] === accountsSchema.OPTION_SOME)
+        this.gameSessionAccount = new web3.PublicKey(userAccount['game_session']);
+      else    
+        this.gameSessionAccount = undefined;
+    }
 }
 
 // after user is signed up their user_account is present on-chain.
 // this function is useful for searching users account when they
 // connect their wallet using wallet adapter.
-export async function findOnChainUserAccount(walletPubkey: web3.PublicKey, stakanState: StakanState)
+export async function findOnChainUserAccount(
+  walletPubkey: web3.PublicKey, 
+  stakanState: StakanState,
+  username: string | undefined)
 : Promise<[web3.PublicKey, accountsSchema.UserAccount] | undefined> {
 //  : Promise<web3.AccountInfo<Buffer | web3.ParsedAccountData> | undefined> {
   const program = stakanState.program;
@@ -301,10 +332,15 @@ export async function findOnChainUserAccount(walletPubkey: web3.PublicKey, staka
     try {
       const userAccountData 
         = accountsSchema.UserAccount.deserialize(acc.account.data as Buffer);
-
+      
+        if (username){
+           if (userAccountData['username'] === username) return [acc.pubkey, userAccountData]
+        } else {
+//        if (userAccountData['username'] == 'javelin') continue;
 //        console.log("findOnChainUserAccount, deserialized: ", userAccountData)
       
-      return [acc.pubkey, userAccountData];
+          return [acc.pubkey, userAccountData];
+        }
     }
     catch(e) {
 //      console.log(e);
@@ -390,53 +426,32 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
     user.tokenAccount = tokenAccount;
 }
 
-//export async function loginUser(userWallet: web3.Keypair, stakanState: StakanState, arweave: Arweave)
 export async function loginUser(
   userWallet: Wallet, 
   stakanState: StakanState, 
   arweave: Arweave,
   arweaveWallet: JWKInterface | undefined,
-//  userAccountBump: number,
-)
-    : Promise<User | undefined> {
+) : Promise<User | undefined> {
+  console.log("loginUser 1");
+  const user = new User(
+    'dummy_user',
+    stakanState.program,
+    userWallet,
+    arweave,
+    arweaveWallet,
+  );
+  console.log("loginUser 2");
+  
+  try {
+    await user.reloadFromChain(stakanState, undefined);
+  console.log("loginUser 3");
 
-  console.log("User wallet: ", userWallet.publicKey.toBase58());
-  const acc = await findOnChainUserAccount(userWallet.publicKey, stakanState);
-  console.log("User acc: ", acc);
-
-  if (acc) {
-    const [accPubkey, userAccount] = acc;
-    try {
-//      const arweaveWallet = JSON.parse(fs.readFileSync(User.localDir + userAccount['username'] + '_arweave_wallet.json', "utf-8"));
-//      const arweaveWallet = testWeave.rootJWK;
-//      const userAccountBump = JSON.parse(fs.readFileSync(User.localDir + userAccount['username'] + '_bump.json', "utf-8"));
-
-      const user = new User(
-        userAccount['username'],
-        stakanState.program,
-        userWallet,
-        arweave,
-//        testWeave,
-        arweaveWallet,
-//        userAccount['arweave_storage_address'],
-      );
-//      user.bump = userAccountBump;
-      user.bump = userAccount['bump'];
-      user.account = accPubkey;
-  //    console.log("!!!!!!!!!!!!!!!!!!! ", userAccount);
-      user.tokenAccount = new web3.PublicKey(userAccount['token_account']);
-      
-      if (userAccount['has_active_game_session']) {
-      }
-      
-    return user;
-
-    } catch(e) {
-//      console.log(e);
-      return undefined;
-    }
+  } 
+  catch(e) {
+    console.log(e);
+    return undefined;
   }
-  return undefined
+  return user
 }
 
 export async function purchaseStakanTokens(
@@ -506,6 +521,8 @@ export async function initGameSession(
     tiles_cols: number,
     tiles_rows: number,
 ) {
+    console.log("%%%%%%%%%%%%%% in initGameSession");
+
     const arweaveStorageAddress = await user.arweave.wallets.getAddress(user.arweaveWallet); 
     const [gameSessionAccount, gameSessionAccountBump] =
       await web3.PublicKey.findProgramAddress(
@@ -516,7 +533,7 @@ export async function initGameSession(
         ],
         stakanState.program.programId
       );
-    if (!user.account || !user.tokenAccount) return;
+    if (!user.account || !user.tokenAccount) throw 'User is not connected';
 
 //    user.setGameSession(gameSessionAccount, gameSessionAccountBump);
     
@@ -550,7 +567,7 @@ export async function initGameSession(
   }
 
   async function saveToArweave(user: User, data: any): Promise<string | undefined> {
-//    console.log("saveToArweave data: ", data);
+    console.log("saveToArweave data: ", data);
 
     const serializedData = accountsSchema.GameSessionArchive.serialize(data);
 
@@ -599,19 +616,24 @@ export async function initGameSession(
 
     console.log("before saveToArweave");
     
-    const txid = await saveToArweave(user, 
+    let txid = await saveToArweave(user, 
       {
         score: (gameSessionInfo as any)['score'],
         duration: (gameSessionInfo as any)['duration_millis'] ,
       }
     );
 
+//    txid = "dummy_bad_tx";
+
     if (!txid) throw "Failed saving to Arweave";
  
     let saveTxId: string = txid as string; 
     let bump: number = user.bump as number;
   
-    if (!user.account || !user.tokenAccount || !user.gameSessionAccount) return;
+    if (!user.account || !user.tokenAccount || !user.gameSessionAccount)
+      throw 'Invalid User state';
+
+    console.log("User state BEFORE finishing session: ", user.gameSessionAccount);
 
     await stakanState.program.methods
       .finishGameSession(
@@ -632,7 +654,10 @@ export async function initGameSession(
       .signers([])
       .rpc();
   
-     user.setGameSession(undefined, undefined);
+//     user.setGameSession(undefined, undefined);
+      await user.reloadFromChain(stakanState, user.username);
+
+      console.log("User state AFTER finishing session: ", user.gameSessionAccount);
   }
   
   export async function updateGameSession(
@@ -684,29 +709,21 @@ export async function initGameSession(
       .signers([])
 //      .signers([stakanState.wallet.payer])
       .rpc();  
-/*
-      if (!user.account || !user.tokenAccount) return;
-
-      const tx = stakanState.program.transaction
-        .signOutUser(
-          user.bump as number,
-          {
-            accounts: {
-              stakanStateAccount: stakanState.stateAccount,
-              stakanEscrowAccount: stakanState.escrowAccount,
-              userAccount: user.account,
-              userTokenAccount: user.tokenAccount,
-              userWallet: user.wallet.publicKey,
-      //        programWallet: stakanState.wallet.publicKey,
-              rewardFundsAccount: stakanState.rewardFundsAccount,
-        
-              tokenProgram: spl.TOKEN_PROGRAM_ID,
-              systemProgram: SystemProgram.programId,
-              rent: web3.SYSVAR_RENT_PUBKEY,
-            }
-          }  
-      )
-      */
-
   }
-  
+
+  export async function forceDeleteUser(
+    user: User,
+    stakanState: StakanState,
+  ) {
+    await stakanState.program.methods
+      .forceDeleteUser(
+      )
+      .accounts({
+        userAccount: user.account,
+        userWallet: user.wallet.publicKey,
+
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([])
+      .rpc();  
+  }

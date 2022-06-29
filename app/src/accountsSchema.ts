@@ -2,6 +2,9 @@ import * as anchor from "@project-serum/anchor";
 import Arweave from "arweave";
 import { serialize, deserialize } from "borsh";
 
+export const OPTION_SOME = 1;
+export const OPTION_NONE = 0;
+
 class Assignable extends Function {
     [key: string]: any;
     

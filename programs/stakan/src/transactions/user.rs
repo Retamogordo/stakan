@@ -7,7 +7,7 @@ use crate::errors::StakanError;
 #[account]
 //#[derive(agsol_borsh_schema::BorshSchema)]
 pub struct User {
-    inner_size: u16,
+    pub inner_size: u16,
     pub user: UserInner,    
 } 
 
@@ -44,6 +44,7 @@ impl User {
 
         self.inner_size = self.user.size_for_borsh() as u16;
     }
+    
 /*
     pub(crate) fn compose_user_account_seeds_with_bump<'a>(&self,
         bump_vec: &'a [u8; 1],
@@ -100,7 +101,7 @@ impl UserInner {
         + (1)
     }    
 
-    fn size_for_borsh(&self) -> u16 {
+    pub(crate) fn size_for_borsh(&self) -> u16 {
         if self.game_session.is_none() {
             Self::size_for_init(self.username.len(), self.arweave_storage_address.len()) as u16
         } else {
@@ -193,6 +194,21 @@ pub struct SignOutUser<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
+#[derive(Accounts)]
+pub struct ForceDeleteUser<'info> {
+    #[account(mut, 
+        close = user_wallet,
+        constraint = user_account.user.user_wallet == user_wallet.key()
+    )]
+    user_account: Account<'info, User>,
+    
+    /// CHECK:` pubkey of user wallet to receive lamports from program wallet
+    #[account(mut)]
+    user_wallet: AccountInfo<'info>,
+
+    system_program: Program<'info, System>,
+    rent: Sysvar<'info, Rent>,
+}
 
 pub fn sign_up(ctx: Context<SignUpUser>,
     username: String, 
@@ -279,5 +295,10 @@ pub fn sign_out(ctx: Context<SignOutUser>,
         ],
     )?;
 */
+    Ok(())
+}
+
+pub fn force_delete(_ctx: Context<ForceDeleteUser>,
+) -> Result<()> {
     Ok(())
 }

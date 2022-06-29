@@ -21,12 +21,14 @@ import * as stakanApi from './stakanSolanaApi'
 import  ArweaveConnectionProvider  from './ArweaveConnectionProvider'
 import Arweave from 'arweave'
 import {UserConnectionContextState} from './UseLoginUser'
+import { setupStakan } from './stakanLogic'
+
 //import * as ArConnect from 'arconnect'
 //import { ArjsProvider, useArjs } from 'arjs-react'
 
 
 function App() {
-  console.log("window.arweaveWallet: ", window.arweaveWallet);
+//  console.log("window.arweaveWallet: ", window.arweaveWallet);
   if (window.arweaveWallet) window.arweaveWallet.getActiveAddress()
     .then( activeAddress => {
       console.log("window.arweaveWallet, address: ", activeAddress);
@@ -45,6 +47,10 @@ function App() {
   const [arweaveBalance, setArweaveBalance] = useState('0');
   const [signalStartSession, setSignalStartSession] = useState(false);
 
+  const cols = 10;
+  const rows = 16;
+  const tiles = setupStakan(rows, cols);
+
   const handleStartSession = () => {
 //    if (stakePanelRef.current) stakePanelRef.current.visible = false;
 
@@ -52,22 +58,51 @@ function App() {
 //    stakanControlsRef.current.startSession();
   }
   
-  const handleBeforeSessionStarted = async (session: StakanSession) => {
+  const handleBeforeSessionStarted = async () => {
     const stake = 0;
     try {
+      console.log("Srart session, tiles: ", tiles);
+/*
       userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState
-        && await stakanApi.initGameSession(userConnectionCtx.user, userConnectionCtx.stakanState, stake);
+      
+      && await stakanApi.finishGameSession(
+        userConnectionCtx.user, 
+        userConnectionCtx.stakanState,
+        tiles.colsWithBorder,
+        tiles.rowsWithBorder
+        )
+*/
+        userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState
+        && await stakanApi.initGameSession(
+          userConnectionCtx.user, 
+          userConnectionCtx.stakanState, 
+          stake,
+          tiles.colsWithBorder,
+          tiles.rowsWithBorder,
+      );
+
+      setSignalStartSession(true);
+
     } catch(e) {
       console.log(e);
     }
-    setSignalStartSession(true);
   }
 
-  const handleGameOver = async (tiles: Array<Array<number>>) => {
+  const handleDeleteUser = async () => {
+    userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState
+    && await stakanApi.forceDeleteUser(userConnectionCtx.user, userConnectionCtx.stakanState) 
+  }
+    
+  const handleGameOver = async (tiles: any) => {
     console.log("ON GAME OVER, tiles: ", tiles);
 
     userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState
-      && await stakanApi.finishGameSession(userConnectionCtx.user, userConnectionCtx.stakanState);
+      && await stakanApi.finishGameSession(
+        userConnectionCtx.user, 
+        userConnectionCtx.stakanState,
+        tiles.colsWithBorder,
+        tiles.rowsWithBorder
+        );
 //    setSessionStarted(false);
 
 //    if (stakePanelRef.current) stakePanelRef.current.visible = true;
@@ -127,11 +162,17 @@ function App() {
         <div className='left-panel'></div>
           <div className="stakan-wrapper">
             <StakePanel 
-//              visible={session===null || !session.active} 
+//              visible={session===null || !session.active}
+              startButtonLabel={
+                userConnectionCtx?.user?.gameSessionAccount ? 'Resume' : 'Start'
+              }
               onStartSessionClick={handleBeforeSessionStarted}
+              onDeleteUserClick={handleDeleteUser}
             />   
 
             <StakanControls 
+              cols={cols}
+              rows={rows}
               startSession={signalStartSession}
               onGameOver={handleGameOver}
             />       

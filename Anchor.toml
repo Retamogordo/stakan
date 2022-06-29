@@ -6,6 +6,9 @@ stakan = "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
 [programs.devnet]
 stakan = "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
 
+[programs.testnet]
+stakan = "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
+
 [registry]
 url = "https://anchor.projectserum.com"
 

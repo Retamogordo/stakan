@@ -80,4 +80,10 @@ pub mod stakan {
     ) -> Result<()> {
         crate::transactions::user::sign_out(ctx)
     }
+    pub fn force_delete_user(
+        ctx: Context<ForceDeleteUser>,
+//        user_account_bump: u8,
+    ) -> Result<()> {
+        crate::transactions::user::force_delete(ctx)
+    }
 }
