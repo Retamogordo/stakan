@@ -99,7 +99,9 @@ const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextSta
                 stakanProgram.provider.wallet as Wallet, 
                 stakanState, 
                 arweave,
-                undefined, // arweave wallet - will assign 'use_wallet' internally
+                // arweave wallet - will assign 'use_wallet' internally
+                // to connect via ArConnect in browser mode
+                undefined
             );
     
             console.log("User: ", user);

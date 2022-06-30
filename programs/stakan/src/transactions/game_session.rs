@@ -71,7 +71,7 @@ pub struct InitGameSession<'info> {
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
 }
-
+/*
 #[derive(Accounts)]
 pub struct UpdateGameSession<'info> {
     user_account: Account<'info, User>,
@@ -85,7 +85,7 @@ pub struct UpdateGameSession<'info> {
 
     system_program: Program<'info, System>,
 }
-
+*/
 #[derive(Accounts)]
 pub struct FinishGameSession<'info> {
     #[account(mut)]
@@ -158,12 +158,14 @@ pub fn finish(ctx: Context<FinishGameSession>,
     // just to ensure arweave has confirmed storage transaction
     _dummy_arweave_storage_tx_id: Option<String>, 
     user_account_bump: u8,
+    score: u64,
 //    stakan_state_account_bump: u8,
 ) -> Result<()> {
 //    return Ok(());
 
     let global_max_score = ctx.accounts.stakan_state_account.global_max_score;
-    let game_session_score = ctx.accounts.game_session_account.score;
+//    let game_session_score = ctx.accounts.game_session_account.score;
+    let game_session_score = score;
     let stake = ctx.accounts.game_session_account.stake;
     let username = ctx.accounts.user_account.user.username.clone();
     let arweave_storage_address = ctx.accounts.user_account.user.arweave_storage_address.clone();
@@ -234,26 +236,22 @@ pub fn finish(ctx: Context<FinishGameSession>,
     if game_session_score > user_account.user.max_score {
         user_account.user.max_score = game_session_score;
     }
-    //let 
     user_account.user.saved_game_sessions += 1;
 
     user_account.set_game_session(None);
-/*    user_account.user.game_session = None;
-    user_account.inner_size = user_account.user.size_for_borsh() as u16;
-*/
     Ok(())
 }
-
+/*
 pub fn update(ctx: Context<UpdateGameSession>,
     score: u64,
     duration_millis: u64,
     tiles: Vec<u8>,
 ) -> Result<()> {
 
-    if ctx.accounts.game_session_account.score >= score {
+    if ctx.accounts.game_session_account.score > score {
         return Err(StakanError::ScoreCantDecrease.into());
     }
-    if ctx.accounts.game_session_account.duration_millis >= duration_millis {
+    if ctx.accounts.game_session_account.duration_millis > duration_millis {
         return Err(StakanError::DurationCantDecrease.into());
     }
     ctx.accounts.game_session_account.score = score;
@@ -262,3 +260,4 @@ pub fn update(ctx: Context<UpdateGameSession>,
 
     Ok(())
 }
+*/

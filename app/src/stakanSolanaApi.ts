@@ -12,6 +12,7 @@ import * as accountsSchema from "./accountsSchema";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import { IDL, Stakan } from './idl/stakan'
 
+const ARWEAVE_FEE_WINSTON = 67506057;
 const axios = require('axios');
 /*
 const provider = new Provider(connection, Wallet.local(), opts);
@@ -246,17 +247,42 @@ export class User {
       return await this.program.provider.connection.getTokenAccountBalance(this.tokenAccount as web3.PublicKey);
     }
     
-    async arweaveAirdrop(ar: string) {
+    async arweaveAirdrop(ar: string): Promise<boolean> {
       const tokens = this.arweave.ar.arToWinston(ar)
       const arweaveStorageAddress = await this.arweave.wallets.getAddress(this.arweaveWallet);
 
-      await this.arweave.api.get(`/mint/${arweaveStorageAddress}/${tokens}`)
+      const resp = await this.arweave.api.get(`/mint/${arweaveStorageAddress}/${tokens}`)
+      
+      if (resp.status != 200) return false;
+      return true;
+//      console.log("^^^^^^^^^^^^^^^ ar: ", ar," resp.data;", resp.data, ", status: ", resp.status);
     }
 
-    async getArweaveBalance(): Promise<string> {
+    async getArweaveBalance(): Promise<number> {
       const arweaveStorageAddress = await this.arweave.wallets.getAddress(this.arweaveWallet);
       const balance = await this.arweave.wallets.getBalance(arweaveStorageAddress);
-      return balance;
+      return parseInt(balance);
+    }
+
+    async hasWinstonToStoreSession(): Promise<boolean> {
+      try {
+        return (
+          await this.isArweaveWalletConnected() 
+          && 
+          (ARWEAVE_FEE_WINSTON < await this.getArweaveBalance())
+        );
+      } catch {
+        return false;
+      }
+    }
+
+    async isArweaveWalletConnected(): Promise<boolean> {
+      try {
+        await this.arweave.wallets.getAddress(this.arweaveWallet);
+      } catch {
+        return false;
+      }
+      return true;
     }
 
     setGameSession(
@@ -430,6 +456,7 @@ export async function loginUser(
   userWallet: Wallet, 
   stakanState: StakanState, 
   arweave: Arweave,
+  // in browser pass 'undefined' here so ArConnect is used
   arweaveWallet: JWKInterface | undefined,
 ) : Promise<User | undefined> {
   console.log("loginUser 1");
@@ -522,8 +549,10 @@ export async function initGameSession(
     tiles_rows: number,
 ) {
     console.log("%%%%%%%%%%%%%% in initGameSession");
+    console.log(user.arweave.wallets);
 
     const arweaveStorageAddress = await user.arweave.wallets.getAddress(user.arweaveWallet); 
+    
     const [gameSessionAccount, gameSessionAccountBump] =
       await web3.PublicKey.findProgramAddress(
         [

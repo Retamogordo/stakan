@@ -26,7 +26,7 @@ code {
   height: 90%;
   flex: 1 0 auto;
   width: 25%;
-  background: red;
+  background: rgb(19, 5, 144);
 }
 
 .main-header, .main-footer {

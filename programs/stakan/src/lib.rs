@@ -56,21 +56,23 @@ pub mod stakan {
         tiles_cols: u8, tiles_rows: u8) -> Result<()> {
         crate::transactions::game_session::init(ctx, stake, tiles_cols, tiles_rows)
     }
-
+/*
     pub fn update_game_session(ctx: Context<UpdateGameSession>, score: u64,
         duration_millis: u64, tiles: Vec<u8>) -> Result<()> {
         crate::transactions::game_session::update(ctx, score, duration_millis, tiles)
     }
-
+*/
     pub fn finish_game_session(ctx: Context<FinishGameSession>,
         // just to ensure arweave has confirmed storage transaction
         _dummy_arweave_storage_tx_id: Option<String>, 
         user_account_bump: u8,
+        score: u64,
     ) -> Result<()> {
         crate::transactions::game_session::finish(
             ctx, 
             _dummy_arweave_storage_tx_id,
             user_account_bump,
+            score,
         )
     }
 

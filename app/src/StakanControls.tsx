@@ -15,7 +15,7 @@ export class StakanSession {
   stepDelay: number;
 
   constructor() {
-      this.active = true;
+    this.active = true;
     this.score = 0;
     this.linesCleared = 0;
     this.level = 0;
@@ -197,6 +197,7 @@ export function StakanControls(props: any) {
   
         const session = new StakanSession();      
 
+        props.onSessionStarted(session);
         return session;
       })
     }
@@ -239,9 +240,10 @@ export function StakanControls(props: any) {
     useEffect(() => {
       if (session !== null && session.active) {
         stakanRef.current && stakanRef.current.setSession(session);
-
   //    console.log("session use effect, stakanRef: ", stakanRef.current, "session: ", session);
         setEntryDelay();
+
+        props.onSessionUpdated(session, stakanRef.current?.tiles);
       }
     },
     [session])
