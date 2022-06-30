@@ -93,7 +93,6 @@ const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextSta
     const tryToLogin = async (arweave: Arweave) => {
         console.log("in tryToLogin");
     
-
         if (stakanProgram && stakanState) {
             const user = await stakanApi.loginUser(
                 stakanProgram.provider.wallet as Wallet, 

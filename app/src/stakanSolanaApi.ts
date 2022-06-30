@@ -12,7 +12,8 @@ import * as accountsSchema from "./accountsSchema";
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
 import { IDL, Stakan } from './idl/stakan'
 
-const ARWEAVE_FEE_WINSTON = 67506057;
+const ARWEAVE_FEE_WINSTON = 67506057; // 36063945
+                            
 const axios = require('axios');
 /*
 const provider = new Provider(connection, Wallet.local(), opts);
@@ -247,8 +248,9 @@ export class User {
       return await this.program.provider.connection.getTokenAccountBalance(this.tokenAccount as web3.PublicKey);
     }
     
-    async arweaveAirdrop(ar: string): Promise<boolean> {
-      const tokens = this.arweave.ar.arToWinston(ar)
+    async arweaveAirdrop(winston: number): Promise<boolean> {
+//      const tokens = this.arweave.ar.arToWinston(ar)
+      const tokens = winston.toString();
       const arweaveStorageAddress = await this.arweave.wallets.getAddress(this.arweaveWallet);
 
       const resp = await this.arweave.api.get(`/mint/${arweaveStorageAddress}/${tokens}`)
@@ -256,6 +258,10 @@ export class User {
       if (resp.status != 200) return false;
       return true;
 //      console.log("^^^^^^^^^^^^^^^ ar: ", ar," resp.data;", resp.data, ", status: ", resp.status);
+    }
+
+    async arweaveAirdropMin(): Promise<boolean> {
+      return await this.arweaveAirdrop(ARWEAVE_FEE_WINSTON);
     }
 
     async getArweaveBalance(): Promise<number> {
@@ -269,7 +275,7 @@ export class User {
         return (
           await this.isArweaveWalletConnected() 
           && 
-          (ARWEAVE_FEE_WINSTON < await this.getArweaveBalance())
+          (ARWEAVE_FEE_WINSTON <= await this.getArweaveBalance())
         );
       } catch {
         return false;
@@ -284,7 +290,15 @@ export class User {
       }
       return true;
     }
-
+    async isArweaveProviderConnected(): Promise<boolean> {
+      try {
+        await this.getArweaveBalance()
+      } catch {
+        return false;
+      }
+      return true;
+    }
+    
     setGameSession(
       gameSessionAccount?: web3.PublicKey, 
       gameSessionAccountBump?: number,

@@ -1,12 +1,22 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import {RevolvingDot} from "react-loader-spinner"
 
 class StakePanel extends React.Component {
     props: any;
+    loader: any;
     constructor(props: any) {
         super(props);
 
         this.props = props;
-//        this.visible = true;
+        this.loader = {
+            Component: RevolvingDot,
+            props: {
+              color: "#0ead69",
+              height: 100,
+              width: 110
+            },
+            name: "RevolvingDot"
+          };
     }
 
     render() {
@@ -23,17 +33,19 @@ class StakePanel extends React.Component {
                     <div>
                         <input type='button' 
                             value={this.props.startButtonLabel} 
-                            disabled={this.props.startButtonDisabled}
+                            disabled={this.props.startButtonDisabled || this.props.loadingMode}
                             onClick={this.props.onStartSessionClick}>
                         </input>
-                    </div>
-                    <div>
-                        <input type='button' value='Stop' onClick={this.props.sendStopSessionClick}></input>
                     </div>
                     <div>
                         <input type='button' value='Delete User' disabled={true} onClick={this.props.onDeleteUserClick}></input>
 
                     </div>
+                    {this.props.loadingMode 
+                        ? <this.loader.Component {...this.loader.props}/>
+                        : null
+                    }
+
                 </div>
             )
             :

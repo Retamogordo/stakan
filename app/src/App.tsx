@@ -23,6 +23,8 @@ import Arweave from 'arweave'
 import {UserConnectionContextState} from './UseLoginUser'
 import { setupStakan } from './stakanLogic'
 
+
+
 //import * as ArConnect from 'arconnect'
 //import { ArjsProvider, useArjs } from 'arjs-react'
 class UserWalletsStatus {
@@ -30,33 +32,28 @@ class UserWalletsStatus {
   arweaveWalletConnected: boolean;
   arweaveBalance: number;
   hasWinstonToStoreSession: boolean;
+  arweaveProviderConnected: boolean;
 
   constructor() {
     this.solanaBalance = 0;
     this.arweaveWalletConnected = false;
     this.arweaveBalance = 0;
     this.hasWinstonToStoreSession = false;
+    this.arweaveProviderConnected = false;
   }
 }
 
 function App() {
-//  console.log("window.arweaveWallet: ", window.arweaveWallet);
-  if (window.arweaveWallet) window.arweaveWallet.getActiveAddress()
-    .then( activeAddress => {
-      console.log("window.arweaveWallet, address: ", activeAddress);
-    });
-   // window.arweaveWallet.
+  
   const stakanControlsRef = useRef<typeof StakanControls>(null);
   const stakePanelRef = useRef<StakePanel>(null);
   const [userWalletCtx, setUserWalletCtx] = useState<WalletContextState | null>(null)
   const [userConnectionCtx, setUserConnectionCtx] = useState<UserConnectionContextState | null>(null);
 
-//  const [displayedBalance, setDisplayedBalance] = useState(0);
-//  const [arweaveBalance, setArweaveBalance] = useState('0');
   const [signalStartSession, setSignalStartSession] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
-
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
+  const [loadingMode, setLoadingMode] = useState(false);
 
   const cols = 10;
   const rows = 16;
@@ -80,6 +77,8 @@ function App() {
         tiles.rowsWithBorder
         )
 */
+      setLoadingMode(true);
+
       if (user && stakanState) {
         if (!user.gameSessionAccount) { // check for pending session
           await stakanApi.initGameSession(
@@ -92,6 +91,8 @@ function App() {
           await user?.reloadFromChain(stakanState, user?.username)
         }
 
+        await updateUserWalletsStatus();
+
         console.log("user.gameSessionAcc: ", user?.gameSessionAccount);
         console.log("user.gameSessionAcc: ", userConnectionCtx?.user?.gameSessionAccount);
 
@@ -100,9 +101,10 @@ function App() {
     } catch(e) {
       console.log(e);
     }
+    setLoadingMode(false);
   }
 
-  const handleSessionStarted = async (session: StakanSession) => {
+  const handleSessionStarted = async (session: StakanSession) => {    
     setSessionActive(true);
   }
   
@@ -119,21 +121,30 @@ function App() {
     const user = userConnectionCtx?.user;
     const stakanState = userConnectionCtx?.stakanState;
 
-    if (user && stakanState) {
-      await stakanApi.finishGameSession(
-        user, 
-        stakanState,
-        tiles.colsWithBorder,
-        tiles.rowsWithBorder
-        );
-      await user?.reloadFromChain(stakanState, user?.username)
-
-      console.log("user.gameSessionAcc: ", user?.gameSessionAccount);
-      console.log("user.gameSessionAcc: ", userConnectionCtx?.user?.gameSessionAccount);
-    }
     setSessionActive(false);
+    setLoadingMode(true);
 
-//    if (stakePanelRef.current) stakePanelRef.current.visible = true;
+    try {
+      if (user && stakanState) {
+        await stakanApi.finishGameSession(
+          user, 
+          stakanState,
+          tiles.colsWithBorder,
+          tiles.rowsWithBorder
+          );
+        await user?.reloadFromChain(stakanState, user?.username);
+
+        await updateUserWalletsStatus();
+
+        console.log("user.gameSessionAcc: ", user?.gameSessionAccount);
+        console.log("user.gameSessionAcc: ", userConnectionCtx?.user?.gameSessionAccount);
+      }
+    } catch(e) {
+      setLoadingMode(false);
+      throw e;
+    }
+    setLoadingMode(false);
+    //    if (stakePanelRef.current) stakePanelRef.current.visible = true;
   }
 
   const handleDeleteUser = async () => {
@@ -147,46 +158,45 @@ function App() {
     setUserConnectionCtx(loggedUserConnetctionCtx);
   }
 
+  const updateUserWalletsStatus = async () => {
+    const user = userConnectionCtx?.user;
+
+    const userBalance = await user?.getBalance();
+    
+    const arweaveConnected = !!user && await user?.isArweaveWalletConnected()
+    const arweaveProviderConnected = !!user && await user?.isArweaveProviderConnected()
+   // const arweavePro
+    const arBalance = arweaveConnected && arweaveProviderConnected 
+                        ? await user?.getArweaveBalance() : 0;
+    const hasWinstonToStoreSession = !!user && await user?.hasWinstonToStoreSession();
+
+    setUserWalletsStatus((prevUserWalletsStatus) => {
+      let userWalletsStatus = new UserWalletsStatus();
+      
+      userWalletsStatus.solanaBalance = userBalance ? userBalance : 0;
+      userWalletsStatus.arweaveWalletConnected = arweaveConnected;
+      userWalletsStatus.arweaveBalance = arBalance ? arBalance : 0;
+      userWalletsStatus.hasWinstonToStoreSession = hasWinstonToStoreSession;
+      userWalletsStatus.arweaveProviderConnected = arweaveProviderConnected;
+
+      return userWalletsStatus;
+    })
+  }
+
+  const airdropWinston = async () => {
+    const user = userConnectionCtx?.user;
+
+    if (await user?.arweaveAirdropMin()) await updateUserWalletsStatus();
+  }
+
   useEffect(() => {
 //    console.log('App ->  effect: ');
   }, []);
 
   useEffect(() => {
-      console.log("userConnectionCtx?.user->useEffect: ");
+    console.log("userConnectionCtx?.user->useEffect: ", userConnectionCtx?.user?.username);
 
-    (async () => {
-      const user = userConnectionCtx?.user;
-
-      const userBalance = await user?.getBalance();
-      
-//      setDisplayedBalance(userBalance ? userBalance : 0);
-      
-//      user?.isArweaveWalletConnected();
-
-//      console.log("App->userBalance: ", userBalance);
-//      try {
-        const arweaveConnected = !!user && await user?.isArweaveWalletConnected()
-//        await userConnectionCtx?.user?.arweaveAirdrop('1');
-    
-        const arBalance = arweaveConnected 
-          ? await user?.getArweaveBalance()
-          : 0;
-        const hasWinstonToStoreSession = !!user && await user?.hasWinstonToStoreSession();
-//        setArweaveBalance(arBalance ? arBalance : '0');
-//      } catch (e) {
-//        console.log("ARWEAVE NOT CONNECTED");
-//        setArweaveBalance('0');
-
-        setUserWalletsStatus((prevUserWalletsStatus) => {
-          prevUserWalletsStatus.solanaBalance = userBalance ? userBalance : 0;
-          prevUserWalletsStatus.arweaveWalletConnected = arweaveConnected;
-          prevUserWalletsStatus.arweaveBalance = arBalance ? arBalance : 0;
-          prevUserWalletsStatus.hasWinstonToStoreSession = hasWinstonToStoreSession;
-          return prevUserWalletsStatus;
-        })
-  
-//      }
-    })();
+    updateUserWalletsStatus();
   }, [userConnectionCtx?.user]);
   //  <StakePanel ref={stakePanelRef} onStartSessionClick={handleStartSession}/>   
 
@@ -195,7 +205,7 @@ function App() {
       setSignalStartSession(false);
     } 
   }, [signalStartSession]);
-    
+
   return (
     <div className="App">
       <div className="main-wrapper">
@@ -206,8 +216,22 @@ function App() {
           <div>
             Balance {userWalletsStatus.solanaBalance}
           </div>
+
           <div>
             Arweave Balance {userWalletsStatus.arweaveBalance}
+            {!userWalletsStatus.hasWinstonToStoreSession 
+              && userWalletsStatus.arweaveWalletConnected
+              && userWalletsStatus.arweaveProviderConnected
+              ? <input type='button' 
+                            value={'Airdrop some winston'} 
+                            onClick={airdropWinston}>
+              </input>
+              : userWalletsStatus.arweaveWalletConnected
+                ? userWalletsStatus.arweaveProviderConnected 
+                  ? null 
+                  : <div>Arweave provider is disconnected. Is arlocal running ?</div>
+                : <div>Arweave wallet is disconnected. Is ArConnect installed ?</div>
+            }
           </div>
         </div>
 
@@ -218,6 +242,7 @@ function App() {
               userConnectionCtx?.user?.gameSessionAccount ? 'Resume' : 'Start'
             }
             startButtonDisabled={!userWalletsStatus.hasWinstonToStoreSession}
+            loadingMode={loadingMode}
             onStartSessionClick={handleBeforeSessionStarted}
             onDeleteUserClick={handleDeleteUser}
           />   
