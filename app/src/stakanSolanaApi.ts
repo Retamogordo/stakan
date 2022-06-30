@@ -473,7 +473,6 @@ export async function loginUser(
   // in browser pass 'undefined' here so ArConnect is used
   arweaveWallet: JWKInterface | undefined,
 ) : Promise<User | undefined> {
-  console.log("loginUser 1");
   const user = new User(
     'dummy_user',
     stakanState.program,
@@ -481,11 +480,9 @@ export async function loginUser(
     arweave,
     arweaveWallet,
   );
-  console.log("loginUser 2");
   
   try {
     await user.reloadFromChain(stakanState, undefined);
-  console.log("loginUser 3");
 
   } 
   catch(e) {

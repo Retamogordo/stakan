@@ -4,6 +4,7 @@ import useLoginUser from "./UseLoginUser"
 import * as stakanApi from "./stakanSolanaApi";
 
 import { IDL, Stakan } from './idl/stakan'
+import { UseLogTerminal } from './UseLogTerminal';
 
 const LoginProvider = (props: any) => {
 
@@ -11,7 +12,7 @@ const LoginProvider = (props: any) => {
         null
     );
 //    console.log("LoginProvider, userName: ", userName);
-    const userConnectionCtx = useLoginUser(userName);
+    const userConnectionCtx = useLoginUser(userName, props.logCtx);
     
 //    console.log("LoginProvider: ",  userConnectionCtx);
 //    userConnectionCtx.user = null;
@@ -29,7 +30,7 @@ const LoginProvider = (props: any) => {
     }
 
     useEffect(() => {
-        console.log("LoginProvider: useEffect ",  userConnectionCtx);
+//        console.log("LoginProvider: useEffect ",  userConnectionCtx);
         
         setUserName(userConnectionCtx.user?.username 
             ? userConnectionCtx.user?.username.slice()
@@ -39,12 +40,14 @@ const LoginProvider = (props: any) => {
     [])
                 
     useEffect(() => {
-        console.log("LoginProvider.userName: ", userName);
+//        console.log("LoginProvider.userName: ", userName);
+//        props.logCtx.log("LoginProvider.userName: " + userName);
+//        console.log("------------------------ ", logCtx);
     },
     [userName])
 
     useEffect(() => {
-        console.log("^^^^^^^^^^^^^^^^^^^^^^^^LoginProvider.userConnectionCtx: ", userConnectionCtx);
+//        console.log("^^^^^^^^^^^^^^^^^^^^^^^^LoginProvider.userConnectionCtx: ", userConnectionCtx);
         props.loggedUserChanged && props.loggedUserChanged(userConnectionCtx);
     },
     [userConnectionCtx.user])

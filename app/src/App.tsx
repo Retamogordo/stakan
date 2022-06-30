@@ -22,8 +22,8 @@ import  ArweaveConnectionProvider  from './ArweaveConnectionProvider'
 import Arweave from 'arweave'
 import {UserConnectionContextState} from './UseLoginUser'
 import { setupStakan } from './stakanLogic'
-
-
+import { LogTerminal } from './LogTerminal'
+import { UseLogTerminal } from './UseLogTerminal';
 
 //import * as ArConnect from 'arconnect'
 //import { ArjsProvider, useArjs } from 'arjs-react'
@@ -54,6 +54,8 @@ function App() {
   const [sessionActive, setSessionActive] = useState(false);
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
   const [loadingMode, setLoadingMode] = useState(false);
+  
+  const logCtx = UseLogTerminal({log: ''}); 
 
   const cols = 10;
   const rows = 16;
@@ -212,6 +214,7 @@ function App() {
         <div className='left-panel'>
           <WalletConnectionProvider 
             loggedUserChanged={handleUserChanged}
+            logCtx={logCtx}
           />
           <div>
             Balance {userWalletsStatus.solanaBalance}
@@ -262,10 +265,8 @@ function App() {
 
       </div>
       
-      <div className="output_terminal_container">
-        <textarea id="output_terminal">
-        </textarea>
-      </div>  
+{/*      <LogTerminal ctx={logCtx}/> */}
+      <LogTerminal ctx={logCtx}/>
 
       <footer className="main-footer">
         sdfdsafsafdsa

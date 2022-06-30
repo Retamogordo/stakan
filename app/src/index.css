@@ -84,11 +84,14 @@ code {
   width: 100%;
   bottom: 0px;
   left: 0px;
-  background-color: red;
+  background-color: rgb(234, 255, 0);
   border-color: hsl(209, 96%, 46%);
   border-top-style: solid;
   border-left-style: hidden;
   border-width: thin;
+  white-space: pre-line;
+  text-align: left;
+  overflow-y:auto;
 }
 
 #output_terminal {
@@ -103,11 +106,5 @@ code {
   background-color: rgb(1, 39, 1); 
 }
 
-.phantom  {
-  display: 'block';
-  padding: '20px';
-  height: '60px';
-  width: '100%';
-  background-color: red; 
-}
+
 

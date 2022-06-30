@@ -1,7 +1,7 @@
-import React, { useMemo, FC } from 'react'
+import React, { useMemo, FC, useEffect } from 'react'
 
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { WalletAdapterNetwork, WalletError } from '@solana/wallet-adapter-base';
 import {
   //  GlowWalletAdapter,
     PhantomWalletAdapter,
@@ -34,7 +34,6 @@ export const WalletConnectionProvider = (props: any) => {
 //    const endpoint = useMemo(() => clusterApiUrl(network), [network]);
     const endpoint = 'https://devnet.genesysgo.net/';
 
-    console.log("ENDPOINT: ", endpoint)
 
     // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking and lazy loading --
     // Only the wallets you configure here will be compiled into your application, and only the dependencies
@@ -42,36 +41,30 @@ export const WalletConnectionProvider = (props: any) => {
     const wallets = useMemo(
         () => [
             new PhantomWalletAdapter(),
-//            new GlowWalletAdapter(),
-//            new SlopeWalletAdapter(),
             new SolflareWalletAdapter(),
-//            new TorusWalletAdapter(),
         ],
         [network]
     );
-/*
-                    <InitWorkspace 
-                        onConnectionChanged={props.onConnectionChanged}
-                        onWalletChanged={props.onWalletChanged}
-                        onProgramChanged={props.onProgramChanged}
-                    />
 
-*/
+    const handleError = (err: WalletError) => {
+        props.logCtx.logLn("wallet provider failure: " + err.message);
+    }
+
+    useEffect(() => {
+        props.logCtx.logLn("connecting wallet provider on " + endpoint + "...");
+    },
+    []);
 
     return (
         <ConnectionProvider endpoint={endpoint}>
-            <WalletProvider wallets={wallets} autoConnect={true}>
+            <WalletProvider wallets={wallets} autoConnect={true} onError={handleError}>
                 <WalletModalProvider>
                     <WalletMultiButton />
                     <WalletDisconnectButton />
                 </WalletModalProvider>
                 <LoginProvider 
                     loggedUserChanged={props.loggedUserChanged}
-/*                        userToSignUp={props.userToSignUp}
-                        onConnectionChanged={props.onConnectionChanged}
-                        onWalletChanged={props.onWalletChanged}
-                        onProgramChanged={props.onProgramChanged}
-                        */
+                    logCtx={props.logCtx}
                 />
             </WalletProvider>
         </ConnectionProvider>

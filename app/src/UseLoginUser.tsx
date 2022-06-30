@@ -7,6 +7,7 @@ import { Program, Provider, Wallet } from "@project-serum/anchor";
 import Arweave from 'arweave'
 
 import { IDL, Stakan } from './idl/stakan'
+import { LogTerminalContext } from './UseLogTerminal';
 
 export class UserConnectionContextState {
     user: stakanApi.User | null;
@@ -30,7 +31,10 @@ export class UserConnectionContextState {
     }
 }
 
-const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextState => {
+const useLoginUser = (
+    usernameToSignUp: string | null,
+    logCtx: LogTerminalContext,
+): UserConnectionContextState => {
     const [stakanProgram, setStakanProgram] = useState<Program<Stakan> | null>(null);
     const [stakanState, setStakanState] = useState<stakanApi.StakanState | null>(null);
     const [arweave, setArweave] = useState<Arweave | null>(null);
@@ -46,7 +50,16 @@ const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextSta
     console.log("usernameToSignUp: ", usernameToSignUp);
 
     const reconnect = async () => {
+/*
+        if (walletCtx.connected) {
+            console.log("[[[[[[[[[[[[[[[[[[[[ CONNECTED, connecting: ", walletCtx.connecting)
+        } else {
+            console.log(" DISCONNECTED ]]]]]]]]]]]]]]]]]]], connecting: ", walletCtx.connecting)
+        }
+*/
         if (walletCtx.publicKey && walletCtx.connected && anchorWallet) {
+//            if (walletCtx.publicKey && walletCtx.connected && !walletCtx.connecting && anchorWallet) {
+            
             const connection = new Connection(anchorConnection.connection.rpcEndpoint, 'confirmed');
             const opts: ConfirmOptions = {
                 commitment: 'processed',
@@ -70,7 +83,10 @@ const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextSta
                 logging: false,
             });
   
+            logCtx.log("retrieving stakan global state account...")
             const state = await stakanApi.findOnChainStakanAccount(program);
+            logCtx.logLn(state 
+                ? "done, pubkey: " + state?.pubKey.toBase58() : "failed");
 
             console.log("stakanState: ", state);
 
@@ -91,9 +107,10 @@ const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextSta
     }
 
     const tryToLogin = async (arweave: Arweave) => {
-        console.log("in tryToLogin");
-    
+//        console.log("in tryToLogin");    
         if (stakanProgram && stakanState) {
+            logCtx.log("logging user in...");
+            
             const user = await stakanApi.loginUser(
                 stakanProgram.provider.wallet as Wallet, 
                 stakanState, 
@@ -102,9 +119,8 @@ const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextSta
                 // to connect via ArConnect in browser mode
                 undefined
             );
-    
-            console.log("User: ", user);
-
+            user ? logCtx.logLn("done, username " + user.username) : logCtx.logLn("failed");
+//            console.log("User: ", user);
             setCurrUser(user ? user : null);
         }
     }
@@ -115,12 +131,13 @@ const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextSta
     }
     
     const tryToSignUp = async (user: stakanApi.User, arweave: Arweave) => {
-        console.log("tryToSignUp: ", user);
-
+//        console.log("tryToSignUp: ", user);
+        logCtx.log("signing user up...");
         if (stakanState && arweave) {
             await stakanApi.signUpUser(user, stakanState);
             await tryToLogin(arweave);
         }
+        logCtx.logLn("done, username " + user.username)
     }
 
     useEffect(() => {
@@ -147,7 +164,7 @@ const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextSta
             logout();
         }
     },
-    [stakanState, usernameToSignUp]);
+    [stakanState, usernameToSignUp, arweave]);
 
     useEffect(() => {
 //        props.onConnectionChanged && props.onConnectionChanged(anchorConnection);
@@ -157,9 +174,15 @@ const useLoginUser = (usernameToSignUp: string | null): UserConnectionContextSta
     
     useEffect(() => {
 //        props.onWalletChanged && props.onWalletChanged(walletCtx, anchorWallet);
+        if (walletCtx.connected)
+            logCtx.logLn("wallet connected, pubkey " + walletCtx.publicKey?.toBase58())
+        else 
+            logCtx.logLn("wallet disconnected ");
+
         reconnect();
     },
-    [walletCtx.connected, walletCtx.connecting]);
+//    [walletCtx.connected, walletCtx.connecting]);
+    [walletCtx.connected]);
 
     useEffect(() => {
 //        props.onProgramChanged && props.onProgramChanged(stakanProgram);
