@@ -1,59 +1,26 @@
 
-import { web3, BN, Program, Wallet, Provider } from "@project-serum/anchor";
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import './App.css';
 import {StakanControls, StakanSession} from './StakanControls';
 import StakePanel from './StakePanel'
-import RecordPanel from './RecordPanel'
-import { WalletConnectionProvider } from './WalletConnectionProvider';
-import { StakeButton } from './WalletAdapter';
-import { Connection } from '@solana/web3.js'
-import * as StakanApi from './stakanSolanaApi'
-import { IDL, Stakan } from './idl/stakan'
-//import { localNetProgram } from './confProgram'
-import { useConnection, useWallet, 
-  useAnchorWallet, AnchorWallet, 
-  ConnectionContextState, WalletContextState } from '@solana/wallet-adapter-react';
-import { clusterApiUrl } from '@solana/web3.js';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { devNetProgram } from './confProgram'
 import * as stakanApi from './stakanSolanaApi'
-import  ArweaveConnectionProvider  from './ArweaveConnectionProvider'
-import Arweave from 'arweave'
 import {UserConnectionContextState} from './UseLoginUser'
 import { setupStakan } from './stakanLogic'
 import { LogTerminal } from './LogTerminal'
 import { UseLogTerminal } from './UseLogTerminal';
+import { UserWalletsPanel, UserWalletsStatus } from './UserWalletsPanel';
 
-//import * as ArConnect from 'arconnect'
-//import { ArjsProvider, useArjs } from 'arjs-react'
-class UserWalletsStatus {
-  solanaBalance: number;
-  arweaveWalletConnected: boolean;
-  arweaveBalance: number;
-  hasWinstonToStoreSession: boolean;
-  arweaveProviderConnected: boolean;
-
-  constructor() {
-    this.solanaBalance = 0;
-    this.arweaveWalletConnected = false;
-    this.arweaveBalance = 0;
-    this.hasWinstonToStoreSession = false;
-    this.arweaveProviderConnected = false;
-  }
-}
-
-function App() {
-  
-  const stakanControlsRef = useRef<typeof StakanControls>(null);
-  const stakePanelRef = useRef<StakePanel>(null);
-  const [userWalletCtx, setUserWalletCtx] = useState<WalletContextState | null>(null)
+function App() {  
   const [userConnectionCtx, setUserConnectionCtx] = useState<UserConnectionContextState | null>(null);
 
   const [signalStartSession, setSignalStartSession] = useState(false);
+  const [signalUserWalletsStatus, setSignalUserWalletsStatus] = useState(false);
+  const [rewardBalance, setRewardBalance] = useState(0);
+
   const [sessionActive, setSessionActive] = useState(false);
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
   const [loadingMode, setLoadingMode] = useState(false);
+  const [pollTimer, setPollTimer] = useState<NodeJS.Timer | null>(null);
   
   const logCtx = UseLogTerminal({log: ''}); 
 
@@ -62,7 +29,7 @@ function App() {
   const tiles = setupStakan(rows, cols);
 
   const handleBeforeSessionStarted = async () => {
-    const stake = 0;
+    const stake = 1;
     try {
       console.log("Srart session, tiles: ", tiles);
 
@@ -87,16 +54,17 @@ function App() {
             user, 
             stakanState, 
             stake,
+            logCtx,
             tiles.colsWithBorder,
             tiles.rowsWithBorder,
           );
           await user?.reloadFromChain(stakanState, user?.username)
         }
 
-        await updateUserWalletsStatus();
+//        await updateUserWalletsStatus();
+        setSignalUserWalletsStatus(true);
 
         console.log("user.gameSessionAcc: ", user?.gameSessionAccount);
-        console.log("user.gameSessionAcc: ", userConnectionCtx?.user?.gameSessionAccount);
 
         setSignalStartSession(true);
       }
@@ -111,15 +79,9 @@ function App() {
   }
   
   const handleSessionUpdated = async (session: StakanSession, tiles: any) => {
-    const user = userConnectionCtx?.user;
-    const stakanState = userConnectionCtx?.stakanState;
-
-    if (user && stakanState) {
-    }
   }
 
   const handleGameOver = async (tiles: any) => {
-    console.log("ON GAME OVER, tiles: ", tiles);
     const user = userConnectionCtx?.user;
     const stakanState = userConnectionCtx?.stakanState;
 
@@ -131,22 +93,22 @@ function App() {
         await stakanApi.finishGameSession(
           user, 
           stakanState,
+          logCtx,
           tiles.colsWithBorder,
           tiles.rowsWithBorder
           );
         await user?.reloadFromChain(stakanState, user?.username);
 
-        await updateUserWalletsStatus();
+//        await updateUserWalletsStatus();
+        setSignalUserWalletsStatus(true);
 
-        console.log("user.gameSessionAcc: ", user?.gameSessionAccount);
-        console.log("user.gameSessionAcc: ", userConnectionCtx?.user?.gameSessionAccount);
+//        console.log("user.gameSessionAcc: ", user?.gameSessionAccount);
       }
     } catch(e) {
       setLoadingMode(false);
       throw e;
     }
     setLoadingMode(false);
-    //    if (stakePanelRef.current) stakePanelRef.current.visible = true;
   }
 
   const handleDeleteUser = async () => {
@@ -154,53 +116,36 @@ function App() {
     && await stakanApi.forceDeleteUser(userConnectionCtx.user, userConnectionCtx.stakanState) 
   }
     
-  const handleUserChanged = (loggedUserConnetctionCtx: UserConnectionContextState) => {
-    console.log("handleUserChanged -> user: ", loggedUserConnetctionCtx);
-
+  const handleUserConnectionChanged = (loggedUserConnetctionCtx: UserConnectionContextState,) => {
+//    console.log("handleUserChanged -> user: ", loggedUserConnetctionCtx);
     setUserConnectionCtx(loggedUserConnetctionCtx);
   }
 
-  const updateUserWalletsStatus = async () => {
-    const user = userConnectionCtx?.user;
-
-    const userBalance = await user?.getBalance();
-    
-    const arweaveConnected = !!user && await user?.isArweaveWalletConnected()
-    const arweaveProviderConnected = !!user && await user?.isArweaveProviderConnected()
-   // const arweavePro
-    const arBalance = arweaveConnected && arweaveProviderConnected 
-                        ? await user?.getArweaveBalance() : 0;
-    const hasWinstonToStoreSession = !!user && await user?.hasWinstonToStoreSession();
-
-    setUserWalletsStatus((prevUserWalletsStatus) => {
-      let userWalletsStatus = new UserWalletsStatus();
-      
-      userWalletsStatus.solanaBalance = userBalance ? userBalance : 0;
-      userWalletsStatus.arweaveWalletConnected = arweaveConnected;
-      userWalletsStatus.arweaveBalance = arBalance ? arBalance : 0;
-      userWalletsStatus.hasWinstonToStoreSession = hasWinstonToStoreSession;
-      userWalletsStatus.arweaveProviderConnected = arweaveProviderConnected;
-
-      return userWalletsStatus;
-    })
+  const handleUserWalletsStatusChanged = (userWalletsSt: UserWalletsStatus) => {
+    setUserWalletsStatus(userWalletsSt);
   }
 
-  const airdropWinston = async () => {
-    const user = userConnectionCtx?.user;
-
-    if (await user?.arweaveAirdropMin()) await updateUserWalletsStatus();
+  const pollChain = () => {
+    userConnectionCtx?.stakanState?.getRewardFundBalance()
+      .then( balance => {
+//    console.log(balance?.value.uiAmount);
+        setRewardBalance(balance?.value.uiAmount ? balance?.value.uiAmount : 0)
+      });
   }
 
   useEffect(() => {
-//    console.log('App ->  effect: ');
-  }, []);
+    if (userConnectionCtx?.stakanState) {
+      !pollTimer && setPollTimer(setInterval(pollChain, 2000))
+    } else {
+      clearInterval(pollTimer ? pollTimer : undefined);
+      setPollTimer(null);
+    }
+    return () => clearInterval(pollTimer ? pollTimer : undefined);
+  }, [userConnectionCtx?.stakanState]);
 
   useEffect(() => {
-    console.log("userConnectionCtx?.user->useEffect: ", userConnectionCtx?.user?.username);
-
-    updateUserWalletsStatus();
+    setSignalUserWalletsStatus(true);
   }, [userConnectionCtx?.user]);
-  //  <StakePanel ref={stakePanelRef} onStartSessionClick={handleStartSession}/>   
 
   useEffect(() => {
     if (signalStartSession) {
@@ -208,43 +153,32 @@ function App() {
     } 
   }, [signalStartSession]);
 
+  useEffect(() => {
+    if (signalUserWalletsStatus) {
+      setSignalUserWalletsStatus(false);
+    } 
+  }, [signalUserWalletsStatus]);
+
   return (
     <div className="App">
       <div className="main-wrapper">
-        <div className='left-panel'>
-          <WalletConnectionProvider 
-            loggedUserChanged={handleUserChanged}
-            logCtx={logCtx}
-          />
-          <div>
-            Balance {userWalletsStatus.solanaBalance}
-          </div>
-
-          <div>
-            Arweave Balance {userWalletsStatus.arweaveBalance}
-            {!userWalletsStatus.hasWinstonToStoreSession 
-              && userWalletsStatus.arweaveWalletConnected
-              && userWalletsStatus.arweaveProviderConnected
-              ? <input type='button' 
-                            value={'Airdrop some winston'} 
-                            onClick={airdropWinston}>
-              </input>
-              : userWalletsStatus.arweaveWalletConnected
-                ? userWalletsStatus.arweaveProviderConnected 
-                  ? null 
-                  : <div>Arweave provider is disconnected. Is arlocal running ?</div>
-                : <div>Arweave wallet is disconnected. Is ArConnect installed ?</div>
-            }
-          </div>
-        </div>
+        <UserWalletsPanel 
+          update={signalUserWalletsStatus} 
+          logCtx={logCtx}
+          onUserConnectionChanged={handleUserConnectionChanged}
+          onUserWalletsStatusChanged={handleUserWalletsStatusChanged}
+        />
 
         <div className="stakan-wrapper">
           <StakePanel 
             visible={!sessionActive}
             startButtonLabel={
-              userConnectionCtx?.user?.gameSessionAccount ? 'Resume' : 'Start'
+              userConnectionCtx?.user?.gameSessionAccount ? 'Resume' : 'Stake 1 & Start'
             }
-            startButtonDisabled={!userWalletsStatus.hasWinstonToStoreSession}
+            startButtonDisabled={
+              !userWalletsStatus.hasWinstonToStoreSession
+              || userWalletsStatus.tokenBalance <= 0
+            }
             loadingMode={loadingMode}
             onStartSessionClick={handleBeforeSessionStarted}
             onDeleteUserClick={handleDeleteUser}
@@ -260,12 +194,20 @@ function App() {
           />       
         </div>
 
-        <div className="side" >
+        <div className="right-panel">
+          <div>
+            Reward Fund balance {rewardBalance}
+          </div>
+          <div>
+            Estimated Winner Reward {(() => {
+              const stake = 1; // supposing that stake is always 1
+              return Math.floor(rewardBalance/2 - stake);
+            })()}
+          </div>
         </div>
 
       </div>
       
-{/*      <LogTerminal ctx={logCtx}/> */}
       <LogTerminal ctx={logCtx}/>
 
       <footer className="main-footer">
@@ -273,7 +215,6 @@ function App() {
       </footer>
     </div>
   );
-
 }
 
 export default App;

@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import StakanView from './StakanView'
-import StakePanel from './StakePanel'
 
 const ENTRY_DELAY = 700;
 const STEP_DELAY = 300;
@@ -44,13 +43,11 @@ export function StakanControls(props: any) {
     const [moveDelay, setMoveDelay] = useState<ReturnType<typeof setInterval> | null>(null);
     const [disableControls, setDisableControls] = useState(true);
     const [childWillRender, setChildWillRender] = useState(0);
-//    const [triggerStartSession, setTriggerStartSession] = useState(props.startSession);
   
     const rows = 16;
     const cols = 10;
     
     const handleKeyDown = useCallback( (event: KeyboardEvent) => {
-    //    console.log("keydown: ", event.keyCode);
         setKeydown(event.keyCode);
       },
     []);
@@ -123,7 +120,6 @@ export function StakanControls(props: any) {
     }
   
     const setEntryDelay = () => {
-  //      console.log("setEntryDelay timer id:", moveDelay);  
         setDisableControls(true);    
         resetMoveDelay();
         resetKeydownDelay();
@@ -150,30 +146,16 @@ export function StakanControls(props: any) {
           session.updateScore(linesCleared);
           setSession(session);
         }
-/*        
-        setSession( (prevSession: StakanSession | null) => {
-          if (prevSession !== null) {
-//            let session = Object.assign({}, prevSession);
-            prevSession.updateScore(linesCleared);
-            return prevSession;
-          }
-          return null;
-        })  */
-      }
-      
+      }      
       setEntryDelay();
     }
   
     const handleGameOver = () => {
-      console.log("Game over: ", session);
-  //    console.log("Game over timer id:", moveDelay);
-      
       resetMoveDelay();
       resetKeydownDelay();
   
       window.removeEventListener('keydown', handleKeyDown)
       
-//      setSession(null);
       if (session !== null) {
         session.active = false;
         setSession(session);
@@ -190,8 +172,6 @@ export function StakanControls(props: any) {
         if (prevSession !== null && prevSession.active) throw 'Session already started';
         if (stakanRef.current === null) throw 'in sendStartSession stakanRef.current is null';
 
-        //        if (stakePanelRef.current === null) throw 'in sendStartSession stakePanelRef.current is null';       
-//        stakePanelRef.current.visible = false;
         stakanRef.current.focus();
         window.addEventListener('keydown', handleKeyDown)
   
@@ -206,7 +186,6 @@ export function StakanControls(props: any) {
       window.addEventListener('resize', handleResize);
 
       return () => {
-//        handleGameOver();
         window.removeEventListener('resize', handleResize);
       }
     },
@@ -240,7 +219,6 @@ export function StakanControls(props: any) {
     useEffect(() => {
       if (session !== null && session.active) {
         stakanRef.current && stakanRef.current.setSession(session);
-  //    console.log("session use effect, stakanRef: ", stakanRef.current, "session: ", session);
         setEntryDelay();
 
         props.onSessionUpdated(session, stakanRef.current?.tiles);
@@ -254,12 +232,6 @@ export function StakanControls(props: any) {
     [stakanRef])
   
     return (
-      /*
-      <div className="stakan-wrapper">
-        <StakePanel 
-          visible={session===null || !session.active} 
-          onStartSessionClick={beforeSessionStarted}
-        />   */
         <StakanView 
           ref={stakanRef}
           rows={rows} 
@@ -269,6 +241,5 @@ export function StakanControls(props: any) {
           willRender={() => setChildWillRender(prev => prev + 1)}
           onFull={handleGameOver}
         />
-//      </div>
-  )
+    )
 }

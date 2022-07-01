@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React from 'react'
 import {RevolvingDot} from "react-loader-spinner"
 
 class StakePanel extends React.Component {
@@ -22,13 +22,11 @@ class StakePanel extends React.Component {
     render() {
         const props = this.props;
 
-//        console.log("Panel render, visible: ", props.visible);
-//        const background = props.visible ? 'rgba(20, 19, 19, 0.396)' : 'rgba(20, 19, 19, 0.0)'
         const style = {background: 'rgba(20, 19, 19, 0.5)'} 
          
         return props.visible ?
             (
-                <div className='stake-panel' style={style}>
+                <div className='control-panel' style={style}>
                     <div className='header'></div>
                     <div>
                         <input type='button' 

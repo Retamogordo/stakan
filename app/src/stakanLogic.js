@@ -36,9 +36,7 @@ export function setupStakan(rows, cols) {
   export function canMove(piece, stakan, xOffset, yOffset) {
     for ( let i = 0; i < 4; i++ ) {
         for ( let j = 0; j < 4; j++ ) {
-  //          console.log("i=", i, "J=", j, "xOffset=", xOffset, "yOffset=", yOffset);
             if (
-  //            (stakan.tiles[i + xOffset][j + yOffset] & piece[4-1-j][i]) !== 0
               (stakan.tiles[i + xOffset][j + yOffset] !== 0 && piece[4-1-j][i] !== 0)
             ) {
               return false;
@@ -51,7 +49,6 @@ export function setupStakan(rows, cols) {
   export function stamp(piece, stakan, xOffset, yOffset) {
     let nextStakan = { ...stakan };
     for ( let i = 0; i < 4; i++ ) {
-  //    console.log(piece[i]);
       for ( let j = 0; j < 4; j++ ) {
         nextStakan.tiles[i + xOffset][j + yOffset] |= piece[4-1-j][i];
       }
@@ -60,7 +57,6 @@ export function setupStakan(rows, cols) {
   }
   
   export function isFull(stakan) {
-    //  for( let i = 1; i < tiles.cols - 1; i++ ) 
     for( let i = 0; i < stakan.cols; i++ ) 
       if (stakan.tiles[i + SIDE_THICKNESS][stakan.rows + 1] !== 0) return true
     return false

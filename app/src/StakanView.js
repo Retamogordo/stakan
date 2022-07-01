@@ -1,13 +1,11 @@
-import React, { useRef, useEffect, useState, useReducer } from 'react'
-import { createTetrimino, createTetriminoByValue } from './tetrimino'
+import React from 'react'
+import { createTetriminoByValue } from './tetrimino'
 import { setupStakan, stamp, clearRows, isFull, canMove, STAKAN_BORDER_VALUE } from './stakanLogic'
-import CanvasButton from './CanvasButton'
 
 const drawValue = (ctx, x, y, width, label, value) => {
   ctx.font = 'IBM Plex Mono';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
-//  ctx.textBaseline = 'middle';
   ctx.fillStyle = 'white';
   const text = label + value.toString();
   ctx.fillText(text, x, y);
@@ -16,10 +14,6 @@ const drawValue = (ctx, x, y, width, label, value) => {
 const drawTiles = (ctx, tiles, tileSize) => {
   const rowsWithBorder = tiles.rowsWithBorder;
   const colsWithBorder = tiles.colsWithBorder;
-
-//    console.log("rows:", rowsWithBorder, "cols: ", colsWithBorder)
-//    console.log("ctx.canvas.width:", ctx.canvas.width, "ctx.canvas.height: ", ctx.canvas.height)
-//    console.log("cols_width: ", cols_width, "row_heigth:", row_heigth, "tileSize: ", tileSize)
 
   for ( let i = 0; i < colsWithBorder; i++ ) {
     for ( let j = 0; j < rowsWithBorder; j++ ) {
@@ -34,7 +28,6 @@ const drawTiles = (ctx, tiles, tileSize) => {
         ctx.fillStyle = createTetriminoByValue(tiles.tiles[i][j]).color;
       }
       else if (i % 2 === 0) {
-//        ctx.fillStyle = 'rgba(10,10,10, 0.3)';
         ctx.fillStyle = 'rgb(10,10,10)';
       } 
       else ctx.fillStyle = 'rgb(0,0,0)';
@@ -108,8 +101,6 @@ class StakanView extends React.Component {
   }
   
   fitToParent() {
-//    console.log("fitToParent: ", this.canvasRef.current);
-
     this.tileSize = ( 0.8 * window.innerHeight / this.tiles.rowsWithBorder );
 
     if (this.canvasRef.current === null ) return;
@@ -123,10 +114,7 @@ class StakanView extends React.Component {
   startPieceXOffset() { return Math.floor(this.tiles.colsWithBorder/2 - 1) }
   startPieceYOffset() { return this.tiles.rowsWithBorder - 4; }
 
-  pieceEntryCommand() {
-//    console.log("StakanView->pieceEntryCommand(), tiles: ", this.tiles, this.currentPiece);
-//    this.session = session;
-  
+  pieceEntryCommand() {  
     this.pieceXOffset = this.startPieceXOffset();
     this.pieceYOffset = this.startPieceYOffset();
     this.rotationPosition = 0;

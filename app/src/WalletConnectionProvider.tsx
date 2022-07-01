@@ -3,13 +3,8 @@ import React, { useMemo, FC, useEffect } from 'react'
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork, WalletError } from '@solana/wallet-adapter-base';
 import {
-  //  GlowWalletAdapter,
     PhantomWalletAdapter,
-  //  SlopeWalletAdapter,
     SolflareWalletAdapter,
-  //  SolletExtensionWalletAdapter,
-  //  SolletWalletAdapter,
-  //  TorusWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 
 import {
@@ -18,10 +13,7 @@ import {
     WalletMultiButton
 } from '@solana/wallet-adapter-react-ui';
 
-import { clusterApiUrl } from '@solana/web3.js';
-import { StakeButton } from './WalletAdapter';
 import LoginProvider from './LoginProvider';
-
 
 // Default styles that can be overridden by your app
 require('@solana/wallet-adapter-react-ui/styles.css');

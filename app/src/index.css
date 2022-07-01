@@ -26,6 +26,7 @@ code {
   height: 90%;
   flex: 1 0 auto;
   width: 25%;
+  text-align: left;
   background: rgb(128, 144, 5);
 }
 
@@ -49,23 +50,23 @@ code {
   border-style: solid;
 }
 
-.stake-panel {
+.control-panel {
   position: absolute;
   top: 0px;
   left: 0px;
   width: 80%;
   height: 100%; 
 }
-.stake-panel > .header {
+.control-panel > .header {
   margin-top: 30%;
 }
-.stake-panel > div {
+.control-panel > div {
   width: 100%;
   background: rgba(237, 4, 4, 0.396);
   text-align: right;
   bottom: 100px;
 }
-.side {
+.right-panel {
   width: 25%;
   height: 90%;
   flex: 1 0 auto;

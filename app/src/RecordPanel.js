@@ -1,6 +1,5 @@
 function RecordPanel(props) {
 
-    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!, ", props);
     const { records, ...rest } = props;
 
     const recordList= records.map(
