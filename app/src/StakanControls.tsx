@@ -160,7 +160,7 @@ export function StakanControls(props: any) {
         session.active = false;
         setSession(session);
       }
-      props.onGameOver(stakanRef.current?.tiles);
+      props.onGameOver(session, stakanRef.current?.tiles);
     }
 
     const beforeSessionStarted = () => {

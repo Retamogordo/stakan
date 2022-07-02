@@ -281,48 +281,6 @@ export type Stakan = {
         {
           "name": "stake",
           "type": "u64"
-        },
-        {
-          "name": "tilesCols",
-          "type": "u8"
-        },
-        {
-          "name": "tilesRows",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "updateGameSession",
-      "accounts": [
-        {
-          "name": "userAccount",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "gameSessionAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "score",
-          "type": "u64"
-        },
-        {
-          "name": "durationMillis",
-          "type": "u64"
-        },
-        {
-          "name": "tiles",
-          "type": "bytes"
         }
       ]
     },
@@ -380,6 +338,10 @@ export type Stakan = {
         {
           "name": "userAccountBump",
           "type": "u8"
+        },
+        {
+          "name": "score",
+          "type": "u64"
         }
       ]
     },
@@ -468,32 +430,16 @@ export type Stakan = {
         "kind": "struct",
         "fields": [
           {
+            "name": "id",
+            "type": "bytes"
+          },
+          {
             "name": "userAccount",
             "type": "publicKey"
           },
           {
-            "name": "score",
-            "type": "u64"
-          },
-          {
-            "name": "durationMillis",
-            "type": "u64"
-          },
-          {
             "name": "stake",
             "type": "u64"
-          },
-          {
-            "name": "tilesCols",
-            "type": "u8"
-          },
-          {
-            "name": "tilesRows",
-            "type": "u8"
-          },
-          {
-            "name": "tiles",
-            "type": "bytes"
           }
         ]
       }
@@ -913,48 +859,6 @@ export const IDL: Stakan = {
         {
           "name": "stake",
           "type": "u64"
-        },
-        {
-          "name": "tilesCols",
-          "type": "u8"
-        },
-        {
-          "name": "tilesRows",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "updateGameSession",
-      "accounts": [
-        {
-          "name": "userAccount",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "gameSessionAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "score",
-          "type": "u64"
-        },
-        {
-          "name": "durationMillis",
-          "type": "u64"
-        },
-        {
-          "name": "tiles",
-          "type": "bytes"
         }
       ]
     },
@@ -1012,6 +916,10 @@ export const IDL: Stakan = {
         {
           "name": "userAccountBump",
           "type": "u8"
+        },
+        {
+          "name": "score",
+          "type": "u64"
         }
       ]
     },
@@ -1100,32 +1008,16 @@ export const IDL: Stakan = {
         "kind": "struct",
         "fields": [
           {
+            "name": "id",
+            "type": "bytes"
+          },
+          {
             "name": "userAccount",
             "type": "publicKey"
           },
           {
-            "name": "score",
-            "type": "u64"
-          },
-          {
-            "name": "durationMillis",
-            "type": "u64"
-          },
-          {
             "name": "stake",
             "type": "u64"
-          },
-          {
-            "name": "tilesCols",
-            "type": "u8"
-          },
-          {
-            "name": "tilesRows",
-            "type": "u8"
-          },
-          {
-            "name": "tiles",
-            "type": "bytes"
           }
         ]
       }

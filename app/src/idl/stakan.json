@@ -281,48 +281,6 @@
         {
           "name": "stake",
           "type": "u64"
-        },
-        {
-          "name": "tilesCols",
-          "type": "u8"
-        },
-        {
-          "name": "tilesRows",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "updateGameSession",
-      "accounts": [
-        {
-          "name": "userAccount",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "gameSessionAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "score",
-          "type": "u64"
-        },
-        {
-          "name": "durationMillis",
-          "type": "u64"
-        },
-        {
-          "name": "tiles",
-          "type": "bytes"
         }
       ]
     },
@@ -380,6 +338,10 @@
         {
           "name": "userAccountBump",
           "type": "u8"
+        },
+        {
+          "name": "score",
+          "type": "u64"
         }
       ]
     },
@@ -468,32 +430,16 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "id",
+            "type": "bytes"
+          },
+          {
             "name": "userAccount",
             "type": "publicKey"
           },
           {
-            "name": "score",
-            "type": "u64"
-          },
-          {
-            "name": "durationMillis",
-            "type": "u64"
-          },
-          {
             "name": "stake",
             "type": "u64"
-          },
-          {
-            "name": "tilesCols",
-            "type": "u8"
-          },
-          {
-            "name": "tilesRows",
-            "type": "u8"
-          },
-          {
-            "name": "tiles",
-            "type": "bytes"
           }
         ]
       }

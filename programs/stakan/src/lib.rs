@@ -47,21 +47,13 @@ pub mod stakan {
         ctx: Context<SellTokens>,
         user_account_bump: u8,
         token_amount: u64, 
-//        stakan_state_account_bump: u8,
     ) -> Result<()> {
         crate::transactions::tokens::sell(ctx, user_account_bump, token_amount)
     }
 
-    pub fn init_game_session(ctx: Context<InitGameSession>, stake: u64, 
-        tiles_cols: u8, tiles_rows: u8) -> Result<()> {
-        crate::transactions::game_session::init(ctx, stake, tiles_cols, tiles_rows)
+    pub fn init_game_session(ctx: Context<InitGameSession>, stake: u64,) -> Result<()> {
+        crate::transactions::game_session::init(ctx, stake)
     }
-/*
-    pub fn update_game_session(ctx: Context<UpdateGameSession>, score: u64,
-        duration_millis: u64, tiles: Vec<u8>) -> Result<()> {
-        crate::transactions::game_session::update(ctx, score, duration_millis, tiles)
-    }
-*/
     pub fn finish_game_session(ctx: Context<FinishGameSession>,
         // just to ensure arweave has confirmed storage transaction
         _dummy_arweave_storage_tx_id: Option<String>, 
@@ -78,13 +70,11 @@ pub mod stakan {
 
     pub fn sign_out_user(
         ctx: Context<SignOutUser>,
-//        user_account_bump: u8,
     ) -> Result<()> {
         crate::transactions::user::sign_out(ctx)
     }
     pub fn force_delete_user(
         ctx: Context<ForceDeleteUser>,
-//        user_account_bump: u8,
     ) -> Result<()> {
         crate::transactions::user::force_delete(ctx)
     }

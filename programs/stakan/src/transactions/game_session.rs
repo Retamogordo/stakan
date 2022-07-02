@@ -6,33 +6,28 @@ use crate::errors::StakanError;
 
 #[account]
 pub struct GameSession {
+    // use this id for quering this type of accounts 
+    // with getParsedProgramAccounts on frontend side
+    id: Vec<u8>, 
     user_account: Pubkey,
-    score: u64,
-    duration_millis: u64,
     stake: u64,
-    tiles_cols: u8,
-    tiles_rows: u8,
-    tiles: Vec<u8>,
 }
 
 impl GameSession {
-    pub(crate) fn size_for_init(tiles_cols: u8, tiles_rows: u8) -> usize {
+    const ID: &'static str = "GameSession";
+
+    pub(crate) fn size_for_init() -> usize {
         use std::mem::size_of;
 
         8
+        + size_of::<u32>() + Self::ID.len()
         + size_of::<Pubkey>()
         + size_of::<u64>()
-        + size_of::<u64>()
-        + size_of::<u64>()
-        + size_of::<u8>()
-        + size_of::<u8>()
-        + (size_of::<u32>() + (tiles_cols as usize * tiles_rows as usize)*size_of::<u8>())
-//        + (tiles_cols as usize * tiles_rows as usize)*size_of::<u8>()
     }
 }
 
 #[derive(Accounts)]
-#[instruction(stake: u64, tiles_cols: u8, tiles_rows: u8)]
+#[instruction(stake: u64)]
 
 pub struct InitGameSession<'info> {
     stakan_state_account: Account<'info, StakanGlobalState>,
@@ -54,7 +49,7 @@ pub struct InitGameSession<'info> {
     reward_funds_account: Account<'info, TokenAccount>,
 
     #[account(
-        init, space = GameSession::size_for_init(tiles_cols, tiles_rows),
+        init, space = GameSession::size_for_init(),
         payer = user_wallet,
         seeds = [
             b"game_session_account".as_ref(),
@@ -71,21 +66,7 @@ pub struct InitGameSession<'info> {
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
 }
-/*
-#[derive(Accounts)]
-pub struct UpdateGameSession<'info> {
-    user_account: Account<'info, User>,
 
-    #[account(mut,
-        constraint = game_session_account.user_account == user_account.key(),
-//        constraint = user_account.user.game_session == None
-        constraint = user_account.user.game_session == Some(game_session_account.key())
-    )]
-    game_session_account: Account<'info, GameSession>,
-
-    system_program: Program<'info, System>,
-}
-*/
 #[derive(Accounts)]
 pub struct FinishGameSession<'info> {
     #[account(mut)]
@@ -122,8 +103,6 @@ pub struct FinishGameSession<'info> {
 pub fn init(
     ctx: Context<InitGameSession>, 
     stake: u64,
-    tiles_cols: u8,
-    tiles_rows: u8,
 ) -> Result<()> {
     let reward_tokens_funds = ctx.accounts.reward_funds_account.amount;
 
@@ -138,19 +117,12 @@ pub fn init(
 
     let game_session_account = &mut ctx.accounts.game_session_account;
     
+    game_session_account.id = GameSession::ID.as_bytes().to_vec();
     game_session_account.user_account = ctx.accounts.user_account.key();
     game_session_account.stake = stake;
-    game_session_account.duration_millis = 0;
-    game_session_account.score = 0;
-    game_session_account.tiles_cols = tiles_cols;
-    game_session_account.tiles_rows = tiles_rows;
-    game_session_account.tiles = vec![0; (tiles_cols as usize)*(tiles_rows as usize)];
 
     ctx.accounts.user_account.set_game_session(Some(game_session_account.key()));
-/*
-    ctx.accounts.user_account.user.game_session = Some(game_session_account.key());
-    ctx.accounts.user_account.inner_size = ctx.accounts.user_account.user.size_for_borsh() as u16;
-*/
+
     Ok(())
 }
 
@@ -159,12 +131,9 @@ pub fn finish(ctx: Context<FinishGameSession>,
     _dummy_arweave_storage_tx_id: Option<String>, 
     user_account_bump: u8,
     score: u64,
-//    stakan_state_account_bump: u8,
 ) -> Result<()> {
-//    return Ok(());
 
     let global_max_score = ctx.accounts.stakan_state_account.global_max_score;
-//    let game_session_score = ctx.accounts.game_session_account.score;
     let game_session_score = score;
     let stake = ctx.accounts.game_session_account.stake;
     let username = ctx.accounts.user_account.user.username.clone();
@@ -241,23 +210,3 @@ pub fn finish(ctx: Context<FinishGameSession>,
     user_account.set_game_session(None);
     Ok(())
 }
-/*
-pub fn update(ctx: Context<UpdateGameSession>,
-    score: u64,
-    duration_millis: u64,
-    tiles: Vec<u8>,
-) -> Result<()> {
-
-    if ctx.accounts.game_session_account.score > score {
-        return Err(StakanError::ScoreCantDecrease.into());
-    }
-    if ctx.accounts.game_session_account.duration_millis > duration_millis {
-        return Err(StakanError::DurationCantDecrease.into());
-    }
-    ctx.accounts.game_session_account.score = score;
-    ctx.accounts.game_session_account.duration_millis = duration_millis;
-    ctx.accounts.game_session_account.tiles = tiles;
-
-    Ok(())
-}
-*/

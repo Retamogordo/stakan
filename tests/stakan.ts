@@ -72,14 +72,14 @@ before(async () => {
     
 
   console.log("searching stakan global state on chain...");
-  stakanState = await stakanApi.findOnChainStakanAccount(program) as stakanApi.StakanState;
+  stakanState = await stakanApi.queryStakanAccount(program) as stakanApi.StakanState;
 
   if (!stakanState) {
     console.log("not found, trying to initialize stakan global state...");
 
     await stakanApi.setUpStakan(program);
   
-    stakanState = await stakanApi.findOnChainStakanAccount(program) as stakanApi.StakanState;
+    stakanState = await stakanApi.queryStakanAccount(program) as stakanApi.StakanState;
     
     if (!stakanState) {
       console.log("Failed to set up stakan global state, exitting");
@@ -339,7 +339,7 @@ describe("stakan", () => {
     const currUser = user as stakanApi.User;  
     const cols = 10;
     const rows = 16;
-    await stakanApi.finishGameSession(currUser, stakanState, cols, rows);      
+    await stakanApi.finishGameSession(currUser, stakanState, undefined);      
 
     const numberOfArchives = 1;
     const archivedData 

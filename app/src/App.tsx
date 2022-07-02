@@ -55,8 +55,6 @@ function App() {
             stakanState, 
             stake,
             logCtx,
-            tiles.colsWithBorder,
-            tiles.rowsWithBorder,
           );
           await user?.reloadFromChain(stakanState, user?.username)
         }
@@ -81,7 +79,7 @@ function App() {
   const handleSessionUpdated = async (session: StakanSession, tiles: any) => {
   }
 
-  const handleGameOver = async (tiles: any) => {
+  const handleGameOver = async (session: StakanSession, tiles: any) => {
     const user = userConnectionCtx?.user;
     const stakanState = userConnectionCtx?.stakanState;
 
@@ -94,15 +92,13 @@ function App() {
           user, 
           stakanState,
           logCtx,
+          session.score,
           tiles.colsWithBorder,
           tiles.rowsWithBorder
           );
         await user?.reloadFromChain(stakanState, user?.username);
 
-//        await updateUserWalletsStatus();
         setSignalUserWalletsStatus(true);
-
-//        console.log("user.gameSessionAcc: ", user?.gameSessionAccount);
       }
     } catch(e) {
       setLoadingMode(false);
@@ -131,6 +127,23 @@ function App() {
 //    console.log(balance?.value.uiAmount);
         setRewardBalance(balance?.value.uiAmount ? balance?.value.uiAmount : 0)
       });
+
+    if (userConnectionCtx?.stakanState?.program) {
+      stakanApi.queryActiveUsers(userConnectionCtx?.stakanState?.program)
+        .then( users => {
+          //console.log(users);
+
+          users.forEach(async userWithAccPubkeyPromise => {
+            const userWithAccPubkey = userWithAccPubkeyPromise;
+            if (userWithAccPubkey) {
+              const [accPubkey, userAccount] = userWithAccPubkey;
+            
+              console.log(userAccount['username'])            
+            }
+          }
+          )
+        });
+    }
   }
 
   useEffect(() => {

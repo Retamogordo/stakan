@@ -11,6 +11,7 @@ export const LAMPORTS_PER_STAKAN_TOKEN = 1000000;
 const ARWEAVE_FEE_WINSTON = 67506057; // 36063945
                             
 const axios = require('axios');
+const Base58 = require("base-58");
 
 const { SystemProgram } = web3;
 
@@ -53,11 +54,11 @@ export class StakanState {
     }
 }
 
-export async function findOnChainStakanAccount(
+export async function queryStakanAccount(
   program: Program<Stakan>,
   ): 
   Promise<StakanState | undefined> {
-  const Base58 = require("base-58");
+//  const Base58 = require("base-58");
   const accounts 
     = await program.provider.connection.getParsedProgramAccounts(
         program.programId,
@@ -151,6 +152,50 @@ export async function setUpStakan(program: Program<Stakan>) {
     const signedTx = await program.provider.wallet.signTransaction(tx)
     const txId = await program.provider.connection.sendRawTransaction(signedTx.serialize())
     await program.provider.connection.confirmTransaction(txId)
+}
+
+export async function queryActiveUsers(
+  program: Program<Stakan>,
+) : Promise<[web3.PublicKey, accountsSchema.UserAccount][]> {
+
+  const accounts 
+    = await program.provider.connection.getParsedProgramAccounts(
+        program.programId,
+        {
+          filters: [ 
+            { memcmp: { offset: 8 + 4, 
+                        bytes: Base58.encode(Buffer.from(accountsSchema.GameSessionAccount.id))
+                      } 
+            }, 
+          ],
+        }
+  );
+
+  const arr = new Array<[web3.PublicKey, accountsSchema.UserAccount]>();  
+
+  for (const acc of accounts) {
+    let sessionAccount;
+    try {
+      sessionAccount 
+        = accountsSchema.GameSessionAccount.deserialize(acc.account.data as Buffer);      
+    }
+    catch { 
+    }
+    if (sessionAccount) {
+      const sessionOwnerUserAccount = new web3.PublicKey(Buffer.from(sessionAccount['user_account']));
+        
+      const accountInfo 
+        = await program.provider.connection.getAccountInfo(sessionOwnerUserAccount)
+      
+      if (accountInfo?.data) {
+        const userAccountData: accountsSchema.UserAccount 
+          = accountsSchema.UserAccount.deserialize(accountInfo?.data)
+
+        arr.push([acc.pubkey, userAccountData]);
+      }
+    }
+  } 
+  return arr;
 }
 
 export class User {
@@ -265,14 +310,14 @@ export class User {
       
         let userAccountData 
           = accountInfo ?
-            accountsSchema.GameSessionAccount.deserialize(accountInfo.data, tiles_cols, tiles_rows)
+            accountsSchema.GameSessionAccount.deserialize(accountInfo.data)
             : undefined;
 
       return userAccountData;
     }
 
     async reloadFromChain(stakanState: StakanState, username: string | undefined) {
-      const acc = await findOnChainUserAccount(this.wallet.publicKey, stakanState, username);
+      const acc = await queryWalletOwnerAccount(this.wallet.publicKey, stakanState, username);
     
       if (!acc) throw 'Can not reload User from chain, account: ' + this.account?.toBase58();
 
@@ -294,7 +339,7 @@ export class User {
 // after user is signed up their user_account is present on-chain.
 // this function is useful for searching users account when they
 // connect their wallet using wallet adapter.
-export async function findOnChainUserAccount(
+export async function queryWalletOwnerAccount(
   walletPubkey: web3.PublicKey, 
   stakanState: StakanState,
   username: string | undefined)
@@ -313,7 +358,7 @@ export async function findOnChainUserAccount(
           ],
         }
     );
-//  console.log("findOnChainUserAccount: ", accounts)
+//  console.log("queryWalletOwnerAccount: ", accounts)
   accounts.map(acc => console.log(acc.pubkey.toBase58()));
 
   for (let acc of accounts) {
@@ -333,7 +378,6 @@ export async function findOnChainUserAccount(
   }
   return undefined;
 }
-
 
 export async function signUpUser(user: User, stakanState: StakanState,) {  
     const arweaveStorageAddress = await user.arweave.wallets.getAddress(user.arweaveWallet);
@@ -501,8 +545,6 @@ export async function initGameSession(
     stakanState: StakanState,
     stake: number,
     logCtx: LogTerminalContext | undefined,
-    tiles_cols: number,
-    tiles_rows: number,
 ) {
     const arweaveStorageAddress = await user.arweave.wallets.getAddress(user.arweaveWallet); 
     
@@ -522,8 +564,6 @@ export async function initGameSession(
       const tx = stakanState.program.transaction
         .initGameSession(
           new BN(stake),
-          tiles_cols,
-          tiles_rows,
           {
             accounts: {
               stakanStateAccount: stakanState.stateAccount,
@@ -580,6 +620,7 @@ export async function initGameSession(
     user: User,
     stakanState: StakanState,
     logCtx: LogTerminalContext | undefined,
+    score: number,
     tiles_cols: number, tiles_rows: number
   ) {
     const gameSessionInfo = await user.getGameSessionInfo(tiles_cols, tiles_rows);
@@ -616,6 +657,7 @@ export async function initGameSession(
         .finishGameSession(
           saveTxId,
           bump,
+          new BN(score),
         )
         .accounts({
             stakanStateAccount: stakanState.stateAccount,
@@ -640,31 +682,7 @@ export async function initGameSession(
       throw e;
     }
   }
-  
-  export async function updateGameSession(
-    user: User,
-    score: number,
-    duration: number,
-    tiles: any,
-  ) {
-    const tilesArray = tiles.flat();
 
-    await user.program.methods
-      .updateGameSession(
-        new BN(score),
-        new BN(duration),
-        Buffer.from(tilesArray),
-      )
-      .accounts({
-          userAccount: user.account,
-          gameSessionAccount: user.gameSessionAccount,
-  
-          systemProgram: SystemProgram.programId,
-      })
-      .signers([])
-      .rpc();
-  }
-  
   export async function signOutUser(
     user: User,
     stakanState: StakanState,

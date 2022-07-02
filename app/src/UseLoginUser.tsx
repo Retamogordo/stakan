@@ -68,7 +68,7 @@ const useLoginUser = (
             });
   
             logCtx.log("retrieving stakan global state account...")
-            const state = await stakanApi.findOnChainStakanAccount(program);
+            const state = await stakanApi.queryStakanAccount(program);
             logCtx.logLn(state 
                 ? "done, pubkey: " + state?.pubKey.toBase58() : "failed");
 
