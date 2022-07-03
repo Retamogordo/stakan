@@ -68,10 +68,15 @@ class StakanView extends React.Component {
 
       this.props = props;
 
-      this.session = null;
+//      this.session = null;
+      this.session = props.sessionref;
       this.currentPiece = null; 
       this.canvasRef = React.createRef();
-      this.tiles = setupStakan(props.rows, props.cols);
+
+      console.log("constructor: ", props.sessionref?.tiles);
+
+//      this.tiles = setupStakan(props.rows, props.cols);
+      this.tiles = props.sessionref?.tiles || setupStakan(props.rows, props.cols);
       this.tileSize = 10;
       this.rotationPosition = 0;
     
@@ -97,7 +102,9 @@ class StakanView extends React.Component {
     this.pieceXOffset = this.startPieceXOffset();
     this.pieceYOffset = this.startPieceYOffset();
     this.rotationPosition = 0;
-    this.tiles = setupStakan(this.props.rows, this.props.cols);
+    this.tiles = session.tiles || setupStakan(this.props.rows, this.props.cols);
+
+    this.props.willRender();
   }
   
   fitToParent() {

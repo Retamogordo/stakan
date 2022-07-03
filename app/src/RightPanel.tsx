@@ -43,6 +43,7 @@ export const RightPanel = (props: any) => {
                         const archiveIndStr = (e.target as HTMLLIElement).getAttribute('data-archive-index');
                         if (archiveIndStr) {
                             const archiveInd = parseInt(archiveIndStr);
+                            props.onArchivedSessionChosen(sessionsArchive[archiveInd]);
 //                            console.log("arcive: ", sessionsArchive[archiveInd]);
                         }
                     }}

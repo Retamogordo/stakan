@@ -10,7 +10,7 @@ import { setupStakan } from './stakanLogic'
 import { LogTerminal } from './LogTerminal'
 import { UseLogTerminal } from './UseLogTerminal';
 import { UserWalletsPanel, UserWalletsStatus } from './UserWalletsPanel';
-//import {GameSessionArchive} from './accountsSchema'
+import {GameSessionArchive} from './accountsSchema'
 //import {BN} from "@project-serum/anchor"
 
 function App() {  
@@ -20,14 +20,11 @@ function App() {
   const [signalUserWalletsStatus, setSignalUserWalletsStatus] = useState(false);
   const [signalUpdateRightPanel, setSignalUpdateRightPanel] = useState(false);
 
-//  const [rewardBalance, setRewardBalance] = useState(0);
-
   const [sessionActive, setSessionActive] = useState(false);
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
   const [loadingMode, setLoadingMode] = useState(false);
+  const [archivedSession, setArchivedSession] = useState<GameSessionArchive | null>(null);
 //  const [pollTimer, setPollTimer] = useState<NodeJS.Timer | null>(null);
-//  const [activeUsers, setActiveUsers] = useState<any>();
-//  const [sessionsArchive, SetSessionsArchive] = useState<any>();
   
   const logCtx = UseLogTerminal({log: ''}); 
 
@@ -127,62 +124,20 @@ function App() {
   const handleUserWalletsStatusChanged = (userWalletsSt: UserWalletsStatus) => {
     setUserWalletsStatus(userWalletsSt);
   }
-/*
-  const pollChain = () => {
-    userConnectionCtx?.stakanState?.getRewardFundBalance()
-      .then( balance => {
-        setRewardBalance(balance?.value.uiAmount ? balance?.value.uiAmount : 0)
-      });
 
-    if (userConnectionCtx?.stakanState) {
-      stakanApi.queryActiveUsers(userConnectionCtx?.stakanState)
-        .then( users => {
-            setActiveUsers( 
-              users.map(([accPubkey, userAccount]) => 
-                (<li>{userAccount['username']}</li>)
-              )
-            )
-        })
-    }
+  const handleArchivedSessionChosen = (archSession: GameSessionArchive) => {
+    console.log("handleArchivedSessionChosen: ", archSession);
+
+    setArchivedSession({...archSession});
   }
-*/
+
   useEffect(() => {
-/*
-    if (userConnectionCtx?.stakanState) {
-      !pollTimer && setPollTimer(setInterval(pollChain, 2000))
-    } else {
-      clearInterval(pollTimer ? pollTimer : undefined);
-      setPollTimer(null);
-    }
-    return () => clearInterval(pollTimer ? pollTimer : undefined);
-    */
   }, [userConnectionCtx?.stakanState]);
 
   useEffect(() => {
     const user = userConnectionCtx?.user;
     setSignalUserWalletsStatus(true);
     setSignalUpdateRightPanel(true);
-/*
-    if (user?.arweave && user?.account) { 
-      GameSessionArchive.get(user?.arweave, user?.account, 10)
-        .then(archives => 
-          SetSessionsArchive(
-            archives.map(archive => 
-              ( <li 
-                className='session-archive-item'
-                onMouseEnter={(e) => {
-                  (e.target as HTMLLIElement).style.borderBottom = 'solid'
-                }}
-                onMouseLeave={(e) => {
-                  (e.target as HTMLLIElement).style.borderBottom = 'hidden'
-                }}
-                >{archive['date_time']} {archive['duration'].toNumber()}</li>
-              )
-            )
-          )
-        )
-    }
-  */
   }, [userConnectionCtx?.user]);
 
   useEffect(() => {
@@ -202,6 +157,11 @@ function App() {
       setSignalUpdateRightPanel(false);
     } 
   }, [signalUpdateRightPanel]);
+
+  useEffect(() => {
+      console.log("useEffect->setArchivedSession: ", archivedSession)
+//      setArchivedSession(null);
+  }, [archivedSession]);
 
   return (
     <div className="App">
@@ -234,6 +194,7 @@ function App() {
             cols={cols}
             rows={rows}
             startSession={signalStartSession}
+            archivedSession={archivedSession}
             onSessionStarted={handleSessionStarted}
             onSessionUpdated={handleSessionUpdated}
             onGameOver={handleGameOver}
@@ -245,28 +206,8 @@ function App() {
           user={userConnectionCtx?.user}
           stakanState={userConnectionCtx?.stakanState}
           logCtx={logCtx}
+          onArchivedSessionChosen={handleArchivedSessionChosen}
         />
-{/*
-        <div className="right-panel">
-          <div>
-            Reward Fund balance {rewardBalance}
-          </div>
-          <div>
-            Estimated Winner Reward {(() => {
-              const stake = 1; // supposing that stake is always 1
-              return Math.floor(rewardBalance/2 - stake);
-            })()}
-          </div>
-          <div>
-            Active Users
-            <ul>{activeUsers}</ul>
-          </div>
-          <div>
-            Stored Sessions
-            <ul className='session-archive-list'>{sessionsArchive}</ul>
-          </div>
-        </div>
-          */}
       </div>
       
       <LogTerminal ctx={logCtx}/>

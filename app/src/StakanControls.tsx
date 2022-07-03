@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { setupStakan, stakanFrom } from './stakanLogic'
 import StakanView from './StakanView'
 
 const ENTRY_DELAY = 700;
@@ -12,13 +13,17 @@ export class StakanSession {
   linesCleared: number;
   level: number;
   stepDelay: number;
+//  tiles: (0 | 8)[][]
+  tiles: any
 
-  constructor() {
+  constructor(rows: number, cols: number) {
     this.active = true;
     this.score = 0;
     this.linesCleared = 0;
     this.level = 0;
     this.stepDelay = STEP_DELAY;
+    this.tiles = setupStakan(rows, cols);
+//    this.tiles = setupStakan(rows, cols).tiles;
     this.updateScore = this.updateScore.bind(this);
   }
 
@@ -175,7 +180,8 @@ export function StakanControls(props: any) {
         stakanRef.current.focus();
         window.addEventListener('keydown', handleKeyDown)
   
-        const session = new StakanSession();      
+        let session = new StakanSession(props.rows, props.cols); 
+//        session.tiles = setupStakan(props.rows, props.cols);     
 
         props.onSessionStarted(session);
         return session;
@@ -217,11 +223,15 @@ export function StakanControls(props: any) {
     [keydown])
   
     useEffect(() => {
-      if (session !== null && session.active) {
-        stakanRef.current && stakanRef.current.setSession(session);
-        setEntryDelay();
+      if (session !== null) {
 
-        props.onSessionUpdated(session, stakanRef.current?.tiles);
+        stakanRef.current && stakanRef.current.setSession(session);
+        
+        if (session.active) {
+          setEntryDelay();
+
+          props.onSessionUpdated(session, stakanRef.current?.tiles);
+        }
       }
     },
     [session])
@@ -230,6 +240,34 @@ export function StakanControls(props: any) {
       stakanRef.current && stakanRef.current.fitToParent();
     },
     [stakanRef])
+
+    useEffect(() => {
+      console.log("------------------------- ", props.archivedSession);
+
+      if (props.archivedSession) {
+        const rowsWithBorder = props.archivedSession['tiles_rows'];
+        const colsWithBorder = props.archivedSession['tiles_cols'];
+        const tilesFlat = Array.from(props.archivedSession['tiles']);
+
+        console.log("tilesFlat: ", tilesFlat);
+
+        const tiles = stakanFrom(rowsWithBorder, colsWithBorder, tilesFlat);   
+        let session = new StakanSession(tiles.rows, tiles.cols);
+        
+        session.tiles = tiles;
+//        session.tiles = tiles.tiles;
+        session.active = false;
+//        session.level = props.archivedSession['level'];
+//      session.linesCleared = props.archivedSession['level'];
+        session.score = props.archivedSession['score'];
+
+        console.log("session: ", session);
+
+        setSession(session);
+      } 
+    },
+    [props.archivedSession])
+    
   
     return (
         <StakanView 

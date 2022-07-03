@@ -28,8 +28,32 @@ export function setupStakan(rows, cols) {
   
       tileToViewPos: (i, j) => {
         return { x: i, y: rows - j + TOP_OFFSET }
-      },  
+      },    
+    };
+  }
+
+  export function stakanFrom(rowsWithBorder, colsWithBorder, tilesFlat) {
+    let stakanMatrix = [];
+    const rows = rowsWithBorder - (TOP_OFFSET + BOTTOM_THICKNESS);
+    const cols = colsWithBorder - 2*SIDE_THICKNESS;
+
+    while (tilesFlat.length) {
+      stakanMatrix.push(tilesFlat.splice(0, rowsWithBorder));
+    }
+
+    return { 
+      tiles: stakanMatrix,
+      rows,
+      cols,
+      topOffset: TOP_OFFSET,
+      bottomThickness: BOTTOM_THICKNESS,
+      sideThickness: SIDE_THICKNESS,
+      rowsWithBorder,
+      colsWithBorder,
   
+      tileToViewPos: (i, j) => {
+        return { x: i, y: rows - j + TOP_OFFSET }
+      },  
     };
   }
 
