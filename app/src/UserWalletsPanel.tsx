@@ -34,12 +34,13 @@ export const UserWalletsPanel = (props: any) => {
         
         const arweaveConnected = !!user && await user?.isArweaveWalletConnected()
         const arweaveProviderConnected = !!user && await user?.isArweaveProviderConnected()
-        const arBalance = arweaveConnected && arweaveProviderConnected 
-                            ? await user?.getArweaveBalance() : 0;
-        const hasWinstonToStoreSession = !!user && await user?.hasWinstonToStoreSession();
+        const arBalance 
+            = arweaveConnected && arweaveProviderConnected ? await user?.getArweaveBalance() : 0;
+        const hasWinstonToStoreSession 
+            = !!user && await user?.hasWinstonToStoreSession(props.cols, props.rows);
         const tokenBalance = (await user?.getTokenBalance())?.value.uiAmount;
 
-        setUserWalletsStatus((prevUserWalletsStatus) => {
+        setUserWalletsStatus((_prevUserWalletsStatus) => {
           let userWalletsStatus = new UserWalletsStatus();
           
           userWalletsStatus.solanaBalance = userBalance ? userBalance : 0;
@@ -55,7 +56,9 @@ export const UserWalletsPanel = (props: any) => {
     const airdropWinston = async () => {
         const user = userConnectionCtx?.user;
     
-        if (await user?.arweaveAirdropMin()) await updateUserWalletsStatus();
+//        console.log("props.cols: ", props.cols);        
+        if (await user?.arweaveAirdropMin(props.cols, props.rows)) 
+            await updateUserWalletsStatus();
     }
     
     const purchaseStakanTokens = async () => {
@@ -117,7 +120,8 @@ export const UserWalletsPanel = (props: any) => {
 
         <div>
           Winston Balance {userWalletsStatus.arweaveBalance}
-          {!userWalletsStatus.hasWinstonToStoreSession 
+          {
+            !userWalletsStatus.hasWinstonToStoreSession 
             && userWalletsStatus.arweaveWalletConnected
             && userWalletsStatus.arweaveProviderConnected
             ? <input type='button' 

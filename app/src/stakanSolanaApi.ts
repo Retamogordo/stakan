@@ -8,8 +8,10 @@ import { Stakan } from './idl/stakan'
 import { LogTerminalContext } from "./UseLogTerminal";
 
 export const LAMPORTS_PER_STAKAN_TOKEN = 1000000;
-const ARWEAVE_FEE_WINSTON = 67506057; // 36063945
-                            
+//const ARWEAVE_FEE_WINSTON = 68142907; // 36063945
+//                            19651320000
+//                            196513200
+                   
 const axios = require('axios');
 const Base58 = require("base-58");
 
@@ -155,9 +157,9 @@ export async function setUpStakan(program: Program<Stakan>) {
 }
 
 export async function queryActiveUsers(
-  program: Program<Stakan>,
+  stakanState: StakanState,
 ) : Promise<[web3.PublicKey, accountsSchema.UserAccount][]> {
-
+  const program = stakanState.program;
   const accounts 
     = await program.provider.connection.getParsedProgramAccounts(
         program.programId,
@@ -257,8 +259,14 @@ export class User {
       return true;
     }
 
-    async arweaveAirdropMin(): Promise<boolean> {
-      return await this.arweaveAirdrop(ARWEAVE_FEE_WINSTON);
+    async arweaveAirdropMin(tilesCols: number, tilesRows: number): Promise<boolean> {
+      const savePrice = parseInt(
+        await this.arweave.transactions
+          .getPrice(accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows), '')
+      );
+//      console.log("max size: ",    accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows));
+      console.log("savePrice: ", savePrice);        
+      return await this.arweaveAirdrop(savePrice);
     }
 
     async getArweaveBalance(): Promise<number> {
@@ -267,12 +275,14 @@ export class User {
       return parseInt(balance);
     }
 
-    async hasWinstonToStoreSession(): Promise<boolean> {
+    async hasWinstonToStoreSession(tilesCols: number, tilesRows: number): Promise<boolean> {
       try {
+        const savePrice = parseInt(
+          await this.arweave.transactions.getPrice(accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows), ''));
         return (
           await this.isArweaveWalletConnected() 
           && 
-          (ARWEAVE_FEE_WINSTON <= await this.getArweaveBalance())
+          (savePrice <= await this.getArweaveBalance())
         );
       } catch {
         return false;
@@ -598,12 +608,17 @@ export async function initGameSession(
   async function saveToArweave(user: User, data: any): Promise<string | undefined> {
     const serializedData = accountsSchema.GameSessionArchive.serialize(data);
 
+    console.log("serializedData: ", serializedData);
+
+    if (!user.account) throw 'Error saving to Arweave: user.account is undefined';
+
     const tx = await user.arweave.createTransaction({
+//      data
       data: serializedData
     }, user.arweaveWallet);
 
     tx.addTag('App-Name', 'Stakan');
-    tx.addTag('stakanApi.User', (user.account as web3.PublicKey).toString());
+    tx.addTag('User', user.account?.toBase58());
 
     await user.arweave.transactions.sign(tx, user.arweaveWallet);
     await user.arweave.transactions.post(tx);
@@ -627,14 +642,20 @@ export async function initGameSession(
   
     if (!gameSessionInfo) {
       logCtx?.logLn('could not retrieve session account');
-      throw 'Cannot get Session Info';
+      throw 'Cannot retrieve Session Info';
     }
     
     logCtx?.log('saving session data to arweave...');
+    
+    const dateTime = new Date();
+
     let txid = await saveToArweave(user, 
       {
-        score: (gameSessionInfo as any)['score'],
-        duration: (gameSessionInfo as any)['duration_millis'] ,
+        score,
+        date_time: dateTime.toUTCString(),
+        duration: 42, // todo: fix
+        tiles_cols,
+        tiles_rows,
       }
     );
 
@@ -644,9 +665,6 @@ export async function initGameSession(
       throw "Failed saving to Arweave";
     }
     logCtx?.logLn('done, tx id ' + txid);
-
-    let saveTxId: string = txid as string; 
-    let bump: number = user.bump as number;
   
     if (!user.account || !user.tokenAccount || !user.gameSessionAccount)
       throw 'Invalid User state';
@@ -655,8 +673,8 @@ export async function initGameSession(
     try {
       const txId = await stakanState.program.methods
         .finishGameSession(
-          saveTxId,
-          bump,
+          txid as string,
+          user.bump as number,
           new BN(score),
         )
         .accounts({

@@ -155,6 +155,10 @@ class Assignable extends Function {
   }
   
   export class GameSessionArchive extends Assignable { 
+    static maxSize(tilesCols: number, tilesRows: number): number {
+      return 8 + 70 /*approx date_time len*/ + 8 + 1 + 1 + tilesCols*tilesRows;
+    }
+
     static schema: Map<GameSessionArchive, any> = new Map([
       [
         GameSessionArchive, 
@@ -162,7 +166,10 @@ class Assignable extends Function {
           kind: 'struct', 
           fields: [
               ['score', 'u64'], 
-              ['duration', 'u64']
+              ['date_time', 'String'],
+              ['duration', 'u64'],
+              ['tiles_cols', 'u8'],
+              ['tiles_rows', 'u8'],
             ] 
         }
       ]
@@ -173,16 +180,18 @@ class Assignable extends Function {
       return buffer;
     }
   
-    public static deserialize(buffer: Uint8Array) {
+    public static deserialize(buffer: Uint8Array): GameSessionArchive {
       try {
         const data = deserialize(GameSessionArchive.schema, GameSessionArchive, Buffer.from(buffer));
-        } catch(e) {
-          console.log(e);
-          throw e;
-        }
+
+        return data;
+      } catch(e) {
+        console.log(e);
+        throw e;
+      }
     }
   
-    public static async getArchiveIds(
+    static async getArchiveIds(
       arweave: Arweave, 
       userAccount: anchor.web3.PublicKey, 
       numberOfArchives: number
@@ -196,7 +205,7 @@ class Assignable extends Function {
             },
             {
               name: "User",
-              values: ["${userAccount}"]
+              values: ["${userAccount.toBase58()}"]
             },
           ]
         ) {
@@ -221,52 +230,36 @@ class Assignable extends Function {
           }
         }
       }`}
-  //    console.log("queryObject: ", queryObject);
-      let results = await arweave.api.post('/graphql', queryObject);
+
+  let results = await arweave.api.post('/graphql', queryObject);
   
-      return results.data.data.transactions.edges.map((edge: any) => edge.node.id);
+  return results.data.data.transactions.edges.map((edge: any) => {
+//    console.log("userAccount: ", userAccount.toBase58())
+//    console.log(edge.node)
+    return edge.node.id
+  });
+}
+  
+  public static async get(
+    arweave: Arweave, 
+    userAccount: anchor.web3.PublicKey, 
+    numberOfArchives: number
+  ) {
+//      console.log("Before getArchiveIds: ");    
+    const archiveIds = await this.getArchiveIds(arweave, userAccount, numberOfArchives);
+      console.log("ARCHIVE IDS: ", archiveIds); 
+    let archivedData = new Array<GameSessionArchive>();
+
+    for( let id of archiveIds ) {
+      const buffer = await arweave.transactions.getData(id,
+        { decode: true, string: false }
+      );
+      const data = deserialize(GameSessionArchive.schema, GameSessionArchive, Buffer.from(buffer));
+      archivedData.push(data);
     }
-  
-    public static async get(
-      arweave: Arweave, 
-      userAccount: anchor.web3.PublicKey, 
-      numberOfArchives: number
-    ) {
-      console.log("Before getArchiveIds: ");    
-      const archiveIds = await this.getArchiveIds(arweave, userAccount, numberOfArchives);
-  
-      console.log("ARCHIVE IDS: ", archiveIds);    
-      const archivedData = archiveIds.map(async (id: any) => {
-        const buffer = await arweave.transactions.getData(id,
-          { decode: true, string: false }
-        );
-        const data = deserialize(GameSessionArchive.schema, GameSessionArchive, Buffer.from(buffer));
-  //      console.log("DATA: ", data);
-        return data;
-      });
-      return archivedData;
-  /*    
-      edges.map(async edge => {
-        console.log("Node ID: " + edge.node.id);
-        const buffer = await arweave.transactions.getData(
-          edge.node.id,
-          { decode: true, string: false }
-        );
-  
-        console.log("BUFFER FROM ARCHIVE: ", buffer);
-  
-        try {
-        const data = deserialize(GameSessionArchive.schema, GameSessionArchive, Buffer.from(buffer));
-        console.log("Data from Arweave: score, ", data['score'].toString(), ", duration: ", data['duration'].toString() );
-        } catch(e) {
-          console.log(e);
-          throw e;
-        }
-        //      const data =  Buffer.from(buffer);
-      });
-      */
-  
-  //    return edges;
-    }
+    console.log("archivedData: ", archivedData); 
+
+    return archivedData;
   }
+}
   

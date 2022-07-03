@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo, SetStateAction } from 'react'
 import './App.css';
 import {StakanControls, StakanSession} from './StakanControls';
 import StakePanel from './StakePanel'
@@ -9,6 +9,8 @@ import { setupStakan } from './stakanLogic'
 import { LogTerminal } from './LogTerminal'
 import { UseLogTerminal } from './UseLogTerminal';
 import { UserWalletsPanel, UserWalletsStatus } from './UserWalletsPanel';
+import {GameSessionArchive} from './accountsSchema'
+import {BN} from "@project-serum/anchor"
 
 function App() {  
   const [userConnectionCtx, setUserConnectionCtx] = useState<UserConnectionContextState | null>(null);
@@ -21,6 +23,8 @@ function App() {
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
   const [loadingMode, setLoadingMode] = useState(false);
   const [pollTimer, setPollTimer] = useState<NodeJS.Timer | null>(null);
+  const [activeUsers, setActiveUsers] = useState<any>();
+  const [sessionsArchive, SetSessionsArchive] = useState<any>();
   
   const logCtx = UseLogTerminal({log: ''}); 
 
@@ -124,25 +128,18 @@ function App() {
   const pollChain = () => {
     userConnectionCtx?.stakanState?.getRewardFundBalance()
       .then( balance => {
-//    console.log(balance?.value.uiAmount);
         setRewardBalance(balance?.value.uiAmount ? balance?.value.uiAmount : 0)
       });
 
-    if (userConnectionCtx?.stakanState?.program) {
-      stakanApi.queryActiveUsers(userConnectionCtx?.stakanState?.program)
+    if (userConnectionCtx?.stakanState) {
+      stakanApi.queryActiveUsers(userConnectionCtx?.stakanState)
         .then( users => {
-          //console.log(users);
-
-          users.forEach(async userWithAccPubkeyPromise => {
-            const userWithAccPubkey = userWithAccPubkeyPromise;
-            if (userWithAccPubkey) {
-              const [accPubkey, userAccount] = userWithAccPubkey;
-            
-              console.log(userAccount['username'])            
-            }
-          }
-          )
-        });
+            setActiveUsers( 
+              users.map(([accPubkey, userAccount]) => 
+                (<li>{userAccount['username']}</li>)
+              )
+            )
+        })
     }
   }
 
@@ -157,7 +154,20 @@ function App() {
   }, [userConnectionCtx?.stakanState]);
 
   useEffect(() => {
+    const user = userConnectionCtx?.user;
     setSignalUserWalletsStatus(true);
+
+    if (user?.arweave && user?.account) { 
+      GameSessionArchive.get(user?.arweave, user?.account, 10)
+        .then(archives => 
+          SetSessionsArchive(
+            archives.map(archive => 
+              (<li border-style='solid' border-color='red'>{archive['date_time']} {archive['duration'].toNumber()}</li>)
+            )
+          )
+        )
+    }
+  
   }, [userConnectionCtx?.user]);
 
   useEffect(() => {
@@ -178,6 +188,8 @@ function App() {
         <UserWalletsPanel 
           update={signalUserWalletsStatus} 
           logCtx={logCtx}
+          cols={cols}
+          rows={rows}
           onUserConnectionChanged={handleUserConnectionChanged}
           onUserWalletsStatusChanged={handleUserWalletsStatusChanged}
         />
@@ -216,6 +228,14 @@ function App() {
               const stake = 1; // supposing that stake is always 1
               return Math.floor(rewardBalance/2 - stake);
             })()}
+          </div>
+          <div>
+            Active Users
+            <ul>{activeUsers}</ul>
+          </div>
+          <div>
+            Stored Sessions
+            <ul className='session-archive-item'>{sessionsArchive}</ul>
           </div>
         </div>
 

@@ -107,5 +107,9 @@ code {
   background-color: rgb(1, 39, 1); 
 }
 
-
+.session-archive-item {
+  list-style: none;
+  border-color: hsl(58, 96%, 46%);
+  border-style: solid;
+}
 
