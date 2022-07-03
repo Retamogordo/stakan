@@ -21,7 +21,6 @@ class StakePanel extends React.Component {
 
     render() {
         const props = this.props;
-
         const style = {background: 'rgba(20, 19, 19, 0.5)'} 
          
         return props.visible ?

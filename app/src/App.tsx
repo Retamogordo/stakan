@@ -3,28 +3,31 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, SetStateActio
 import './App.css';
 import {StakanControls, StakanSession} from './StakanControls';
 import StakePanel from './StakePanel'
+import { RightPanel } from './RightPanel';
 import * as stakanApi from './stakanSolanaApi'
 import {UserConnectionContextState} from './UseLoginUser'
 import { setupStakan } from './stakanLogic'
 import { LogTerminal } from './LogTerminal'
 import { UseLogTerminal } from './UseLogTerminal';
 import { UserWalletsPanel, UserWalletsStatus } from './UserWalletsPanel';
-import {GameSessionArchive} from './accountsSchema'
-import {BN} from "@project-serum/anchor"
+//import {GameSessionArchive} from './accountsSchema'
+//import {BN} from "@project-serum/anchor"
 
 function App() {  
   const [userConnectionCtx, setUserConnectionCtx] = useState<UserConnectionContextState | null>(null);
 
   const [signalStartSession, setSignalStartSession] = useState(false);
   const [signalUserWalletsStatus, setSignalUserWalletsStatus] = useState(false);
-  const [rewardBalance, setRewardBalance] = useState(0);
+  const [signalUpdateRightPanel, setSignalUpdateRightPanel] = useState(false);
+
+//  const [rewardBalance, setRewardBalance] = useState(0);
 
   const [sessionActive, setSessionActive] = useState(false);
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
   const [loadingMode, setLoadingMode] = useState(false);
-  const [pollTimer, setPollTimer] = useState<NodeJS.Timer | null>(null);
-  const [activeUsers, setActiveUsers] = useState<any>();
-  const [sessionsArchive, SetSessionsArchive] = useState<any>();
+//  const [pollTimer, setPollTimer] = useState<NodeJS.Timer | null>(null);
+//  const [activeUsers, setActiveUsers] = useState<any>();
+//  const [sessionsArchive, SetSessionsArchive] = useState<any>();
   
   const logCtx = UseLogTerminal({log: ''}); 
 
@@ -62,7 +65,6 @@ function App() {
           );
           await user?.reloadFromChain(stakanState, user?.username)
         }
-
 //        await updateUserWalletsStatus();
         setSignalUserWalletsStatus(true);
 
@@ -95,14 +97,15 @@ function App() {
         await stakanApi.finishGameSession(
           user, 
           stakanState,
+          session,
+          tiles,
           logCtx,
-          session.score,
-          tiles.colsWithBorder,
-          tiles.rowsWithBorder
+//          tiles.rowsWithBorder
           );
         await user?.reloadFromChain(stakanState, user?.username);
 
         setSignalUserWalletsStatus(true);
+        setSignalUpdateRightPanel(true);
       }
     } catch(e) {
       setLoadingMode(false);
@@ -124,7 +127,7 @@ function App() {
   const handleUserWalletsStatusChanged = (userWalletsSt: UserWalletsStatus) => {
     setUserWalletsStatus(userWalletsSt);
   }
-
+/*
   const pollChain = () => {
     userConnectionCtx?.stakanState?.getRewardFundBalance()
       .then( balance => {
@@ -142,8 +145,9 @@ function App() {
         })
     }
   }
-
+*/
   useEffect(() => {
+/*
     if (userConnectionCtx?.stakanState) {
       !pollTimer && setPollTimer(setInterval(pollChain, 2000))
     } else {
@@ -151,23 +155,34 @@ function App() {
       setPollTimer(null);
     }
     return () => clearInterval(pollTimer ? pollTimer : undefined);
+    */
   }, [userConnectionCtx?.stakanState]);
 
   useEffect(() => {
     const user = userConnectionCtx?.user;
     setSignalUserWalletsStatus(true);
-
+    setSignalUpdateRightPanel(true);
+/*
     if (user?.arweave && user?.account) { 
       GameSessionArchive.get(user?.arweave, user?.account, 10)
         .then(archives => 
           SetSessionsArchive(
             archives.map(archive => 
-              (<li border-style='solid' border-color='red'>{archive['date_time']} {archive['duration'].toNumber()}</li>)
+              ( <li 
+                className='session-archive-item'
+                onMouseEnter={(e) => {
+                  (e.target as HTMLLIElement).style.borderBottom = 'solid'
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLLIElement).style.borderBottom = 'hidden'
+                }}
+                >{archive['date_time']} {archive['duration'].toNumber()}</li>
+              )
             )
           )
         )
     }
-  
+  */
   }, [userConnectionCtx?.user]);
 
   useEffect(() => {
@@ -182,14 +197,20 @@ function App() {
     } 
   }, [signalUserWalletsStatus]);
 
+  useEffect(() => {
+    if (signalUpdateRightPanel) {
+      setSignalUpdateRightPanel(false);
+    } 
+  }, [signalUpdateRightPanel]);
+
   return (
     <div className="App">
       <div className="main-wrapper">
         <UserWalletsPanel 
           update={signalUserWalletsStatus} 
           logCtx={logCtx}
-          cols={cols}
-          rows={rows}
+          cols={tiles.colsWithBorder}
+          rows={tiles.rowsWithBorder}
           onUserConnectionChanged={handleUserConnectionChanged}
           onUserWalletsStatusChanged={handleUserWalletsStatusChanged}
         />
@@ -219,6 +240,13 @@ function App() {
           />       
         </div>
 
+        <RightPanel 
+          update={signalUpdateRightPanel} 
+          user={userConnectionCtx?.user}
+          stakanState={userConnectionCtx?.stakanState}
+          logCtx={logCtx}
+        />
+{/*
         <div className="right-panel">
           <div>
             Reward Fund balance {rewardBalance}
@@ -235,10 +263,10 @@ function App() {
           </div>
           <div>
             Stored Sessions
-            <ul className='session-archive-item'>{sessionsArchive}</ul>
+            <ul className='session-archive-list'>{sessionsArchive}</ul>
           </div>
         </div>
-
+          */}
       </div>
       
       <LogTerminal ctx={logCtx}/>

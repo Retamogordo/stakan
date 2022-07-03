@@ -140,8 +140,6 @@ class Assignable extends Function {
                 ['discriminant', [8]],
                 ['id', 'String'], 
                 ['user_account', [32]],
-//                ['score', 'u64'], 
-//                ['duration_millis', 'u64'], 
                 ['stake', 'u64'], 
               ] 
           }
@@ -158,6 +156,8 @@ class Assignable extends Function {
     static maxSize(tilesCols: number, tilesRows: number): number {
       return 8 + 70 /*approx date_time len*/ + 8 + 1 + 1 + tilesCols*tilesRows;
     }
+    static tilesCols = 10 + 6;
+    static tilesRows = 16 + 1 + 4;
 
     static schema: Map<GameSessionArchive, any> = new Map([
       [
@@ -170,6 +170,8 @@ class Assignable extends Function {
               ['duration', 'u64'],
               ['tiles_cols', 'u8'],
               ['tiles_rows', 'u8'],
+              ['tiles', [GameSessionArchive.tilesCols*GameSessionArchive.tilesRows]]
+              //              ['tiles', 'String'],
             ] 
         }
       ]
@@ -245,9 +247,8 @@ class Assignable extends Function {
     userAccount: anchor.web3.PublicKey, 
     numberOfArchives: number
   ) {
-//      console.log("Before getArchiveIds: ");    
     const archiveIds = await this.getArchiveIds(arweave, userAccount, numberOfArchives);
-      console.log("ARCHIVE IDS: ", archiveIds); 
+//      console.log("ARCHIVE IDS: ", archiveIds); 
     let archivedData = new Array<GameSessionArchive>();
 
     for( let id of archiveIds ) {

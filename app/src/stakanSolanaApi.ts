@@ -9,8 +9,6 @@ import { LogTerminalContext } from "./UseLogTerminal";
 
 export const LAMPORTS_PER_STAKAN_TOKEN = 1000000;
 //const ARWEAVE_FEE_WINSTON = 68142907; // 36063945
-//                            19651320000
-//                            196513200
                    
 const axios = require('axios');
 const Base58 = require("base-58");
@@ -606,6 +604,8 @@ export async function initGameSession(
   }
 
   async function saveToArweave(user: User, data: any): Promise<string | undefined> {
+    console.log("before serialize: ", data);
+
     const serializedData = accountsSchema.GameSessionArchive.serialize(data);
 
     console.log("serializedData: ", serializedData);
@@ -634,11 +634,14 @@ export async function initGameSession(
   export async function finishGameSession(
     user: User,
     stakanState: StakanState,
+    session: any,
+    stakanTiles: any,
     logCtx: LogTerminalContext | undefined,
-    score: number,
-    tiles_cols: number, tiles_rows: number
+//    score: number,
+//    tiles_cols: number, tiles_rows: number
   ) {
-    const gameSessionInfo = await user.getGameSessionInfo(tiles_cols, tiles_rows);
+    const gameSessionInfo 
+      = await user.getGameSessionInfo(stakanTiles.colsWithBorder, stakanTiles.rowsWithBorder);
   
     if (!gameSessionInfo) {
       logCtx?.logLn('could not retrieve session account');
@@ -648,14 +651,16 @@ export async function initGameSession(
     logCtx?.log('saving session data to arweave...');
     
     const dateTime = new Date();
+    const tilesArray = stakanTiles.tiles.flat();
 
     let txid = await saveToArweave(user, 
       {
-        score,
+        score: session.score,
         date_time: dateTime.toUTCString(),
-        duration: 42, // todo: fix
-        tiles_cols,
-        tiles_rows,
+        duration: session.duration,
+        tiles_cols: stakanTiles.colsWithBorder,
+        tiles_rows: stakanTiles.rowsWithBorder,
+        tiles: tilesArray,
       }
     );
 
@@ -675,7 +680,7 @@ export async function initGameSession(
         .finishGameSession(
           txid as string,
           user.bump as number,
-          new BN(score),
+          new BN(session.score),
         )
         .accounts({
             stakanStateAccount: stakanState.stateAccount,

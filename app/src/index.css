@@ -71,6 +71,25 @@ code {
   height: 90%;
   flex: 1 0 auto;
   background: rgb(0, 88, 139);
+  flex-direction: column;
+}
+
+.right-panel-active-users {
+  width: 100%;
+  height: 50%;
+  flex: 1 0 auto;
+  border-width: 1px;
+  border-style: solid;
+  border-bottom-style: hidden;
+}
+
+.right-panel-sessions-archive {
+  width: 100%;
+  height: 50%;
+  flex: 1 0 auto;
+  border-width: 1px;
+  border-style: solid;
+  border-bottom-style: hidden;
 }
 
 .RecordPanel {
@@ -107,9 +126,10 @@ code {
   background-color: rgb(1, 39, 1); 
 }
 
-.session-archive-item {
+.session-archive-list {
   list-style: none;
-  border-color: hsl(58, 96%, 46%);
-  border-style: solid;
 }
 
+.session-archive-item {
+  border-bottom-style: hidden;
+}
