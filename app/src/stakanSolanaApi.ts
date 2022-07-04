@@ -6,6 +6,7 @@ import { JWKInterface } from 'arweave/node/lib/wallet'
 import * as accountsSchema from "./accountsSchema";
 import { Stakan } from './idl/stakan'
 import { LogTerminalContext } from "./UseLogTerminal";
+import {StakanSession} from './StakanControls';
 
 export const LAMPORTS_PER_STAKAN_TOKEN = 1000000;
 //const ARWEAVE_FEE_WINSTON = 68142907; // 36063945
@@ -634,11 +635,9 @@ export async function initGameSession(
   export async function finishGameSession(
     user: User,
     stakanState: StakanState,
-    session: any,
+    session: StakanSession,
     stakanTiles: any,
     logCtx: LogTerminalContext | undefined,
-//    score: number,
-//    tiles_cols: number, tiles_rows: number
   ) {
     const gameSessionInfo 
       = await user.getGameSessionInfo(stakanTiles.colsWithBorder, stakanTiles.rowsWithBorder);
@@ -656,6 +655,8 @@ export async function initGameSession(
     let txid = await saveToArweave(user, 
       {
         score: session.score,
+        lines_cleared: session.linesCleared,
+        level: session.level,
         date_time: dateTime.toUTCString(),
         duration: session.duration,
         tiles_cols: stakanTiles.colsWithBorder,

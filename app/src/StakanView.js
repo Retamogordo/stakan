@@ -115,6 +115,16 @@ class StakanView extends React.Component {
     this.canvasRef.current.width = this.tiles.colsWithBorder * this.tileSize;
     this.canvasRef.current.height = this.tiles.rowsWithBorder * this.tileSize;
 
+    const rightPanel = document.getElementsByClassName('right-panel');
+    if (this.canvasRef.current.width > 0.5*window.innerWidth) {
+      this.props.onStakanWidthBiggerThanHalf(true);
+//      rightPanel.style.visibility = 'hidden';
+//      console.log("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
+    } else {
+      this.props.onStakanWidthBiggerThanHalf(false);
+//      rightPanel.style.visibility = 'visible';
+    }
+
     this.props.willRender();
   }
   

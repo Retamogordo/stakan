@@ -24,7 +24,8 @@ function App() {
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
   const [loadingMode, setLoadingMode] = useState(false);
   const [archivedSession, setArchivedSession] = useState<GameSessionArchive | null>(null);
-//  const [pollTimer, setPollTimer] = useState<NodeJS.Timer | null>(null);
+  const [stakanWidthBiggerThanHalf, setStakanWidthBiggerThanHalf] = useState(false);
+  //  const [pollTimer, setPollTimer] = useState<NodeJS.Timer | null>(null);
   
   const logCtx = UseLogTerminal({log: ''}); 
 
@@ -131,6 +132,12 @@ function App() {
     setArchivedSession({...archSession});
   }
 
+  const handleStakanWidthBiggerThanHalf = (isBigger: boolean) => {
+    setStakanWidthBiggerThanHalf(isBigger);
+  }
+
+  
+
   useEffect(() => {
   }, [userConnectionCtx?.stakanState]);
 
@@ -165,7 +172,8 @@ function App() {
 
   return (
     <div className="App">
-      <div className="main-wrapper">
+      <div className='app-wrapper'>
+      <div className="main-area-wrapper">
         <UserWalletsPanel 
           update={signalUserWalletsStatus} 
           logCtx={logCtx}
@@ -198,23 +206,28 @@ function App() {
             onSessionStarted={handleSessionStarted}
             onSessionUpdated={handleSessionUpdated}
             onGameOver={handleGameOver}
+            onStakanWidthBiggerThanHalf={handleStakanWidthBiggerThanHalf}
           />       
         </div>
-
-        <RightPanel 
-          update={signalUpdateRightPanel} 
-          user={userConnectionCtx?.user}
-          stakanState={userConnectionCtx?.stakanState}
-          logCtx={logCtx}
-          onArchivedSessionChosen={handleArchivedSessionChosen}
-        />
+        { !stakanWidthBiggerThanHalf     
+          ? <RightPanel 
+            update={signalUpdateRightPanel} 
+            user={userConnectionCtx?.user}
+            stakanState={userConnectionCtx?.stakanState}
+            logCtx={logCtx}
+            onArchivedSessionChosen={handleArchivedSessionChosen}
+          />
+          : null
+        }
       </div>
       
       <LogTerminal ctx={logCtx}/>
-
+      </div>
+{/*
       <footer className="main-footer">
         sdfdsafsafdsa
       </footer>
+          */}
     </div>
   );
 }

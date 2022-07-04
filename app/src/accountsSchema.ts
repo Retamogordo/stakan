@@ -154,7 +154,7 @@ class Assignable extends Function {
   
   export class GameSessionArchive extends Assignable { 
     static maxSize(tilesCols: number, tilesRows: number): number {
-      return 8 + 70 /*approx date_time len*/ + 8 + 1 + 1 + tilesCols*tilesRows;
+      return 8 + 8 + 1 + 70 /*approx date_time len*/ + 8 + 1 + 1 + tilesCols*tilesRows;
     }
     static tilesCols = 10 + 6;
     static tilesRows = 16 + 1 + 4;
@@ -166,6 +166,8 @@ class Assignable extends Function {
           kind: 'struct', 
           fields: [
               ['score', 'u64'], 
+              ['lines_cleared', 'u64'],
+              ['level', 'u8'],
               ['date_time', 'String'],
               ['duration', 'u64'],
               ['tiles_cols', 'u8'],

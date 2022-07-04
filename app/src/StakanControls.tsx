@@ -12,8 +12,8 @@ export class StakanSession {
   score: number;
   linesCleared: number;
   level: number;
+  duration: number;
   stepDelay: number;
-//  tiles: (0 | 8)[][]
   tiles: any
 
   constructor(rows: number, cols: number) {
@@ -21,9 +21,9 @@ export class StakanSession {
     this.score = 0;
     this.linesCleared = 0;
     this.level = 0;
+    this.duration = 0;
     this.stepDelay = STEP_DELAY;
     this.tiles = setupStakan(rows, cols);
-//    this.tiles = setupStakan(rows, cols).tiles;
     this.updateScore = this.updateScore.bind(this);
   }
 
@@ -242,32 +242,27 @@ export function StakanControls(props: any) {
     [stakanRef])
 
     useEffect(() => {
-      console.log("------------------------- ", props.archivedSession);
 
       if (props.archivedSession) {
         const rowsWithBorder = props.archivedSession['tiles_rows'];
         const colsWithBorder = props.archivedSession['tiles_cols'];
         const tilesFlat = Array.from(props.archivedSession['tiles']);
 
-        console.log("tilesFlat: ", tilesFlat);
-
         const tiles = stakanFrom(rowsWithBorder, colsWithBorder, tilesFlat);   
+
         let session = new StakanSession(tiles.rows, tiles.cols);
         
         session.tiles = tiles;
-//        session.tiles = tiles.tiles;
         session.active = false;
-//        session.level = props.archivedSession['level'];
-//      session.linesCleared = props.archivedSession['level'];
         session.score = props.archivedSession['score'];
-
-        console.log("session: ", session);
+        session.linesCleared = props.archivedSession['lines_cleared'];
+        session.level = props.archivedSession['level'];
+        session.duration = props.archivedSession['duration'];
 
         setSession(session);
       } 
     },
-    [props.archivedSession])
-    
+    [props.archivedSession])    
   
     return (
         <StakanView 
@@ -278,6 +273,7 @@ export function StakanControls(props: any) {
           evEntryNewPiece={handleEntryNewPiece}
           willRender={() => setChildWillRender(prev => prev + 1)}
           onFull={handleGameOver}
+          onStakanWidthBiggerThanHalf={props.onStakanWidthBiggerThanHalf}
         />
     )
 }
