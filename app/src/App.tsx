@@ -118,7 +118,7 @@ function App() {
   }
     
   const handleUserConnectionChanged = (loggedUserConnetctionCtx: UserConnectionContextState,) => {
-//    console.log("handleUserChanged -> user: ", loggedUserConnetctionCtx);
+    console.log("handleUserChanged -> user: ", loggedUserConnetctionCtx);
     setUserConnectionCtx(loggedUserConnetctionCtx);
   }
 
@@ -212,8 +212,7 @@ function App() {
         { !stakanWidthBiggerThanHalf     
           ? <RightPanel 
             update={signalUpdateRightPanel} 
-            user={userConnectionCtx?.user}
-            stakanState={userConnectionCtx?.stakanState}
+            userConnectionCtx={userConnectionCtx}
             logCtx={logCtx}
             onArchivedSessionChosen={handleArchivedSessionChosen}
           />

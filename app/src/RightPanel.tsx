@@ -1,17 +1,18 @@
-import React, {useState, useEffect} from 'react'
+import { web3 } from "@project-serum/anchor";
+import {useState, useEffect, useRef} from 'react'
 import {GameSessionArchive} from './accountsSchema'
 import * as stakanApi from './stakanSolanaApi'
-import { web3 } from "@project-serum/anchor";
+//import {UserConnectionContextState} from './UseLoginUser'
 
 export const RightPanel = (props: any) => {
-//    const [sessionsArchive, SetSessionsArchive] = useState<any>();
     const [sessionsArchive, SetSessionsArchive] = useState<GameSessionArchive[]>();
-    const [pollTimer, setPollTimer] = useState<NodeJS.Timer | null>(null);
     const [rewardBalance, setRewardBalance] = useState(0);
     const [activeUsers, setActiveUsers] = useState<any>();
+    const pollChainRef = useRef<() => void>();
 
     const getSessionsArchive = () => {
-        const user = props.user;
+//        console.log("****************** getSessionsArchive");
+        const user = props.userConnectionCtx?.user;
 
         if (user?.arweave && user?.account) { 
             props.logCtx.log("retrieving sessions archive...");
@@ -21,8 +22,6 @@ export const RightPanel = (props: any) => {
                     props.logCtx.logLn("done, retrieved ", archives.length, " sessions");
                     
                     SetSessionsArchive(archives)
-
-                    console.log("archives[0]: ", archives[0]);
                 })
         }      
     }
@@ -44,7 +43,6 @@ export const RightPanel = (props: any) => {
                         if (archiveIndStr) {
                             const archiveInd = parseInt(archiveIndStr);
                             props.onArchivedSessionChosen(sessionsArchive[archiveInd]);
-//                            console.log("arcive: ", sessionsArchive[archiveInd]);
                         }
                     }}
 
@@ -54,16 +52,20 @@ export const RightPanel = (props: any) => {
     }
 
     const pollChain = () => {
-        props.stakanState?.getRewardFundBalance()
+//        console.log("polling chain: ", props.userConnectionCtx?.stakanState);
+
+        const stakanState = props.userConnectionCtx?.stakanState;
+
+        stakanState?.getRewardFundBalance()
           .then( (balance: web3.RpcResponseAndContext<web3.TokenAmount>) => {
             setRewardBalance(balance?.value.uiAmount ? balance?.value.uiAmount : 0)
           });
     
-        if (props.stakanState) {
-          stakanApi.queryActiveUsers(props.stakanState)
+        if (stakanState) {
+          stakanApi.queryActiveUsers(stakanState)
             .then( users => {
                 setActiveUsers( 
-                  users.map(([accPubkey, userAccount]) => 
+                  users.map(([_accPubkey, userAccount]) => 
                     (<li key={userAccount['username']}>{userAccount['username']}</li>)
                   )
                 )
@@ -72,25 +74,27 @@ export const RightPanel = (props: any) => {
     }    
 
     useEffect(() => {
+        const pollingTimer = setInterval(
+            () => pollChainRef.current && pollChainRef.current(), 
+        2000)
+        
+        getSessionsArchive();
 
-//        getSessionsArchive();
+        return () => {
+//            console.log("clear interval");
+            clearInterval(pollingTimer); 
+        }     
     },
     [])
 
     useEffect(() => {
-        if (props.update) {
-            if (props.stakanState) {
-                !pollTimer && setPollTimer(setInterval(pollChain, 2000))
-            } else {
-                clearInterval(pollTimer ? pollTimer : undefined);
-                setPollTimer(null);
-            }
-            getSessionsArchive()
-        }
-        return () => clearInterval(pollTimer ? pollTimer : undefined);      
-      },
-    [props.update])
+        pollChainRef.current = pollChain;  
+    });
 
+    useEffect(() => {
+        getSessionsArchive()
+    },
+    [props.update]);
 
     return (
         <div className="right-panel">
