@@ -177,7 +177,6 @@ export function StakanControls(props: any) {
         if (prevSession !== null && prevSession.active) throw 'Session already started';
         if (stakanRef.current === null) throw 'in sendStartSession stakanRef.current is null';
 
-        stakanRef.current.focus();
         window.addEventListener('keydown', handleKeyDown)
   
         let session = new StakanSession(props.rows, props.cols); 
@@ -232,6 +231,7 @@ export function StakanControls(props: any) {
 
           props.onSessionUpdated(session, stakanRef.current?.tiles);
         }
+        stakanRef.current && stakanRef.current.focus();
       }
     },
     [session])

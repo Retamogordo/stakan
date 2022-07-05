@@ -1,5 +1,5 @@
 import React from 'react'
-import {RevolvingDot} from "react-loader-spinner"
+import {TailSpin} from "react-loader-spinner"
 
 class StakePanel extends React.Component {
     props: any;
@@ -8,70 +8,106 @@ class StakePanel extends React.Component {
         super(props);
 
         this.props = props;
-        this.loader = {
-            Component: RevolvingDot,
-            props: {
-              color: "#0ead69",
-              height: 100,
-              width: 110
-            },
-            name: "RevolvingDot"
-          };
     }
 
     render() {
         const props = this.props;
-        const style = {background: 'rgba(20, 19, 19, 0.5)'} 
+        this.loader = {
+            Component: TailSpin,
+            props: {
+              color: "#0ead69",
+              height: 40,
+              width: 40,
+              radius: 1,
+              visible: props.loadingMode,
+            },
+            name: "RevolvingDot"
+          };
+
          
         return props.visible ?
-            (
-                <div className='control-panel' style={style}>
-                    <div className='header'>
-                    </div>
-                    <div className='control-panel-main'>
-                    <table className='game-controls-table'>
-                            <tbody>
-                            <tr>
-                            <td>move right</td>
-                            <td>→</td>
-                            </tr>
-                            <tr>
-                            <td>move left</td>
-                            <td>←</td>
-                            </tr>
-                            <tr>
-                            <td>rotate clockwise</td>
-                            <td>Ctrl or z</td>
-                            </tr>
-                            <tr>
-                            <td>rotate counter clockwise</td>
-                            <td>↑ or x</td>
-                            </tr>
-                            <tr>
-                            <td>soft drop</td>
-                            <td>↓</td>
-                            </tr>
-                            <tr>
-                            <td>hard drop</td>
-                            <td>Space</td>
-                            </tr>
-                            </tbody>
-                        </table>
-                        <input type='button' 
-                            value={this.props.startButtonLabel} 
-                            disabled={this.props.startButtonDisabled || this.props.loadingMode}
-                            onClick={this.props.onStartSessionClick}>
-                        </input>
-                    </div>
-                    {this.props.loadingMode 
-                        ? <this.loader.Component {...this.loader.props}/>
-                        : null
-                    }
+        (
+        <div className='control-panel'>
+            
+            <div className='control-panel-main'>
+                <div className='title-div'>Connection and Balance Status</div>
 
+                <div style={{textAlign: 'left', marginLeft: "5%"}}>Token balance {
+                    props.userWalletsStatus.tokenBalance > 0
+                    ? <span style={{color: 'green'}}>&#10003;</span>
+                    : <span style={{color: 'red'}}>&#10005;</span> 
+                }</div>
+                
+                <div style={{textAlign: 'left', marginLeft: "5%"}}>Arweave provider {
+                    props.userWalletsStatus.arweaveProviderConnected
+                    ? <span style={{color: 'green'}}>&#10003;</span>
+                    : <span style={{color: 'red'}}>&#10005; try runninng 'npx arlocal' in terminal</span> 
+                }</div>
+
+                <div style={{textAlign: 'left', marginLeft: "5%"}}>Arweave balance {
+                    props.userWalletsStatus.hasWinstonToStoreSession
+                    ? <span style={{color: 'green'}}>&#10003;</span>
+                    : <span style={{color: 'red'}}>&#10005;</span> 
+                }</div>
+
+                <div className='title-div'>Game Controls</div>
+                <table className='game-controls-table'>
+                    <tbody>
+                        <tr>
+                        <td>move right</td>
+                        <td>→</td>
+                        </tr>
+                        <tr>
+                        <td>move left</td>
+                        <td>←</td>
+                        </tr>
+                        <tr>
+                        <td>rotate clockwise</td>
+                        <td>Ctrl or z</td>
+                        </tr>
+                        <tr>
+                        <td>rotate counter clockwise</td>
+                        <td>↑ or x</td>
+                        </tr>
+                        <tr>
+                        <td>soft drop</td>
+                        <td>↓</td>
+                        </tr>
+                        <tr>
+                        <td>hard drop</td>
+                        <td>Space</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style={{
+                        height: "5%", width: "10%", margin: "0 auto", clear: "both"}}>
+                    <this.loader.Component {...this.loader.props}/>
                 </div>
-            )
-            :
-            null
+            
+                <div style={{textAlign: 'right', marginRight: "5%"}}>
+                    <input className="stakan-input" type='button'                          
+                        value={this.props.startButtonLabel} 
+                        disabled={this.props.startButtonDisabled || this.props.loadingMode}
+                        onClick={this.props.onStartSessionClick}>
+                    </input>
+                </div>
+                <div style={{textAlign: 'right', marginRight: "5%"}}>
+                    <div className='title-div'>Off-chain</div>
+                    <div style={{textAlign: 'left', marginLeft: "5%"}}>
+                        Play off-chain, your session will not be stored
+                    </div>
+                    <input className="stakan-input" type='button' 
+                        
+                        value='Free play' 
+                        onClick={this.props.onStartFreePlayClick}>
+                    </input>
+                </div>
+            </div>
+
+        </div>
+        )
+        :
+        null
     }
 }
 

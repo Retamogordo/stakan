@@ -20,7 +20,7 @@ function App() {
   const [signalUserWalletsStatus, setSignalUserWalletsStatus] = useState(false);
   const [signalUpdateRightPanel, setSignalUpdateRightPanel] = useState(false);
 
-  const [sessionActive, setSessionActive] = useState(false);
+  const [sessionActive, setSessionActive] = useState({active: false, staked: false});
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
   const [loadingMode, setLoadingMode] = useState(false);
   const [archivedSession, setArchivedSession] = useState<GameSessionArchive | null>(null);
@@ -76,8 +76,10 @@ function App() {
     setLoadingMode(false);
   }
 
-  const handleSessionStarted = async (session: StakanSession) => {    
-    setSessionActive(true);
+  const handleSessionStarted = async (session: StakanSession) => {
+
+    if (!sessionActive.active) // check if this session is already started as free session
+      setSessionActive({active: true, staked: true});
   }
   
   const handleSessionUpdated = async (session: StakanSession, tiles: any) => {
@@ -86,30 +88,38 @@ function App() {
   const handleGameOver = async (session: StakanSession, tiles: any) => {
     const user = userConnectionCtx?.user;
     const stakanState = userConnectionCtx?.stakanState;
+    const currStaked = sessionActive.staked;
 
-    setSessionActive(false);
-    setLoadingMode(true);
+    setSessionActive({active: false, staked: false});
+    
+    if (currStaked) {
+      setLoadingMode(true);
 
-    try {
-      if (user && stakanState) {
-        await stakanApi.finishGameSession(
-          user, 
-          stakanState,
-          session,
-          tiles,
-          logCtx,
-//          tiles.rowsWithBorder
-          );
-        await user?.reloadFromChain(stakanState, user?.username);
+      try {
+        if (user && stakanState) {
+          await stakanApi.finishGameSession(
+            user, 
+            stakanState,
+            session,
+            tiles,
+            logCtx,
+            );
+          await user?.reloadFromChain(stakanState, user?.username);
 
-        setSignalUserWalletsStatus(true);
-        setSignalUpdateRightPanel(true);
+          setSignalUserWalletsStatus(true);
+          setSignalUpdateRightPanel(true);
+        }
+      } catch(e) {
+        setLoadingMode(false);
+        throw e;
       }
-    } catch(e) {
       setLoadingMode(false);
-      throw e;
     }
-    setLoadingMode(false);
+  }
+
+  const handleStartFreePlayStarted = () => {
+    setSignalStartSession(true);
+    setSessionActive({active: true, staked: false});
   }
 
   const handleDeleteUser = async () => {
@@ -178,56 +188,58 @@ function App() {
   return (
     <div className="App">
       <div className='app-wrapper'>
-      <div className="main-area-wrapper">
-        <UserWalletsPanel 
-          update={signalUserWalletsStatus} 
-          logCtx={logCtx}
-          cols={tiles.colsWithBorder}
-          rows={tiles.rowsWithBorder}
-          onUserConnectionChanged={handleUserConnectionChanged}
-          onUserWalletsStatusChanged={handleUserWalletsStatusChanged}
-          onDeleteUserClick={handleDeleteUser}
-          onTokenTransactionStarted={handleTokenTransactionStarted}
-        />
+        <div className="main-area-wrapper">
+          <UserWalletsPanel 
+            update={signalUserWalletsStatus} 
+            logCtx={logCtx}
+            cols={tiles.colsWithBorder}
+            rows={tiles.rowsWithBorder}
+            onUserConnectionChanged={handleUserConnectionChanged}
+            onUserWalletsStatusChanged={handleUserWalletsStatusChanged}
+            onDeleteUserClick={handleDeleteUser}
+            onTokenTransactionStarted={handleTokenTransactionStarted}
+          />
 
-        <div className="stakan-wrapper">
-          <StakePanel 
-            visible={!sessionActive}
-            startButtonLabel={
-              userConnectionCtx?.user?.gameSessionAccount ? 'Resume' : 'Stake 1 & Start'
-            }
-            startButtonDisabled={
-              !userWalletsStatus.hasWinstonToStoreSession
-              || userWalletsStatus.tokenBalance <= 0
-            }
-            loadingMode={loadingMode}
-            onStartSessionClick={handleBeforeSessionStarted}
-          />   
+          <div className="stakan-wrapper">
+            <StakePanel 
+              visible={!sessionActive.active}
+              startButtonLabel={
+                userConnectionCtx?.user?.gameSessionAccount ? 'Resume' : 'Stake 1 & Start'
+              }
+              startButtonDisabled={
+                !userWalletsStatus.hasWinstonToStoreSession
+                || userWalletsStatus.tokenBalance <= 0
+              }
+              userWalletsStatus={userWalletsStatus}
+              loadingMode={loadingMode}
+              onStartSessionClick={handleBeforeSessionStarted}
+              onStartFreePlayClick={handleStartFreePlayStarted}
+            />   
 
-          <StakanControls 
-            cols={cols}
-            rows={rows}
-            startSession={signalStartSession}
-            archivedSession={archivedSession}
-            onSessionStarted={handleSessionStarted}
-            onSessionUpdated={handleSessionUpdated}
-            onGameOver={handleGameOver}
-            onStakanWidthBiggerThanHalf={handleStakanWidthBiggerThanHalf}
-          />       
+            <StakanControls 
+              cols={cols}
+              rows={rows}
+              startSession={signalStartSession}
+              archivedSession={archivedSession}
+              onSessionStarted={handleSessionStarted}
+              onSessionUpdated={handleSessionUpdated}
+              onGameOver={handleGameOver}
+              onStakanWidthBiggerThanHalf={handleStakanWidthBiggerThanHalf}
+            />       
+          </div>
+          { !stakanWidthBiggerThanHalf     
+            ? <RightPanel 
+                update={signalUpdateRightPanel} 
+                userConnectionCtx={userConnectionCtx}
+                logCtx={logCtx}
+                enabled={!sessionActive.active}
+                onArchivedSessionChosen={handleArchivedSessionChosen}
+              />
+            : null
+          }
         </div>
-        { !stakanWidthBiggerThanHalf     
-          ? <RightPanel 
-              update={signalUpdateRightPanel} 
-              userConnectionCtx={userConnectionCtx}
-              logCtx={logCtx}
-              enabled={!sessionActive}
-              onArchivedSessionChosen={handleArchivedSessionChosen}
-            />
-          : null
-        }
-      </div>
-      
-      <LogTerminal ctx={logCtx}/>
+        
+        <LogTerminal ctx={logCtx}/>
       </div>
 
     </div>

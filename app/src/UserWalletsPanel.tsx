@@ -85,9 +85,12 @@ export const UserWalletsPanel = (props: any) => {
         if (user && stakanState) { 
             props.onTokenTransactionStarted(true);
 
-            await stakanApi.purchaseStakanTokens(user, stakanState, tokens, props.logCtx);
-            await updateUserWalletsStatus();
-
+            try {
+                await stakanApi.purchaseStakanTokens(user, stakanState, tokens, props.logCtx);
+                await updateUserWalletsStatus();
+            } catch (e) {
+                props.logCtx.logLn(e);
+            }
             props.onTokenTransactionStarted(false);
         }
     }
@@ -102,10 +105,13 @@ export const UserWalletsPanel = (props: any) => {
         if (user && stakanState) { 
             props.onTokenTransactionStarted(true);
 
+        try {
             await stakanApi.sellStakanTokens(user, stakanState, tokens, props.logCtx);
             await updateUserWalletsStatus();
-
-            props.onTokenTransactionStarted(false);
+        } catch (e) {
+            props.logCtx.logLn(e);
+        }
+        props.onTokenTransactionStarted(false);
         }
     }
 
@@ -178,7 +184,7 @@ export const UserWalletsPanel = (props: any) => {
                     </div>
                 )
             })()}
-            
+
             <div className="title-div">Stakan Tokens</div>
             {userWalletsStatus.tokenBalance > 0
             ?
