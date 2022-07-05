@@ -11,15 +11,14 @@ export const RightPanel = (props: any) => {
     const pollChainRef = useRef<() => void>();
 
     const getSessionsArchive = () => {
-//        console.log("****************** getSessionsArchive");
         const user = props.userConnectionCtx?.user;
 
         if (user?.arweave && user?.account) { 
             props.logCtx.log("retrieving sessions archive...");
 
-            GameSessionArchive.get(user?.arweave, user?.account, 10)
+            GameSessionArchive.get(user?.arweave, user?.account, 100)
                 .then(archives => {
-                    props.logCtx.logLn("done, retrieved ", archives.length, " sessions");
+                    props.logCtx.logLn("done, retrieved " + archives.length + " sessions");
                     
                     SetSessionsArchive(archives)
                 })
@@ -32,19 +31,21 @@ export const RightPanel = (props: any) => {
                 <li key={archive['date_time']}
                     className='session-archive-item'
                     data-archive-index={ind}
-                    onMouseEnter={(e) => {
+
+                    onMouseEnter={ props.enabled ?
+                        (e) => {
                         (e.target as HTMLLIElement).style.borderBottom = '1px solid red'
-                    }}
-                    onMouseLeave={(e) => {
+                    } : undefined }
+                    onMouseLeave={ props.enabled ? (e) => {
                         (e.target as HTMLLIElement).style.borderBottom = 'hidden'
-                    }}
-                    onClick={(e) => {
+                    } : undefined }
+                    onClick={ props.enabled ? (e) => {
                         const archiveIndStr = (e.target as HTMLLIElement).getAttribute('data-archive-index');
                         if (archiveIndStr) {
                             const archiveInd = parseInt(archiveIndStr);
                             props.onArchivedSessionChosen(sessionsArchive[archiveInd]);
                         }
-                    }}
+                    } : undefined }
 
                 >{archive['date_time']} {archive['duration'].toNumber()}</li>
             )

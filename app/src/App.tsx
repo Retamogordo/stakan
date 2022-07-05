@@ -113,12 +113,15 @@ function App() {
   }
 
   const handleDeleteUser = async () => {
-    userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState
-    && await stakanApi.forceDeleteUser(userConnectionCtx.user, userConnectionCtx.stakanState) 
+    if (userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState) {
+      setLoadingMode(true);
+      await stakanApi.forceDeleteUser(userConnectionCtx.user, userConnectionCtx.stakanState) 
+      setLoadingMode(false);
+    }
   }
-    
+
   const handleUserConnectionChanged = (loggedUserConnetctionCtx: UserConnectionContextState,) => {
-    console.log("handleUserChanged -> user: ", loggedUserConnetctionCtx);
+//    console.log("handleUserChanged -> user: ", loggedUserConnetctionCtx);
     setUserConnectionCtx(loggedUserConnetctionCtx);
   }
 
@@ -136,7 +139,9 @@ function App() {
     setStakanWidthBiggerThanHalf(isBigger);
   }
 
-  
+  const handleTokenTransactionStarted = (started: boolean) => {
+    setLoadingMode(started);
+  }
 
   useEffect(() => {
   }, [userConnectionCtx?.stakanState]);
@@ -181,6 +186,8 @@ function App() {
           rows={tiles.rowsWithBorder}
           onUserConnectionChanged={handleUserConnectionChanged}
           onUserWalletsStatusChanged={handleUserWalletsStatusChanged}
+          onDeleteUserClick={handleDeleteUser}
+          onTokenTransactionStarted={handleTokenTransactionStarted}
         />
 
         <div className="stakan-wrapper">
@@ -195,7 +202,6 @@ function App() {
             }
             loadingMode={loadingMode}
             onStartSessionClick={handleBeforeSessionStarted}
-            onDeleteUserClick={handleDeleteUser}
           />   
 
           <StakanControls 
@@ -211,22 +217,19 @@ function App() {
         </div>
         { !stakanWidthBiggerThanHalf     
           ? <RightPanel 
-            update={signalUpdateRightPanel} 
-            userConnectionCtx={userConnectionCtx}
-            logCtx={logCtx}
-            onArchivedSessionChosen={handleArchivedSessionChosen}
-          />
+              update={signalUpdateRightPanel} 
+              userConnectionCtx={userConnectionCtx}
+              logCtx={logCtx}
+              enabled={!sessionActive}
+              onArchivedSessionChosen={handleArchivedSessionChosen}
+            />
           : null
         }
       </div>
       
       <LogTerminal ctx={logCtx}/>
       </div>
-{/*
-      <footer className="main-footer">
-        sdfdsafsafdsa
-      </footer>
-          */}
+
     </div>
   );
 }

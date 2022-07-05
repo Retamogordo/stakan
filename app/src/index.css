@@ -22,6 +22,14 @@ code {
   height: 100%;
 }
 
+.stakan-input {
+  font-family: 'IBM Plex Mono'
+}
+
+.error-msg-div {
+  color: red;
+}
+
 .main-area-wrapper {
   flex: 1 0 auto;
   display: flex;
@@ -29,20 +37,36 @@ code {
   margin: 0 auto;
   background: rgb(40, 22, 90);
   border-style: solid;
+  border-width: 1px;
   border-color: rgb(255, 0, 0);
   width: 100%; 
   height: 85%;
+  font-family: 'IBM Plex Mono'
 }
 
 .left-panel {
   height: 100%;
   flex: 1 0 auto;
   width: 25%;
+  border-right-width: 1px;
+  border-right-style: solid;
+  border-color: rgb(255, 0, 0);
   text-align: left;
   background: rgb(128, 144, 5);
 }
 
-.main-header, .main-footer {
+.left-panel > .title-div {
+  text-align: center;
+  border-top-width: 1px;
+  border-top-style: solid;
+  margin-left: 5%;
+  margin-right: 5%;
+  margin-top: 10%;
+  font-size: larger;
+}
+
+.main-header, 
+.main-footer {
   text-align: center;
 }
 
@@ -73,36 +97,39 @@ code {
 .control-panel > .header {
   margin-top: 30%;
 }
-.control-panel > div {
+
+.control-panel-main {
   width: 100%;
   background: rgba(237, 4, 4, 0.396);
   text-align: right;
   bottom: 100px;
 }
+
 .right-panel {
   width: 25%;
   height: 100%;
   flex: 1 0 auto;
   flex-direction: column;
   background: rgb(0, 88, 139);
+  border-left-width: 1px;
+  border-left-style: solid;
+  border-color: rgb(255, 0, 0);
 }
 
 .right-panel-active-users {
   width: 100%;
   height: 50%;
   flex: 1 0 auto;
-  border-width: 1px;
-  border-style: solid;
-  border-bottom-style: hidden;
+  border-top-width: 1px;
+  border-top-style: solid;
 }
 
 .right-panel-sessions-archive {
   width: 100%;
   height: 50%;
   flex: 1 0 auto;
-  border-width: 1px;
-  border-style: solid;
-  border-bottom-style: hidden;
+  border-top-width: 1px;
+  border-top-style: solid;
 }
 
 .RecordPanel {
@@ -124,6 +151,7 @@ code {
   white-space: pre-line;
   text-align: left;
   overflow-y:auto;
+  font-family: 'IBM Plex Mono';
 }
 
 #output_terminal {
@@ -145,3 +173,13 @@ code {
 .session-archive-item {
   border-bottom-style: hidden;
 }
+
+.game-controls-table {
+  margin-left: 20%;
+  text-align: right;
+  color: cyan;
+  font-family: 'IBM Plex Mono'
+}
+
+.game-controls-table td:nth-child(1) { text-align: left; }
+.game-controls-table td:nth-child(2) { text-align: end; }

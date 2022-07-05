@@ -7,6 +7,7 @@ import * as accountsSchema from "./accountsSchema";
 import { Stakan } from './idl/stakan'
 import { LogTerminalContext } from "./UseLogTerminal";
 import {StakanSession} from './StakanControls';
+import { SignatureResult } from "@solana/web3.js";
 
 export const LAMPORTS_PER_STAKAN_TOKEN = 1000000;
 //const ARWEAVE_FEE_WINSTON = 68142907; // 36063945
@@ -240,6 +241,15 @@ export class User {
       return await this.program.provider.connection.getBalance(this.wallet.publicKey);
     }
     
+    async airdropLamports(lamports: number): Promise<SignatureResult> {
+      const signature 
+        = await this.program.provider.connection.requestAirdrop(this.wallet.publicKey, lamports)
+
+      const txCtx = await this.program.provider.connection.confirmTransaction(signature);
+      const txErr = txCtx.value;
+      return txErr;
+    }
+  
     async getTokenBalance(): Promise<web3.RpcResponseAndContext<web3.TokenAmount>> {
       return await this.program.provider.connection.getTokenAccountBalance(this.tokenAccount as web3.PublicKey);
     }

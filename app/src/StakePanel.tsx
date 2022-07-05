@@ -26,17 +26,42 @@ class StakePanel extends React.Component {
         return props.visible ?
             (
                 <div className='control-panel' style={style}>
-                    <div className='header'></div>
-                    <div>
+                    <div className='header'>
+                    </div>
+                    <div className='control-panel-main'>
+                    <table className='game-controls-table'>
+                            <tbody>
+                            <tr>
+                            <td>move right</td>
+                            <td>→</td>
+                            </tr>
+                            <tr>
+                            <td>move left</td>
+                            <td>←</td>
+                            </tr>
+                            <tr>
+                            <td>rotate clockwise</td>
+                            <td>Ctrl or z</td>
+                            </tr>
+                            <tr>
+                            <td>rotate counter clockwise</td>
+                            <td>↑ or x</td>
+                            </tr>
+                            <tr>
+                            <td>soft drop</td>
+                            <td>↓</td>
+                            </tr>
+                            <tr>
+                            <td>hard drop</td>
+                            <td>Space</td>
+                            </tr>
+                            </tbody>
+                        </table>
                         <input type='button' 
                             value={this.props.startButtonLabel} 
                             disabled={this.props.startButtonDisabled || this.props.loadingMode}
                             onClick={this.props.onStartSessionClick}>
                         </input>
-                    </div>
-                    <div>
-                        <input type='button' value='Delete User' disabled={true} onClick={this.props.onDeleteUserClick}></input>
-
                     </div>
                     {this.props.loadingMode 
                         ? <this.loader.Component {...this.loader.props}/>

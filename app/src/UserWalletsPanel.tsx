@@ -60,6 +60,20 @@ export const UserWalletsPanel = (props: any) => {
         if (await user?.arweaveAirdropMin(props.cols, props.rows)) 
             await updateUserWalletsStatus();
     }
+
+    const airdropLamports = async () => {
+        const user = userConnectionCtx?.user;
+        const lamports = 1000000;
+        
+        props.logCtx.log("airdropping " + lamports + " lamports...")
+        const txErr = await user?.airdropLamports(lamports);
+
+        if (null === txErr) {
+            props.logCtxLn("done");
+        } else props.logCtx.logLn("failed, " + txErr)
+
+        await updateUserWalletsStatus();
+    }
     
     const purchaseStakanTokens = async () => {
         const user = userConnectionCtx?.user;
@@ -69,8 +83,12 @@ export const UserWalletsPanel = (props: any) => {
             : 0;
     
         if (user && stakanState) { 
+            props.onTokenTransactionStarted(true);
+
             await stakanApi.purchaseStakanTokens(user, stakanState, tokens, props.logCtx);
             await updateUserWalletsStatus();
+
+            props.onTokenTransactionStarted(false);
         }
     }
 
@@ -82,8 +100,12 @@ export const UserWalletsPanel = (props: any) => {
             : 0;
     
         if (user && stakanState) { 
+            props.onTokenTransactionStarted(true);
+
             await stakanApi.sellStakanTokens(user, stakanState, tokens, props.logCtx);
             await updateUserWalletsStatus();
+
+            props.onTokenTransactionStarted(false);
         }
     }
 
@@ -110,61 +132,98 @@ export const UserWalletsPanel = (props: any) => {
 
     return (
         <div className='left-panel'>
-        <WalletConnectionProvider 
-          loggedUserChanged={handleUserChanged}
-          logCtx={props.logCtx}
-        />
-        <div>
-          Lamport Balance {userWalletsStatus.solanaBalance}
-        </div>
-
-        <div>
-          Winston Balance {userWalletsStatus.arweaveBalance}
-          {
-            !userWalletsStatus.hasWinstonToStoreSession 
-            && userWalletsStatus.arweaveWalletConnected
-            && userWalletsStatus.arweaveProviderConnected
-            ? <input type='button' 
-                    value={'Airdrop some winston'} 
-                    onClick={airdropWinston}>
-            </input>
-            : userWalletsStatus.arweaveWalletConnected
-              ? userWalletsStatus.arweaveProviderConnected 
-                ? null 
-                : <div>Arweave provider is disconnected. Is arlocal running ?</div>
-              : <div>Arweave wallet is disconnected. Is ArConnect installed ?</div>
-          }
-        </div>
-        <div>
-            Stakan Token Balance {userWalletsStatus.tokenBalance}
-        </div>
-        {userWalletsStatus.solanaBalance > stakanApi.LAMPORTS_PER_STAKAN_TOKEN
-            ?
-            <div>
-                <input type='text' ref={purchaseTokensInputRef}></input>
-
-                <input type='button'
-                    value={'Purchase tokens'}
-                    onClick={purchaseStakanTokens}
-                >
-                </input>
+            <WalletConnectionProvider 
+                loggedUserChanged={handleUserChanged}
+                logCtx={props.logCtx}
+            />
+            <div className="title-div">Solana</div>
+            <div style={{marginLeft: "5%"}}>
+                Lamport Balance {userWalletsStatus.solanaBalance}
+                {/*
+                userConnectionCtx?.connected 
+                    ? <input type='button' className='stakan-input'
+                            value={'Airdrop some lamports'} 
+                            onClick={airdropLamports}>
+                    </input>
+                    :
+                    null
+                */}
             </div>
-            : null
-        }
-        {userWalletsStatus.tokenBalance > 0
+
+            <div className="title-div">Arweave</div>
+            {(() => {
+                const airdropNeeded = 
+                    !userWalletsStatus.hasWinstonToStoreSession 
+                    && userWalletsStatus.arweaveWalletConnected
+                    && userWalletsStatus.arweaveProviderConnected;
+                const divClassName = airdropNeeded ? 'error-msg-div' : '';
+                
+                return (
+                    <div className={divClassName} style={{marginLeft: "5%"}}>
+                        Winston Balance {userWalletsStatus.arweaveBalance}
+                        <div style={{textAlign: "right", marginRight: "5%"}}>
+                        {
+                            airdropNeeded
+                            ? <input type='button' className='stakan-input'
+                                    value={'Airdrop some winston'} 
+                                    onClick={airdropWinston}>
+                            </input>
+                            : userWalletsStatus.arweaveWalletConnected
+                                ? userWalletsStatus.arweaveProviderConnected 
+                                    ? null 
+                                    : <div className='error-msg-div'>Arweave provider is disconnected. Is arlocal running ?</div>
+                                : <div className='error-msg-div'>Arweave wallet is disconnected. Is ArConnect installed ?</div>
+                        }
+                        </div>
+                    </div>
+                )
+            })()}
+            
+            <div className="title-div">Stakan Tokens</div>
+            {userWalletsStatus.tokenBalance > 0
             ?
-            <div>
-                <input type='text' ref={sellTokensInputRef}></input>
-
-                <input type='button'
-                    value={'Sell tokens'}
-                    onClick={sellStakanTokens}
-                >
-                </input>
+            <div style={{marginLeft: "5%"}}>
+                Stakan Token Balance {userWalletsStatus.tokenBalance}
             </div>
-            : null
-        }
+            :
+            <div className="error-msg-div" style={{ marginLeft: "5%"}}>
+                Stakan Token Balance {userWalletsStatus.tokenBalance}
+            </div>
+            }
+            
+            {userWalletsStatus.solanaBalance > stakanApi.LAMPORTS_PER_STAKAN_TOKEN
+                ?
+                <div style={{marginLeft: "5%", marginTop: "5%"}}>
+                    <input type='number' min='0' ref={purchaseTokensInputRef}></input>
+                    <div style={{textAlign: "right", marginRight: "5%"}}>
+                        <input type='button' className='stakan-input'
+                            value={'Purchase tokens'}
+                            onClick={purchaseStakanTokens}
+                        >
+                        </input>
+                    </div>
+                </div>
+                : null
+            }
+            
+            {userWalletsStatus.tokenBalance > 0
+                ?
+                <div style={{marginLeft: "5%", marginTop: "5%"}}>
+                    <input type='number' min='0' ref={sellTokensInputRef}></input>
+                    <div style={{textAlign: "right", marginRight: "5%"}}>
+                        <input type='button' className='stakan-input'
+                            value={'   Sell tokens   '}
+                            onClick={sellStakanTokens}
+                        >
+                        </input>
+                    </div>
+                </div>
+                : null
+            }
 
+            <div style={{marginTop: '30%' }}>                
+                <input type='button' value='Delete User' disabled={false} onClick={props.onDeleteUserClick}></input>
+            </div>
       </div>
     )
 }
