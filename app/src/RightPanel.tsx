@@ -2,6 +2,8 @@ import { web3 } from "@project-serum/anchor";
 import {useState, useEffect, useRef} from 'react'
 import {GameSessionArchive} from './accountsSchema'
 import * as stakanApi from './stakanSolanaApi'
+import { BN } from "@project-serum/anchor";
+
 //import {UserConnectionContextState} from './UseLoginUser'
 
 export const RightPanel = (props: any) => {
@@ -25,33 +27,41 @@ export const RightPanel = (props: any) => {
         }      
     }
 
-    const archiveLIs = () => {
+    const archiveRows = () => {
         return sessionsArchive?.map((archive, ind) => 
             ( 
-                <li key={archive['date_time']}
-                    className='session-archive-item'
-                    data-archive-index={ind}
+            <tr key={archive['date_time']} className='session-archive-item'
+            
+                onMouseEnter={ props.enabled ?
+                    (e) => {
+                        const parent =  ((e.target as HTMLTableCellElement).parentNode as HTMLTableRowElement)                        
+                        parent.style.borderBottom = '1px solid yellowgreen'
+                        parent.style.cursor = 'pointer'
+                } : undefined }
 
-                    onMouseEnter={ props.enabled ?
-                        (e) => {
-                        (e.target as HTMLLIElement).style.borderBottom = '1px solid red'
-                    } : undefined }
-                    onMouseLeave={ props.enabled ? (e) => {
-                        (e.target as HTMLLIElement).style.borderBottom = 'hidden'
-                    } : undefined }
-                    onClick={ props.enabled ? (e) => {
-                        const archiveIndStr = (e.target as HTMLLIElement).getAttribute('data-archive-index');
-                        if (archiveIndStr) {
-                            const archiveInd = parseInt(archiveIndStr);
-                            props.onArchivedSessionChosen(sessionsArchive[archiveInd]);
-                        }
-                    } : undefined }
+                onMouseLeave={ props.enabled ? (e) => {
+                    const parent = ((e.target as HTMLTableCellElement).parentNode as HTMLTableRowElement);                        
+                    parent.style.borderBottom = 'hidden'
+                    parent.style.cursor = (parent.parentNode as HTMLTableElement).style.cursor;
+                } : undefined }
 
-                >{archive['date_time']} {archive['duration'].toNumber()}</li>
+                onClick={ props.enabled ? (e) => {
+                    const archiveIndStr = (e.target as HTMLElement).getAttribute('data-archive-index');
+                  
+                    if (archiveIndStr) {
+                        const archiveInd = parseInt(archiveIndStr);
+//                        console.log("click ", new BN(archive['score']).toString());
+                        props.onArchivedSessionChosen(sessionsArchive[archiveInd]);
+                    }
+                } : undefined }
+            >    
+           <td style={{border: 'inherit', textAlign: 'left'}} data-archive-index={ind}>{new BN(archive['score']).toString()}</td>
+           <td style={{border: 'inherit', textAlign: 'right'}} data-archive-index={ind}>{archive['date_time']}</td>
+            </tr>
             )
         )
     }
-
+ 
     const pollChain = () => {
 //        console.log("polling chain: ", props.userConnectionCtx?.stakanState);
 
@@ -117,10 +127,15 @@ export const RightPanel = (props: any) => {
             </div>
             
             <div className="right-panel-sessions-archive">
-                Stored Sessions 
-                <ul style={{ textAlign: "left"}} className='session-archive-list'>
-                    {archiveLIs()}
-                </ul>
+                Onchain Stored Sessions 
+                <table className="stored-sessions-table">
+                    <th scope="col">Score</th>
+                    <th scope="col">When</th>
+
+                    <tbody style={{ textAlign: "left"}} className='session-archive-list'>
+                        {archiveRows()}
+                    </tbody>
+                </table>
             </div>
         </div>    
     )

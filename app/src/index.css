@@ -27,7 +27,7 @@ code {
 }
 
 .error-msg-div {
-  color: red;
+  color: rgb(246, 44, 44);
 }
 
 .main-area-wrapper {
@@ -38,7 +38,7 @@ code {
   background: rgb(40, 22, 90);
   border-style: solid;
   border-width: 1px;
-  border-color: rgb(255, 0, 0);
+  border-color: hsl(0, 0%, 30%);
   width: 100%; 
   height: 85%;
   font-family: 'IBM Plex Mono'
@@ -50,15 +50,18 @@ code {
   width: 25%;
   border-right-width: 1px;
   border-right-style: solid;
-  border-color: rgb(255, 0, 0);
+  border-color: hsl(0, 0%, 30%);
   text-align: left;
-  background: rgb(128, 144, 5);
+  background: hsl(0, 0%, 17%);
+  color: hsl(234, 86%, 75%);
+
 }
 
 .title-div {
   text-align: center;
   border-top-width: 1px;
   border-top-style: solid;
+  border-color: hsl(0, 0%, 30%);
   margin-left: 5%;
   margin-right: 5%;
   margin-top: 10%;
@@ -109,7 +112,7 @@ code {
 }
 
 .control-panel > div {
-  color: cyan;
+  color: rgba(5, 226, 255, 0.701);
 }
 
 .control-panel-main {
@@ -117,18 +120,27 @@ code {
   width: 100%;
   height: 90%; 
   top: 5%;
-  background: rgba(100, 100, 100, 0.5);
+  background: rgba(50, 50, 50, 0.5);
 }
+
+.control-panel-section {
+  text-align: center;
+  margin-left: 5%;
+  margin-right: 5%;
+  margin-top: 5%;
+  font-size: larger;
+}
+
 
 .right-panel {
   width: 25%;
   height: 100%;
   flex: 1 0 auto;
   flex-direction: column;
-  background: rgb(0, 88, 139);
+  background: hsl(0, 0%, 17%);
   border-left-width: 1px;
   border-left-style: solid;
-  border-color: rgb(255, 0, 0);
+  border-color: hsl(0, 0%, 30%);
 }
 
 .right-panel-active-users {
@@ -158,11 +170,11 @@ code {
   width: 100%;
   bottom: 0px;
   left: 0px;
-  background-color: rgb(234, 255, 0);
-  border-color: hsl(209, 96%, 46%);
-  border-top-style: solid;
-  border-left-style: hidden;
-  border-width: thin;
+  color:rgba(0, 255, 162, 0.7);
+  background-color: hsl(0, 0%, 0%);
+  border-color: hsl(0, 0%, 30%);
+  border-top-style: hidden;
+  border-width: 1px;
   white-space: pre-line;
   text-align: left;
   overflow-y:auto;
@@ -178,11 +190,20 @@ code {
 }
 
 .game-controls-table {
+  width: 60%;
   margin-left: 20%;
-  text-align: right;
-  color: cyan;
+  color: rgba(5, 226, 255, 0.701);
   font-family: 'IBM Plex Mono';
 }
 
 .game-controls-table td:nth-child(1) { text-align: left; }
 .game-controls-table td:nth-child(2) { text-align: end; }
+
+.stored-sessions-table {
+  width: 100%;
+  color: rgba(5, 226, 255, 0.701);
+  font-family: 'IBM Plex Mono';
+}
+
+.stored-sessions-table td:nth-child(1) { text-align: center; }
+.stored-sessions-table td:nth-child(2) { text-align: end; }

@@ -30,7 +30,7 @@ class StakePanel extends React.Component {
         <div className='control-panel'>
             
             <div className='control-panel-main'>
-                <div className='title-div'>Connection and Balance Status</div>
+                <div className='control-panel-section'>Connection and Balance Status</div>
 
                 <div style={{textAlign: 'left', marginLeft: "5%"}}>Token balance {
                     props.userWalletsStatus.tokenBalance > 0
@@ -41,7 +41,7 @@ class StakePanel extends React.Component {
                 <div style={{textAlign: 'left', marginLeft: "5%"}}>Arweave provider {
                     props.userWalletsStatus.arweaveProviderConnected
                     ? <span style={{color: 'green'}}>&#10003;</span>
-                    : <span style={{color: 'red'}}>&#10005; try runninng 'npx arlocal' in terminal</span> 
+                    : <span style={{color: 'red'}}>&#10005; try running 'npx arlocal' in terminal</span> 
                 }</div>
 
                 <div style={{textAlign: 'left', marginLeft: "5%"}}>Arweave balance {
@@ -50,7 +50,7 @@ class StakePanel extends React.Component {
                     : <span style={{color: 'red'}}>&#10005;</span> 
                 }</div>
 
-                <div className='title-div'>Game Controls</div>
+                <div className='control-panel-section'>Game Controls</div>
                 <table className='game-controls-table'>
                     <tbody>
                         <tr>
@@ -92,7 +92,7 @@ class StakePanel extends React.Component {
                     </input>
                 </div>
                 <div style={{textAlign: 'right', marginRight: "5%"}}>
-                    <div className='title-div'>Off-chain</div>
+                    <div className='control-panel-section'>Off-chain</div>
                     <div style={{textAlign: 'left', marginLeft: "5%"}}>
                         Play off-chain, your session will not be stored
                     </div>
