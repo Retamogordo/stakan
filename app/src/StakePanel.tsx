@@ -50,8 +50,8 @@ class StakePanel extends React.Component {
                     : <span style={{color: 'red'}}>&#10005;</span> 
                 }</div>
 
-                <div className='control-panel-section'>Game Controls</div>
-                <table className='game-controls-table'>
+                <table style={{marginTop: '5%'}} className='game-controls-table'>
+                    <caption>Game Controls</caption>
                     <tbody>
                         <tr>
                         <td>move right</td>
@@ -85,7 +85,7 @@ class StakePanel extends React.Component {
                 </div>
             
                 <div style={{textAlign: 'right', marginRight: "5%"}}>
-                    <input className="stakan-input" type='button'                          
+                    <input className="left-panel-input" type='button'                          
                         value={this.props.startButtonLabel} 
                         disabled={this.props.startButtonDisabled || this.props.loadingMode}
                         onClick={this.props.onStartSessionClick}>
@@ -96,7 +96,7 @@ class StakePanel extends React.Component {
                     <div style={{textAlign: 'left', marginLeft: "5%"}}>
                         Play off-chain, your session will not be stored
                     </div>
-                    <input className="stakan-input" type='button' 
+                    <input className="left-panel-input" type='button' 
                         
                         value='Free play' 
                         onClick={this.props.onStartFreePlayClick}>

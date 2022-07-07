@@ -74,6 +74,8 @@ export async function queryStakanAccount(
         }
   );
 
+  console.log("queryStakanAccount:", accounts);
+
   for (let acc of accounts) {
     try {
       const stakanAccountData 
@@ -106,6 +108,8 @@ export async function setUpStakan(program: Program<Stakan>) {
         ],
         program.programId
       );
+
+      console.log("setUpStakan->stakanStateAccount: ", stakanStateAccount.toBase58());
     
       const [stakanEscrowAccount, stakanEscrowAccountBump] =
       await web3.PublicKey.findProgramAddress(
@@ -114,6 +118,7 @@ export async function setUpStakan(program: Program<Stakan>) {
         ],
         program.programId
       );
+      console.log("setUpStakan->stakanEscrowAccount: ", stakanEscrowAccount.toBase58());
 
   
     const [stakanMint, stakanMintBump] = await web3.PublicKey.findProgramAddress(
@@ -122,6 +127,7 @@ export async function setUpStakan(program: Program<Stakan>) {
       ],
       program.programId
     );
+    console.log("setUpStakan->stakanMint: ", stakanMint.toBase58());
   
     let rewardFundsAccount = await spl.Token.getAssociatedTokenAddress(
       spl.ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -396,6 +402,24 @@ export async function queryWalletOwnerAccount(
     }
   }
   return undefined;
+}
+
+export async function getUserFromAccount(
+  account: web3.PublicKey,
+  stakanState: StakanState,
+): Promise<accountsSchema.UserAccount | undefined> {
+  const accountInfo 
+    = await stakanState.program.provider.connection.getAccountInfo(account);
+  
+  try {
+    const userAccountData 
+      = accountsSchema.UserAccount.deserialize(accountInfo?.data as Buffer);
+    return userAccountData
+  }
+  catch(e) {
+    console.log(e);
+    return undefined;
+  }
 }
 
 export async function signUpUser(user: User, stakanState: StakanState,) {  
@@ -752,6 +776,22 @@ export async function initGameSession(
         userWallet: user.wallet.publicKey,
 
         systemProgram: SystemProgram.programId,
+      })
+      .signers([])
+      .rpc();  
+  }
+
+  export async function closeGlobalStakanAccountForDebug(stakanState: StakanState) {
+    console.log("closeGlobalStakanAccountForDebug: ", stakanState);
+    await stakanState.program.methods
+      .closeGlobalStakanAccountForDebug(
+      )
+      .accounts({
+        stakanStateAccount: stakanState.stateAccount,
+        programWallet: stakanState.program.provider.wallet.publicKey,
+
+        systemProgram: SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
       })
       .signers([])
       .rpc();  

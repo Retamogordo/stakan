@@ -107,8 +107,25 @@ export const RightPanel = (props: any) => {
     },
     [props.update]);
 
+    const deleteStakanForDebug = () => {
+        (async () => {
+            await stakanApi.closeGlobalStakanAccountForDebug(props.userConnectionCtx?.stakanState);
+            //                   props.userConnectionCtx?.stakanState?.getUserFromAccount()  
+        })()
+    }
+/*
+
+*/
+
     return (
         <div className="right-panel">
+            <div>
+                <input type='button' onClick={deleteStakanForDebug} value={'Delete stakan'}
+                ></input>
+            </div>
+            <div>Global Record 
+                {props.userConnectionCtx?.stakanState?.globalMaxScore.toString()}
+            </div>
             <div className="right-panel-active-users">
                 <div style={{textAlign: "left"}}>
                     Reward Fund balance {rewardBalance}
@@ -121,13 +138,17 @@ export const RightPanel = (props: any) => {
                 </div>
                 <p></p>
                 <div className='right-panel-active-users'>
-                    Active Users
+                    <div className="title-div">
+                        Active Users
+                    </div>
                     <ul style={{textAlign: "left"}}>{activeUsers}</ul>
                 </div>
             </div>
             
             <div className="right-panel-sessions-archive">
-                Onchain Stored Sessions 
+                <div className="title-div">
+                    Onchain Stored Sessions 
+                </div>
                 <table className="stored-sessions-table">
                     <th scope="col">Score</th>
                     <th scope="col">When</th>

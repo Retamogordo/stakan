@@ -22,7 +22,7 @@ class Assignable extends Function {
     
     public static deserialize(buffer: Buffer): StakanStateSchema {
 
-      const schema = new Map([
+      const schemaNeverUsedStakanState = new Map([
         [
           StakanStateSchema, 
           { 
@@ -36,14 +36,44 @@ class Assignable extends Function {
                 ['reward_funds_account', [32]], 
                 ['escrow_account', [32]], 
                 ['mint_token', [32]],
+                ['program_wallet', [32]],
+                ['champion_account_opt_variant', 'u8'], 
               ] 
           }
         ]
       ]);
-      const acc = deserialize(schema, StakanStateSchema, 
-        buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+32));
+      const schemaStakanState = new Map([
+        [
+          StakanStateSchema, 
+          { 
+            kind: 'struct', 
+            fields: [
+                ['discriminant', [8]],
+                ['id', 'String'], 
+                ['stakan_state_account', [32]],
+                ['stakan_state_account_bump', [1]],
+                ['global_max_score', 'u64'], 
+                ['reward_funds_account', [32]], 
+                ['escrow_account', [32]], 
+                ['mint_token', [32]],
+                ['program_wallet', [32]],
+                ['champion_account_opt_variant', 'u8'], 
+                ['champion_account', [32]],
+              ] 
+          }
+        ]
+      ]);
 
-//      console.log("deserialized: ", acc);
+      let acc;
+      try {
+        acc = deserialize(schemaNeverUsedStakanState, StakanStateSchema, 
+          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+32+32+1));
+      } catch {
+        console.log("catch -> deserialized: ", acc);
+        acc = deserialize(schemaStakanState, StakanStateSchema, 
+          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+32+32+1+32));
+      }
+      console.log("deserialized: ", acc);
       return acc;
     }
   }
@@ -260,7 +290,7 @@ class Assignable extends Function {
       const data = deserialize(GameSessionArchive.schema, GameSessionArchive, Buffer.from(buffer));
       archivedData.push(data);
     }
-    console.log("archivedData: ", archivedData); 
+//    console.log("archivedData: ", archivedData); 
 
     return archivedData;
   }

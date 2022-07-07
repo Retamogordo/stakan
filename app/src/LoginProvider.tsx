@@ -63,12 +63,18 @@ const LoginProvider = (props: any) => {
                 </div>
             </div>
             :
+                !userConnectionCtx.stakanState
+                ?
+                <div style={{marginLeft: "5%", color: "red"}}>
+                    Fatal: Stakan Global State not present
+                </div>
+                :
                 userConnectionCtx.connected 
                 ?
                 <div style={{marginLeft: "5%"}}>
                     Sign up:
                     <div style={{textAlign: "center"}}>
-                        <input className='stakan-input' 
+                        <input className='left-panel-input' 
                             type="text" 
                             defaultValue={''}
                             onChange={handleChange} 

@@ -21,10 +21,54 @@ export class UserWalletsStatus {
     }
 }
 
+const NumericNonNegativeInput = (props: any) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const buttonRef = useRef<HTMLInputElement>(null);
+    const [inputValue, setInputValue] = useState(0);
+
+    const handleButtonClick = () => {
+        props.onInput(inputValue);
+    } 
+
+    const handleInputChange = () => {
+        setInputValue(inputRef.current ? parseInt(inputRef.current?.value) : 0)
+    } 
+
+    useEffect(() => {
+        props.inputFieldChanged && props.inputFieldChanged(inputValue);
+    },
+    [inputValue]);
+
+    return (
+        props.visible 
+        ?
+        <div className='numeric-input'>
+            <input className='numeric-input-field' type='number' min='0' 
+                onChange={handleInputChange}
+                ref={inputRef}
+            >                    
+            </input>
+            <span>{inputValue > 0 ? props.fieldLabel : ''}</span>
+            <div>
+                <input type='button' className='numeric-input-button'
+                    ref={buttonRef}
+                    disabled={!inputValue || inputValue <= 0}
+                    value={props.buttonText}
+                    onClick={handleButtonClick}
+                >
+                </input>
+            </div>
+        </div>
+        :
+        null
+    )
+}
+
 export const UserWalletsPanel = (props: any) => {
     const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
     const [userConnectionCtx, setUserConnectionCtx] = useState<UserConnectionContextState | null>(null);
     const purchaseTokensInputRef = useRef<HTMLInputElement>(null);
+    const purchaseTokensButtonRef = useRef<HTMLInputElement>(null);
     const sellTokensInputRef = useRef<HTMLInputElement>(null);
 
     const updateUserWalletsStatus = async () => {
@@ -75,24 +119,23 @@ export const UserWalletsPanel = (props: any) => {
         await updateUserWalletsStatus();
     }
     
-    const purchaseStakanTokens = async () => {
+    const purchaseStakanTokens = (tokens: number) => {
         const user = userConnectionCtx?.user;
         const stakanState = userConnectionCtx?.stakanState;
-        const tokens = purchaseTokensInputRef.current 
-            ? parseInt(purchaseTokensInputRef.current.value)
-            : 0;
     
-        if (user && stakanState) { 
-            props.onTokenTransactionStarted(true);
+        (async () => { 
+            if (user && stakanState) { 
+                props.onTokenTransactionStarted(true);
 
-            try {
-                await stakanApi.purchaseStakanTokens(user, stakanState, tokens, props.logCtx);
-                await updateUserWalletsStatus();
-            } catch (e) {
-                props.logCtx.logLn(e);
+                try {
+                    await stakanApi.purchaseStakanTokens(user, stakanState, tokens, props.logCtx);
+                    await updateUserWalletsStatus();
+                } catch (e) {
+                    props.logCtx.logLn(e);
+                }
+                props.onTokenTransactionStarted(false);
             }
-            props.onTokenTransactionStarted(false);
-        }
+        })()
     }
 
     const sellStakanTokens = async () => {
@@ -118,6 +161,13 @@ export const UserWalletsPanel = (props: any) => {
     const handleUserChanged = (loggedUserConnetctionCtx: UserConnectionContextState) => {
         setUserConnectionCtx(loggedUserConnetctionCtx);
     }
+
+    const handlePurchaseTokensInputChange = () => {
+        console.log("handlePurchaseTokensInputChange: ", purchaseTokensInputRef.current?.value); 
+        purchaseTokensButtonRef.current!.disabled = false;
+        console.log("handlePurchaseTokensInputChange: ", purchaseTokensButtonRef.current!.disabled);
+  //       !purchaseTokensInputRef.current?.value || parseInt(purchaseTokensInputRef.current?.value) <= 0
+    }
     
     useEffect(() => {
         if (props.update) updateUserWalletsStatus()
@@ -134,7 +184,7 @@ export const UserWalletsPanel = (props: any) => {
     useEffect(() => {
         props.onUserWalletsStatusChanged(userWalletsStatus);        
     }, [userWalletsStatus]);
-            
+
 
     return (
         <div className='left-panel'>
@@ -147,7 +197,7 @@ export const UserWalletsPanel = (props: any) => {
                 Lamport Balance {userWalletsStatus.solanaBalance}
                 {/*
                 userConnectionCtx?.connected 
-                    ? <input type='button' className='stakan-input'
+                    ? <input type='button' className='left-panel-input'
                             value={'Airdrop some lamports'} 
                             onClick={airdropLamports}>
                     </input>
@@ -170,7 +220,7 @@ export const UserWalletsPanel = (props: any) => {
                         <div style={{textAlign: "right", marginRight: "5%"}}>
                         {
                             airdropNeeded
-                            ? <input type='button' className='stakan-input'
+                            ? <input type='button' className='left-panel-input'
                                     value={'Airdrop some winston'} 
                                     onClick={airdropWinston}>
                             </input>
@@ -196,36 +246,16 @@ export const UserWalletsPanel = (props: any) => {
                 Stakan Token Balance {userWalletsStatus.tokenBalance}
             </div>
             }
-            
-            {userWalletsStatus.solanaBalance > stakanApi.LAMPORTS_PER_STAKAN_TOKEN
-                ?
-                <div style={{marginLeft: "5%", marginTop: "5%"}}>
-                    <input type='number' min='0' ref={purchaseTokensInputRef}></input>
-                    <div style={{textAlign: "right", marginRight: "5%"}}>
-                        <input type='button' className='stakan-input'
-                            value={'Purchase tokens'}
-                            onClick={purchaseStakanTokens}
-                        >
-                        </input>
-                    </div>
-                </div>
-                : null
-            }
-            
-            {userWalletsStatus.tokenBalance > 0
-                ?
-                <div style={{marginLeft: "5%", marginTop: "5%"}}>
-                    <input type='number' min='0' ref={sellTokensInputRef}></input>
-                    <div style={{textAlign: "right", marginRight: "5%"}}>
-                        <input type='button' className='stakan-input'
-                            value={'   Sell tokens   '}
-                            onClick={sellStakanTokens}
-                        >
-                        </input>
-                    </div>
-                </div>
-                : null
-            }
+            <NumericNonNegativeInput 
+                visible={userWalletsStatus.solanaBalance > stakanApi.LAMPORTS_PER_STAKAN_TOKEN}
+                onInput={purchaseStakanTokens}
+                buttonText={'Purchase tokens'}
+            />
+            <NumericNonNegativeInput 
+                visible={userWalletsStatus.tokenBalance > 0}
+                onInput={sellStakanTokens}
+                buttonText={'Sell tokens'}
+            />
 
             <div style={{marginTop: '30%' }}>                
                 <input type='button' value='Delete User' disabled={false} onClick={props.onDeleteUserClick}></input>

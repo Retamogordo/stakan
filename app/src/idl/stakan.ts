@@ -421,6 +421,32 @@ export type Stakan = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "closeGlobalStakanAccountForDebug",
+      "accounts": [
+        {
+          "name": "stakanStateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "programWallet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -984,6 +1010,32 @@ export const IDL: Stakan = {
         },
         {
           "name": "userWallet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeGlobalStakanAccountForDebug",
+      "accounts": [
+        {
+          "name": "stakanStateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "programWallet",
           "isMut": true,
           "isSigner": false
         },

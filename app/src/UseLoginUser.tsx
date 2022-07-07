@@ -68,16 +68,21 @@ const useLoginUser = (
             });
   
             logCtx.log("retrieving stakan global state account...")
+            
+            console.log("retrieving stakan global state account...")
+            
             const state = await stakanApi.queryStakanAccount(program);
             logCtx.logLn(state 
                 ? "done, pubkey: " + state?.pubKey.toBase58() : "failed");
 
             setStakanState(state ? state : null);
-            if (state) {
-                setArweave(arw);
-            } else {
+//            if (state) {
+            console.log("Arweave ", arw)
+            
+            setArweave(arw);
+/*            } else {
                 setArweave(null);
-            }
+            }*/
         } else {
             setStakanProgram(null);
             setStakanState(null);
