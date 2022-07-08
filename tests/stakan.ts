@@ -7,6 +7,7 @@ import fs from 'fs';
 //import { Connection } from "@solana/web3.js";
 import * as accountsSchema from "../app/src/accountsSchema";
 import * as stakanApi from "../app/src/stakanSolanaApi";
+import * as stakanLogic from "../app/src/stakanLogic";
 import { Stakan } from "../target/types/stakan";
 
 import Arweave from "arweave";
@@ -49,7 +50,6 @@ let stakanState: stakanApi.StakanState;
 const arLocal = new ArLocal();
 
 before(async () => {
-
   // Start is a Promise, we need to start it inside an async function.
   await arLocal.start();
 
@@ -69,7 +69,7 @@ before(async () => {
     logging: false,
   });
 //  testWeave = await TestWeave.init(arweave);
-    
+  
 
   console.log("searching stakan global state on chain...");
   stakanState = await stakanApi.queryStakanAccount(program) as stakanApi.StakanState;
@@ -117,6 +117,12 @@ after(async () => {
 });
 
 describe("stakan", () => {
+/*
+  it("Close Global Account", async () => {
+    await stakanApi.closeGlobalStakanAccountForDebug(stakanState);
+  })
+  return;
+*/
   it("Arweave create test transaction", async () => {
     const arweave1 = Arweave.init({
       host: 'localhost',
@@ -187,6 +193,35 @@ describe("stakan", () => {
 
     console.log("stakanApi.User ", userAccountData['username'], " signed up");
   });
+
+  it("Check signing OUT user", async () => {
+    await stakanApi.signOutUser(user as stakanApi.User, stakanState)
+
+    const userAccount = user?.account as anchor.web3.PublicKey;
+    const accountInfo 
+      = await provider.connection.getAccountInfo(userAccount);
+    
+    if (accountInfo) throw "user account was not closed";
+
+    const userTokenAccount = user?.tokenAccount as anchor.web3.PublicKey;
+    const tokenAccountInfo 
+      = await provider.connection.getAccountInfo(userTokenAccount);
+    
+    if (tokenAccountInfo) throw "user Token account was not closed";
+
+  });
+
+  it("Repeat signing up user", async () => {
+    const currUser = user as stakanApi.User;  
+    
+    await stakanApi.signUpUser(currUser, stakanState as stakanApi.StakanState);
+
+    const userAccount = currUser.account as anchor.web3.PublicKey;
+    const accountInfo 
+      = await provider.connection.getAccountInfo(userAccount);
+    
+    if (!accountInfo) throw "accountInfo is null";
+  })
 /*
   it("Sign up another user with the same wallet (allowed for now)", async () => {
     const currUser = user2 as stakanApi.User;  
@@ -225,7 +260,7 @@ describe("stakan", () => {
     }
     throw "Should have failed for insufficient tokens to stake";
   });
-
+*/
   it("Purchase tokens", async () => {
     const currUser = user as stakanApi.User;  
     console.log("before purchasing tokens...");
@@ -233,7 +268,7 @@ describe("stakan", () => {
     console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
     console.log("userMintAccount balance: ", await currUser.getTokenBalance());
 
-    await stakanApi.purchaseStakanTokens(currUser, stakanState, 20);
+    await stakanApi.purchaseStakanTokens(currUser, stakanState, 20, undefined);
 
     console.log("after purchasing tokens");
     console.log("userWallet balance: ", await currUser.getBalance());
@@ -251,10 +286,10 @@ describe("stakan", () => {
 //    console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
     console.log("program escrow balance: ", await provider.connection.getBalance(stakanState.escrowAccount));
     console.log("userMintAccount balance: ", await currUser.getTokenBalance());
-    let rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
+    let rewardFundsAccountBalance = await stakanState.getRewardFundBalance();
       console.log("reward funds token balance: ", rewardFundsAccountBalance);
     
-    await stakanApi.sellStakanTokens(currUser, stakanState, 10);
+    await stakanApi.sellStakanTokens(currUser, stakanState, 10, undefined);
 
     console.log("after selling tokens");
     console.log("userWallet balance: ", await currUser.getBalance());
@@ -263,18 +298,18 @@ describe("stakan", () => {
     
     const userTokenBalance = await currUser.getTokenBalance();
     console.log("user token balance: ", userTokenBalance);
-    rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
+    rewardFundsAccountBalance = await stakanState.getRewardFundBalance();
     console.log("reward funds token balance: ", rewardFundsAccountBalance);  
 //      assert(userTokenBalance, tokenAmount);
   })
-*/
+
   it("Init game session", async () => {
     const currUser = user as stakanApi.User;  
     const stake = 0;
 //    const stake = 1;
     const cols = 10;
     const rows = 16;
-    await stakanApi.initGameSession(currUser, stakanState, stake, cols, rows);
+    await stakanApi.initGameSession(currUser, stakanState, stake, undefined);
     
     const accountInfo 
       = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
@@ -282,19 +317,14 @@ describe("stakan", () => {
     console.log("§§§§§§§§§§§§§§ account Info:", accountInfo?.data);
 
     if (!accountInfo) throw "accountInfo is null"
-    let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data, cols, rows);
+    let accountData = accountsSchema.GameSessionAccount.deserialize(accountInfo.data);
   
     const gameSessionInfo = await currUser.getGameSessionInfo(cols, rows) as accountsSchema.GameSessionAccount;
 
-    console.log("Game session initialized: score: ", 
-      accountData['score'].toString(),
-      ", stake: ", gameSessionInfo['stake'],
-      ", tiles_cols: ", gameSessionInfo['tiles_cols'],
-      ", tiles_rows: ", gameSessionInfo['tiles_rows'],
-      ", tiles: ", gameSessionInfo,
-      );
+    console.log("Game session initialized: ", accountData);
   });
-/*
+
+  /*
   it("Update game session 1", async () => {
     const cols = 10;
     const rows = 16;
@@ -339,7 +369,19 @@ describe("stakan", () => {
     const currUser = user as stakanApi.User;  
     const cols = 10;
     const rows = 16;
-    await stakanApi.finishGameSession(currUser, stakanState, undefined);      
+    const stakanObj = stakanLogic.setupStakan(rows, cols);
+    
+    await stakanApi.finishGameSession(currUser, 
+      stakanState, 
+      {
+        tiles: stakanObj.tiles,
+        score: 42,
+        linesCleared: 17,
+        level: 3,
+        duration: 123,
+      },
+      stakanObj,
+      undefined);      
 
     const numberOfArchives = 1;
     const archivedData 
