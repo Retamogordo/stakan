@@ -49,10 +49,9 @@ pub mod stakan {
 
     pub fn sell_tokens(
         ctx: Context<SellTokens>,
-        user_account_bump: u8,
         token_amount: u64, 
     ) -> Result<()> {
-        crate::transactions::tokens::sell(ctx, user_account_bump, token_amount)
+        crate::transactions::tokens::sell(ctx, token_amount)
     }
 
     pub fn init_game_session(ctx: Context<InitGameSession>, stake: u64,) -> Result<()> {
@@ -82,12 +81,12 @@ pub mod stakan {
     ) -> Result<()> {
         crate::transactions::user::force_delete(ctx)
     }
-/*
+
     pub fn close_global_stakan_account_for_debug(
         ctx: Context<CloseStakanAccountForDebug>,
 
     ) -> Result<()> {
         crate::transactions::set_up_stakan::close_acc(ctx)
     }
-*/
+
 }

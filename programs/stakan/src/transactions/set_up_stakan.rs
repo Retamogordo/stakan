@@ -55,7 +55,7 @@ pub struct SetupStakan<'info> {
 
     /// CHECK:` PDA account used as a program wallet for receiving lamports 
     /// when a user purchases tokens
-    #[account(init, payer = program_wallet, 
+    #[account(init_if_needed, payer = program_wallet, 
         space = 8,
         seeds = [
             StakanGlobalState::SEED.as_ref(), StakanGlobalState::ESCROW_ACCOUNT_SEED.as_ref(), 
@@ -65,7 +65,7 @@ pub struct SetupStakan<'info> {
     escrow_account: AccountInfo<'info>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = program_wallet,
         seeds = [StakanGlobalState::SEED.as_ref(), b"stakan_mint".as_ref()],
         bump,
@@ -90,7 +90,7 @@ pub struct SetupStakan<'info> {
 }
 
 impl SetupStakan<'_> {
-    const INITIAL_REWARD_FUNDS: u64 = 100;
+    const INITIAL_REWARD_FUNDS: u64 = 10000;
 }
 
 #[derive(Accounts)]
@@ -110,11 +110,14 @@ pub struct CloseStakanAccountForDebug<'info> {
     )]
     escrow_account: AccountInfo<'info>,
 
+    #[account(mut,
+    )]
     mint: Account<'info, Mint>,
 
     #[account(mut)]
     reward_funds_account: Account<'info, TokenAccount>,
 
+    associated_token_program: Program<'info, AssociatedToken>,
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
     rent: Sysvar<'info, Rent>,
@@ -161,16 +164,9 @@ pub fn set_up_stakan(ctx: Context<SetupStakan>,
     acc.champion_account = None;
     Ok(())    
 }
-/*
-pub fn close_acc(ctx: Context<CloseStakanAccountForDebug>,
-//    escrow_state_account_bump: u8,
-) -> Result<()> {
 
-    let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.escrow_account_bump.to_le_bytes();
-    let signer_seeds = [
-        StakanGlobalState::ESCROW_ACCOUNT_SEED.as_ref(),
-        &temp_bump
-    ];
+pub fn close_acc(ctx: Context<CloseStakanAccountForDebug>,
+) -> Result<()> {
 
     let escrow_balance = ctx.accounts.escrow_account.lamports();
     ctx.accounts.escrow_account.lamports()
@@ -181,7 +177,6 @@ pub fn close_acc(ctx: Context<CloseStakanAccountForDebug>,
         .checked_add(escrow_balance)
         .ok_or(crate::errors::StakanError::BalanceOverflow)?;
 
-
     let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.stakan_state_account_bump.to_le_bytes();
     let signer_seeds = [
         StakanGlobalState::SEED.as_ref(),
@@ -190,7 +185,7 @@ pub fn close_acc(ctx: Context<CloseStakanAccountForDebug>,
 
     anchor_spl::token::burn(
         CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.associated_token_program.to_account_info(),
             
             anchor_spl::token::Burn {
                 mint: ctx.accounts.mint.to_account_info(),
@@ -200,23 +195,21 @@ pub fn close_acc(ctx: Context<CloseStakanAccountForDebug>,
 
             &[&signer_seeds]
         ),
-        0
+        ctx.accounts.reward_funds_account.amount
     )?;
-/*  
-
-    close_account(
+ 
+    anchor_spl::token::close_account(
         CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
+            ctx.accounts.associated_token_program.to_account_info(),
 
             anchor_spl::token::CloseAccount {
                 account: ctx.accounts.reward_funds_account.to_account_info(),
-                destination: ctx.accounts.mint.to_account_info(),
+                destination: ctx.accounts.program_wallet.to_account_info(),
                 authority: ctx.accounts.stakan_state_account.to_account_info()
             },
             &[&signer_seeds]
         )
     )?;
-*/
+
     Ok(())    
 }
-*/

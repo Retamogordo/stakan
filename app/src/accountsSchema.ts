@@ -74,12 +74,12 @@ class Assignable extends Function {
 
       let acc;
       try {
-        acc = deserialize(schemaNeverUsedStakanState, StakanStateSchema, 
-          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+1+32+32+1));
-      } catch {
-        console.log("catch -> deserialized: ", acc);
         acc = deserialize(schemaStakanState, StakanStateSchema, 
           buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+1+32+32+1+32));
+      } catch {
+        console.log("catch -> deserialized: ", acc);
+        acc = deserialize(schemaNeverUsedStakanState, StakanStateSchema, 
+          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+1+32+32+1));
       }
       console.log("deserialized: ", acc);
       return acc;

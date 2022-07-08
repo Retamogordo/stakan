@@ -228,10 +228,6 @@ export type Stakan = {
       ],
       "args": [
         {
-          "name": "userAccountBump",
-          "type": "u8"
-        },
-        {
           "name": "tokenAmount",
           "type": "u64"
         }
@@ -373,16 +369,6 @@ export type Stakan = {
           "isSigner": false
         },
         {
-          "name": "rewardFundsAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "stakanEscrowAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
@@ -416,6 +402,77 @@ export type Stakan = {
         {
           "name": "userWallet",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeGlobalStakanAccountForDebug",
+      "accounts": [
+        {
+          "name": "stakanStateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "programWallet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardFundsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -581,6 +638,11 @@ export type Stakan = {
       "code": 6012,
       "name": "DurationCantDecrease",
       "msg": "Duration can't decrease"
+    },
+    {
+      "code": 6013,
+      "name": "ShouldSellTokensBeforeSigningOut",
+      "msg": "Should sell all tokens in separate transaction prior to signing out"
     }
   ]
 };
@@ -815,10 +877,6 @@ export const IDL: Stakan = {
       ],
       "args": [
         {
-          "name": "userAccountBump",
-          "type": "u8"
-        },
-        {
           "name": "tokenAmount",
           "type": "u64"
         }
@@ -960,16 +1018,6 @@ export const IDL: Stakan = {
           "isSigner": false
         },
         {
-          "name": "rewardFundsAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "stakanEscrowAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "associatedTokenProgram",
           "isMut": false,
           "isSigner": false
@@ -1003,6 +1051,77 @@ export const IDL: Stakan = {
         {
           "name": "userWallet",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "closeGlobalStakanAccountForDebug",
+      "accounts": [
+        {
+          "name": "stakanStateAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "programWallet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardFundsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -1168,6 +1287,11 @@ export const IDL: Stakan = {
       "code": 6012,
       "name": "DurationCantDecrease",
       "msg": "Duration can't decrease"
+    },
+    {
+      "code": 6013,
+      "name": "ShouldSellTokensBeforeSigningOut",
+      "msg": "Should sell all tokens in separate transaction prior to signing out"
     }
   ]
 };

@@ -60,7 +60,6 @@ before(async () => {
     fs.mkdirSync(dir);
   }
 
-
   arweave = Arweave.init({
     host: 'localhost',
     port: 1984,
@@ -68,8 +67,7 @@ before(async () => {
     timeout: 20000,
     logging: false,
   });
-//  testWeave = await TestWeave.init(arweave);
-  
+//  testWeave = await TestWeave.init(arweave);  
 
   console.log("searching stakan global state on chain...");
   stakanState = await stakanApi.queryStakanAccount(program) as stakanApi.StakanState;
@@ -88,6 +86,24 @@ before(async () => {
     }
   }
 
+  await stakanApi.closeGlobalStakanAccountForDebug(stakanState);
+
+  console.log("searching stakan global state on chain...");
+  stakanState = await stakanApi.queryStakanAccount(program) as stakanApi.StakanState;
+
+  if (!stakanState) {
+    console.log("not found, stakan global state was successfuly deleted...");
+
+    await stakanApi.setUpStakan(program);
+  
+    stakanState = await stakanApi.queryStakanAccount(program) as stakanApi.StakanState;
+    
+    if (!stakanState) {
+      console.log("Failed to set up stakan global state, exitting");
+      
+      throw "Failed to set up stakan global state";
+    }
+  }
 //  console.log("After setup, found on-chain: ", acc['id']);
 //  console.log("After setup, found on-chain: ", stakanState);
   const amount = 1000000000;
@@ -222,7 +238,7 @@ describe("stakan", () => {
     
     if (!accountInfo) throw "accountInfo is null";
   })
-/*
+
   it("Sign up another user with the same wallet (allowed for now)", async () => {
     const currUser = user2 as stakanApi.User;  
     
@@ -240,6 +256,22 @@ describe("stakan", () => {
     console.log("stakanApi.User ", userAccountData['username'], " signed up");
   });
 
+  it("Force delete user", async () => {
+    const currUser = user2 as stakanApi.User;  
+
+    await stakanApi.purchaseStakanTokens(currUser, stakanState, 42, undefined);
+    
+    await stakanApi.forceDeleteUser(currUser, stakanState);
+ //   await signUpUser(user2, stakanState.getMintPublicKey());          
+  });
+
+  it("Re-create second user after force delete", async () => {
+    const currUser = user2 as stakanApi.User;  
+    
+    await stakanApi.signUpUser(currUser, stakanState);
+  });
+
+  /*  
   it("SHOULD FAIL: Init game session (no tokens on account to stake)", async () => {
     const currUser = user as stakanApi.User;  
     const stake = 1;

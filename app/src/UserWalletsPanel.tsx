@@ -69,7 +69,7 @@ export const UserWalletsPanel = (props: any) => {
     const [userConnectionCtx, setUserConnectionCtx] = useState<UserConnectionContextState | null>(null);
     const purchaseTokensInputRef = useRef<HTMLInputElement>(null);
     const purchaseTokensButtonRef = useRef<HTMLInputElement>(null);
-    const sellTokensInputRef = useRef<HTMLInputElement>(null);
+//    const sellTokensInputRef = useRef<HTMLInputElement>(null);
 
     const updateUserWalletsStatus = async () => {
         const user = userConnectionCtx?.user;
@@ -105,20 +105,6 @@ export const UserWalletsPanel = (props: any) => {
             await updateUserWalletsStatus();
     }
 
-    const airdropLamports = async () => {
-        const user = userConnectionCtx?.user;
-        const lamports = 1000000;
-        
-        props.logCtx.log("airdropping " + lamports + " lamports...")
-        const txErr = await user?.airdropLamports(lamports);
-
-        if (null === txErr) {
-            props.logCtxLn("done");
-        } else props.logCtx.logLn("failed, " + txErr)
-
-        await updateUserWalletsStatus();
-    }
-    
     const purchaseStakanTokens = (tokens: number) => {
         const user = userConnectionCtx?.user;
         const stakanState = userConnectionCtx?.stakanState;
@@ -138,12 +124,14 @@ export const UserWalletsPanel = (props: any) => {
         })()
     }
 
-    const sellStakanTokens = async () => {
+    const sellStakanTokens = async (value: string) => {
         const user = userConnectionCtx?.user;
         const stakanState = userConnectionCtx?.stakanState;
-        const tokens = sellTokensInputRef.current 
-            ? parseInt(sellTokensInputRef.current.value)
-            : 0;
+        const tokens = parseInt(value);
+
+        if (isNaN(tokens) || tokens === 0) return;
+
+        console.log('tokens: ', tokens);
     
         if (user && stakanState) { 
             props.onTokenTransactionStarted(true);
@@ -161,14 +149,11 @@ export const UserWalletsPanel = (props: any) => {
     const handleUserChanged = (loggedUserConnetctionCtx: UserConnectionContextState) => {
         setUserConnectionCtx(loggedUserConnetctionCtx);
     }
-
-    const handlePurchaseTokensInputChange = () => {
-        console.log("handlePurchaseTokensInputChange: ", purchaseTokensInputRef.current?.value); 
-        purchaseTokensButtonRef.current!.disabled = false;
-        console.log("handlePurchaseTokensInputChange: ", purchaseTokensButtonRef.current!.disabled);
-  //       !purchaseTokensInputRef.current?.value || parseInt(purchaseTokensInputRef.current?.value) <= 0
+/*
+    const handleUserSignedOut = (userConnetctionCtx: UserConnectionContextState) => {
+        
     }
-    
+*/    
     useEffect(() => {
         if (props.update) updateUserWalletsStatus()
       },
@@ -184,16 +169,6 @@ export const UserWalletsPanel = (props: any) => {
     useEffect(() => {
         props.onUserWalletsStatusChanged(userWalletsStatus);        
     }, [userWalletsStatus]);
-
-    const setupStakanGlobalAccount = () => {
-        (async () => {
-            console.log("before setting up: ", userConnectionCtx);
-            if (userConnectionCtx?.stakanProgram) {
-                console.log("setting up");
-                await stakanApi.setUpStakan(userConnectionCtx?.stakanProgram)
-            }
-        })()
-    }
 
     return (
         <div className='left-panel'>
@@ -265,15 +240,6 @@ export const UserWalletsPanel = (props: any) => {
                 onInput={sellStakanTokens}
                 buttonText={'Sell tokens'}
             />
-
-            <div style={{marginTop: '30%' }}>                
-                <input type='button' value='Delete User' disabled={false} onClick={props.onDeleteUserClick}></input>
-            </div>
-            <div>
-                <input type='button' value='SETUPr' disabled={false} 
-                onClick={setupStakanGlobalAccount}></input>
-                
-            </div>
       </div>
     )
 }

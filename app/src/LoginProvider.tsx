@@ -1,25 +1,53 @@
 import { useEffect, useState } from 'react';
 import useLoginUser from "./UseLoginUser"
+import * as stakanApi from './stakanSolanaApi'
 
 const LoginProvider = (props: any) => {
 
-    const [userName, setUserName] = useState<string | null>(
+    const [enteredUserName, setEnteredUserName] = useState<string | null>(
         null
     );
-    const userConnectionCtx = useLoginUser(userName, props.logCtx);
+    const [userSignedOut, setUserSignedOut] = useState(false);
+    const userConnectionCtx = useLoginUser(enteredUserName, userSignedOut, props.logCtx);
     
     const handleChange = (ev: any) => {
     }
 
     const handleKeyUp = (ev: any) => {
         if (ev.keyCode === 13) {
-            console.log("handleKeyUp: ", ev.target.value)
-            setUserName(ev.target.value);
+            setEnteredUserName(ev.target.value);
         }
     }
 
+    const handleSignOutButtonClicked = (ev: any) => {
+        if (userConnectionCtx.user && userConnectionCtx.stakanState) {
+            stakanApi.signOutUser(
+                userConnectionCtx.user, 
+                userConnectionCtx.stakanState,
+                props.logCtx,
+            )
+            .then(() => {
+                userConnectionCtx.user = null;
+                setUserSignedOut(true);
+            });
+        }
+    }
+
+    const handleForceDeleteUser = (ev: any) => {
+        if (userConnectionCtx.user && userConnectionCtx.stakanState) {
+            stakanApi.forceDeleteUser(
+                userConnectionCtx.user, 
+                userConnectionCtx.stakanState
+            )
+            .then(() => {
+                userConnectionCtx.user = null;
+                setUserSignedOut(true);
+            });
+        }
+    }
+ 
     useEffect(() => {
-        setUserName(userConnectionCtx.user?.username 
+        setEnteredUserName(userConnectionCtx.user?.username 
             ? userConnectionCtx.user?.username.slice()
             : null);
     },
@@ -31,9 +59,14 @@ const LoginProvider = (props: any) => {
     [userConnectionCtx.user])
 
     useEffect(() => {
-        setUserName(null);
+        setEnteredUserName(null);
     },
-    [userName])
+    [enteredUserName])
+
+    useEffect(() => {
+        setUserSignedOut(false);
+    },
+    [userSignedOut])
 
     return (
         <div style={{marginTop: "5%"}}>
@@ -58,8 +91,20 @@ const LoginProvider = (props: any) => {
             ?
             <div style={{marginLeft: "5%", marginTop: "5%"}}>
                 Logged in: 
-                <div style={{textAlign: "center", fontSize: "larger"}}>
-                    {userConnectionCtx.user?.username}
+                <span style={{textAlign: "center", fontSize: "larger"}}>
+                    {' ' + userConnectionCtx.user?.username}
+                </span>
+                <div style={{textAlign: "right"}}>
+                    <input type="button" value='sign out'
+                        disabled={!userConnectionCtx.user}
+                        onClick={handleSignOutButtonClicked}
+                    ></input>
+                </div>
+                <div style={{textAlign: "right"}}>
+                    <input type="button" value='force delete'
+                        disabled={!userConnectionCtx.user}
+                        onClick={handleForceDeleteUser}
+                    ></input>
                 </div>
             </div>
             :

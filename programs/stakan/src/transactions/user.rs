@@ -4,6 +4,19 @@ use anchor_spl::associated_token::{AssociatedToken, };
 use crate::transactions::set_up_stakan::StakanGlobalState;
 use crate::errors::StakanError;
 
+macro_rules! signer_seeds {
+    // `()` indicates that the macro takes no argument.
+    ($user_inner: ident) => {
+        [
+            b"user_account".as_ref(),
+            User::username_slice_for_seed($user_inner.username.as_ref()),
+            User::arweave_storage_address_for_seed($user_inner.arweave_storage_address.as_ref()),
+            
+            &$user_inner.bump.to_le_bytes()
+        ]
+    };
+}
+
 #[account]
 //#[derive(agsol_borsh_schema::BorshSchema)]
 pub struct User {
@@ -156,23 +169,23 @@ pub struct SignOutUser<'info> {
     /// CHECK:` pubkey of user wallet to receive lamports from program wallet
     #[account(mut)]
     user_wallet: AccountInfo<'info>,
-
+/*
     #[account(mut,
         constraint = reward_funds_account.owner == stakan_state_account.key(),
     )]
     reward_funds_account: Account<'info, TokenAccount>,
-
+*/
  /*   #[account(mut)]
     program_wallet: Signer<'info>,
     */
-
+/*
     /// CHECK:` PDA account used as a program wallet for receiving lamports 
     /// when a user purchases tokens
     #[account(mut,
         constraint = stakan_state_account.escrow_account == stakan_escrow_account.key(),
     )]
     stakan_escrow_account: AccountInfo<'info>,
-
+*/
     associated_token_program: Program<'info, AssociatedToken>,
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
@@ -187,10 +200,18 @@ pub struct ForceDeleteUser<'info> {
     )]
     user_account: Account<'info, User>,
     
-    /// CHECK:` pubkey of user wallet to receive lamports from program wallet
+    /// CHECK:` pubkey of user wallet to receive lamports upon token account closing
     #[account(mut)]
     user_wallet: AccountInfo<'info>,
 
+    #[account(mut)]
+    token_account: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    mint: Account<'info, Mint>,
+
+    associated_token_program: Program<'info, AssociatedToken>,
+    token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
     rent: Sysvar<'info, Rent>,
 }
@@ -226,45 +247,25 @@ pub fn sign_up(ctx: Context<SignUpUser>,
 pub fn sign_out(ctx: Context<SignOutUser>, 
     //user_account_bump: u8
 ) -> Result<()> {
+/*    
     let token_amount = ctx.accounts.user_token_account.amount;
-    let temp_bump: [u8; 1] = ctx.accounts.user_account.user.bump.to_le_bytes();
-    let signer_seeds = [
-        b"user_account".as_ref(),
-        User::username_slice_for_seed(ctx.accounts.user_account.user.username.as_ref()),
-        User::arweave_storage_address_for_seed(ctx.accounts.user_account.user.arweave_storage_address.as_ref()),
-        
-        &temp_bump
-    ];
-    anchor_spl::token::transfer(
-        CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
 
-            anchor_spl::token::Transfer {
-                from: ctx.accounts.user_token_account.to_account_info(),
-                to: ctx.accounts.reward_funds_account.to_account_info(),
-                authority: ctx.accounts.user_account.to_account_info(),
-            },
-            &[&signer_seeds]
-        ), 
-        token_amount
+    crate::transactions::tokens::user_sell_tokens(
+        token_amount,
+        &ctx.accounts.user_account,
+        &ctx.accounts.user_token_account,
+        &ctx.accounts.reward_funds_account,
+        &mut ctx.accounts.stakan_escrow_account,
+        &ctx.accounts.user_wallet,
+        &ctx.accounts.token_program,
+        &ctx.accounts.rent,
     )?;
-    // give lamports back to user
-    let escrow_account = &mut ctx.accounts.stakan_escrow_account;
-    let lamports_delta = token_amount * crate::transactions::tokens::PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN;
-    let escrow_balance_after = escrow_account.lamports()
-        .checked_sub(lamports_delta)
-        .ok_or(crate::errors::StakanError::NegativeBalance)?;
-
-    if !ctx.accounts.rent.is_exempt(escrow_balance_after, escrow_account.data_len()) {
-        // should never happen
-        return Err(crate::errors::StakanError::GlobalEscrowAccountDepleted.into());
-    }    
-
-    **escrow_account.lamports.borrow_mut() = escrow_balance_after;
-    **ctx.accounts.user_wallet.lamports.borrow_mut() =
-        ctx.accounts.user_wallet.lamports()
-            .checked_add(lamports_delta)
-            .ok_or(crate::errors::StakanError::BalanceOverflow)?;
+*/
+    if ctx.accounts.user_token_account.amount > 0 {
+        return Err(StakanError::ShouldSellTokensBeforeSigningOut.into())
+    }
+    let user_inner = &ctx.accounts.user_account.user;
+    let signer_seeds = signer_seeds!(user_inner);
 
     anchor_spl::token::close_account(
         CpiContext::new_with_signer(
@@ -282,7 +283,38 @@ pub fn sign_out(ctx: Context<SignOutUser>,
     Ok(())
 }
 
-pub fn force_delete(_ctx: Context<ForceDeleteUser>,
+pub fn force_delete(ctx: Context<ForceDeleteUser>,
 ) -> Result<()> {
+    let user_inner = &ctx.accounts.user_account.user;
+    let signer_seeds = signer_seeds!(user_inner);
+
+    anchor_spl::token::burn(
+        CpiContext::new_with_signer(
+            ctx.accounts.associated_token_program.to_account_info(),
+            
+            anchor_spl::token::Burn {
+                mint: ctx.accounts.mint.to_account_info(),
+                from: ctx.accounts.token_account.to_account_info(),
+                authority: ctx.accounts.user_account.to_account_info(),
+            },
+
+            &[&signer_seeds]
+        ),
+        ctx.accounts.token_account.amount
+    )?;
+
+    anchor_spl::token::close_account(
+        CpiContext::new_with_signer(
+            ctx.accounts.associated_token_program.to_account_info(),
+
+            anchor_spl::token::CloseAccount {
+                account: ctx.accounts.token_account.to_account_info(),
+                destination: ctx.accounts.user_wallet.to_account_info(),
+                authority: ctx.accounts.user_account.to_account_info()
+            },
+            &[&signer_seeds]
+        )
+    )?;
+
     Ok(())
 }

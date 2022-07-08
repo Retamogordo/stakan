@@ -31,6 +31,7 @@ export class UserConnectionContextState {
 
 const useLoginUser = (
     usernameToSignUp: string | null,
+    userSignedOut: boolean,
     logCtx: LogTerminalContext,
 ): UserConnectionContextState => {
     const [stakanProgram, setStakanProgram] = useState<Program<Stakan> | null>(null);
@@ -40,6 +41,8 @@ const useLoginUser = (
     const anchorConnection = useConnection();
     const walletCtx = useWallet();
     const anchorWallet = useAnchorWallet();
+
+    console.log("useLoginUser usernameToSignUp: ", usernameToSignUp, ", userSignedOut: ", userSignedOut);
 
     const reconnect = async () => {
         if (walletCtx.publicKey && walletCtx.connected && anchorWallet) {
@@ -76,6 +79,8 @@ const useLoginUser = (
                 ? "done, pubkey: " + state?.pubKey.toBase58() : "failed");
 
 //            await stakanApi.setUpStakan(program);
+//            if (state)
+//                await stakanApi.closeGlobalStakanAccountForDebug(state)
 
             setStakanState(state ? state : null);
 //            if (state) {
@@ -126,7 +131,7 @@ const useLoginUser = (
 
     useEffect(() => {
         if (stakanProgram && stakanState && arweave) {
-            if (!usernameToSignUp) {
+            if (!usernameToSignUp || userSignedOut) {
                 tryToLogin(arweave);
             } else {
                 const user = new stakanApi.User(
@@ -143,7 +148,7 @@ const useLoginUser = (
             logout();
         }
     },
-    [stakanState, usernameToSignUp, arweave]);
+    [stakanState, usernameToSignUp, userSignedOut, arweave]);
     
     useEffect(() => {
         if (walletCtx.connected)

@@ -1,6 +1,6 @@
 import { web3 } from "@project-serum/anchor";
 import {useState, useEffect, useRef} from 'react'
-import {GameSessionArchive} from './accountsSchema'
+import {GameSessionArchive, UserAccount} from './accountsSchema'
 import * as stakanApi from './stakanSolanaApi'
 import { BN } from "@project-serum/anchor";
 
@@ -9,6 +9,7 @@ import { BN } from "@project-serum/anchor";
 export const RightPanel = (props: any) => {
     const [sessionsArchive, SetSessionsArchive] = useState<GameSessionArchive[]>();
     const [rewardBalance, setRewardBalance] = useState(0);
+    const [championAccount, setChampionAccount] = useState<string | null>(null);
     const [activeUsers, setActiveUsers] = useState<any>();
     const pollChainRef = useRef<() => void>();
 
@@ -63,17 +64,20 @@ export const RightPanel = (props: any) => {
     }
  
     const pollChain = () => {
-//        console.log("polling chain: ", props.userConnectionCtx?.stakanState);
-
-        const stakanState = props.userConnectionCtx?.stakanState;
+        const stakanState = props.userConnectionCtx?.stakanState as stakanApi.StakanState;
 
         stakanState?.getRewardFundBalance()
           .then( (balance: web3.RpcResponseAndContext<web3.TokenAmount>) => {
             setRewardBalance(balance?.value.uiAmount ? balance?.value.uiAmount : 0)
           });
-    
+        
         if (stakanState) {
-          stakanApi.queryActiveUsers(stakanState)
+            stakanState.championAccount && stakanApi.getUserFromAccount(stakanState.championAccount, stakanState)
+                .then(acc => {
+                    setChampionAccount(acc ? acc.username : null)
+                })     
+    
+            stakanApi.queryActiveUsers(stakanState)
             .then( users => {
                 setActiveUsers( 
                   users.map(([_accPubkey, userAccount]) => 
@@ -107,24 +111,19 @@ export const RightPanel = (props: any) => {
     },
     [props.update]);
 
-    const deleteStakanForDebug = () => {
-        (async () => {
-//            await stakanApi.closeGlobalStakanAccountForDebug(props.userConnectionCtx?.stakanState);
-            //                   props.userConnectionCtx?.stakanState?.getUserFromAccount()  
-        })()
-    }
 /*
+            <div>Champion Acc 
+                {props.userConnectionCtx?.stakanState?.championAccount.toBase58()}
+            </div>
 
 */
-
     return (
         <div className="right-panel">
-            <div>
-                <input type='button' onClick={deleteStakanForDebug} value={'Delete stakan'}
-                ></input>
+            <div>Record Score  
+                {' ' + props.userConnectionCtx?.stakanState?.globalMaxScore.toString()}
             </div>
-            <div>Global Record 
-                {props.userConnectionCtx?.stakanState?.globalMaxScore.toString()}
+            <div>Champion 
+                { championAccount ? ' ' + championAccount : ' <unknown>'}
             </div>
             <div className="right-panel-active-users">
                 <div style={{textAlign: "left"}}>

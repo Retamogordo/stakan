@@ -41,4 +41,7 @@ pub enum StakanError {
 
     #[msg("Duration can't decrease")]
     DurationCantDecrease,
+
+    #[msg("Should sell all tokens in separate transaction prior to signing out")]
+    ShouldSellTokensBeforeSigningOut
 }

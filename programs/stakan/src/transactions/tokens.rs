@@ -75,7 +75,6 @@ pub struct SellTokens<'info> {
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
     rent: Sysvar<'info, Rent>,
-
 }
 
 pub fn purchase(
@@ -116,49 +115,65 @@ pub fn purchase(
     Ok(())
 }
 
-pub fn sell(
-    ctx: Context<SellTokens>,
-    user_account_bump: u8,
-    token_amount: u64, 
+pub(crate) fn user_sell_tokens<'info>(
+    token_amount: u64,
+    user_account: &Account<'info, crate::transactions::user::User>,
+    user_token_account: &Account<'info, TokenAccount>,
+    reward_funds_account: &Account<'info, TokenAccount>,
+    stakan_escrow_account: &mut AccountInfo<'info>,
+    user_wallet: &AccountInfo<'info>,
+    token_program: &Program<'info, Token>,
+    rent: &Sysvar<'info, Rent>,
 ) -> Result<()> {
-    let temp_bump: [u8; 1] = user_account_bump.to_le_bytes();
-    let signer_seeds = [
-        b"user_account".as_ref(),
-        User::username_slice_for_seed(ctx.accounts.user_account.user.username.as_ref()),
-        User::arweave_storage_address_for_seed(ctx.accounts.user_account.user.arweave_storage_address.as_ref()),
-        
-        &temp_bump
-    ];
+    let user_inner = &user_account.user;
+    let signer_seeds = signer_seeds!(user_inner);
+
     anchor_spl::token::transfer(
         CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
+            token_program.to_account_info(),
 
             anchor_spl::token::Transfer {
-                from: ctx.accounts.user_token_account.to_account_info(),
-                to: ctx.accounts.reward_funds_account.to_account_info(),
-                authority: ctx.accounts.user_account.to_account_info(),
+                from: user_token_account.to_account_info(),
+                to: reward_funds_account.to_account_info(),
+                authority: user_account.to_account_info(),
             },
             &[&signer_seeds]
         ), 
         token_amount
     )?;
 
-    let escrow_account = &mut ctx.accounts.stakan_escrow_account;
     let lamports_delta = token_amount * PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN;
-    let escrow_balance_after = escrow_account.lamports()
+    let escrow_balance_after = stakan_escrow_account.lamports()
         .checked_sub(lamports_delta)
         .ok_or(crate::errors::StakanError::NegativeBalance)?;
 
-    if !ctx.accounts.rent.is_exempt(escrow_balance_after, escrow_account.data_len()) {
+    if !rent.is_exempt(escrow_balance_after, stakan_escrow_account.data_len()) {
         // should never happen
         return Err(crate::errors::StakanError::GlobalEscrowAccountDepleted.into());
     }    
 
-    **escrow_account.lamports.borrow_mut() = escrow_balance_after;
-    **ctx.accounts.user_wallet.lamports.borrow_mut() =
-        ctx.accounts.user_wallet.lamports()
+    **stakan_escrow_account.lamports.borrow_mut() = escrow_balance_after;
+    **user_wallet.lamports.borrow_mut() =
+        user_wallet.lamports()
             .checked_add(lamports_delta)
             .ok_or(crate::errors::StakanError::BalanceOverflow)?;
 
     Ok(())
+}
+
+pub fn sell(
+    ctx: Context<SellTokens>,
+    token_amount: u64, 
+) -> Result<()> {
+
+    user_sell_tokens(
+        token_amount,
+        &ctx.accounts.user_account,
+        &ctx.accounts.user_token_account,
+        &ctx.accounts.reward_funds_account,
+        &mut ctx.accounts.stakan_escrow_account,
+        &ctx.accounts.user_wallet,
+        &ctx.accounts.token_program,
+        &ctx.accounts.rent,
+    )
 }
