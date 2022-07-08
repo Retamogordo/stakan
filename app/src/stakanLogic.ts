@@ -3,7 +3,7 @@ const BOTTOM_THICKNESS = 1;
 const SIDE_THICKNESS = 3;
 const TOP_OFFSET = 4;
 
-export function setupStakan(rows, cols) {
+export function setupStakan(rows: number, cols: number) {
     const stakanMatrix 
       = Array.from(
         { length: cols + 2*SIDE_THICKNESS }, 
@@ -26,13 +26,15 @@ export function setupStakan(rows, cols) {
       rowsWithBorder: rows + TOP_OFFSET + BOTTOM_THICKNESS,
       colsWithBorder: cols + 2*SIDE_THICKNESS,
   
-      tileToViewPos: (i, j) => {
+      tileToViewPos: (i: number, j: number) => {
         return { x: i, y: rows - j + TOP_OFFSET }
       },    
     };
   }
 
-  export function stakanFrom(rowsWithBorder, colsWithBorder, tilesFlat) {
+  export function stakanFrom(rowsWithBorder: number, colsWithBorder: number, 
+    tilesFlat: any
+  ) {
     let stakanMatrix = [];
     const rows = rowsWithBorder - (TOP_OFFSET + BOTTOM_THICKNESS);
     const cols = colsWithBorder - 2*SIDE_THICKNESS;
@@ -51,13 +53,13 @@ export function setupStakan(rows, cols) {
       rowsWithBorder,
       colsWithBorder,
   
-      tileToViewPos: (i, j) => {
+      tileToViewPos: (i: number, j: number) => {
         return { x: i, y: rows - j + TOP_OFFSET }
       },  
     };
   }
 
-  export function canMove(piece, stakan, xOffset, yOffset) {
+  export function canMove(piece: any, stakan: any, xOffset: number, yOffset: number) {
     for ( let i = 0; i < 4; i++ ) {
         for ( let j = 0; j < 4; j++ ) {
             if (
@@ -70,7 +72,7 @@ export function setupStakan(rows, cols) {
     return true;
   }
   
-  export function stamp(piece, stakan, xOffset, yOffset) {
+  export function stamp(piece: any, stakan: any, xOffset: number, yOffset: number) {
     let nextStakan = { ...stakan };
     for ( let i = 0; i < 4; i++ ) {
       for ( let j = 0; j < 4; j++ ) {
@@ -80,20 +82,20 @@ export function setupStakan(rows, cols) {
     return nextStakan;
   }
   
-  export function isFull(stakan) {
+  export function isFull(stakan: any) {
     for( let i = 0; i < stakan.cols; i++ ) 
       if (stakan.tiles[i + SIDE_THICKNESS][stakan.rows + 1] !== 0) return true
     return false
   }
     
-  export function clearRows(stakan, yOffset) {
+  export function clearRows(stakan: any, yOffset: number) {
     let y = Math.max(yOffset, 1);
-    let rowsToClear = [];
+    let rowsToClear: any = [];
   
     for( let j = y; j < y + 4; j++) { // iterate on 4 rows starting from row[y]
       let probe = 1;
       for( let i = 0; i < stakan.cols; i++ ) 
-        probe &= stakan.tiles[i + SIDE_THICKNESS][j] !== 0;
+        probe &= (stakan.tiles[i + SIDE_THICKNESS][j] !== 0) ? 1 : 0;
       if (1 === probe) {
         rowsToClear = [...rowsToClear, j];
       }

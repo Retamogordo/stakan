@@ -75,6 +75,8 @@ const useLoginUser = (
             logCtx.logLn(state 
                 ? "done, pubkey: " + state?.pubKey.toBase58() : "failed");
 
+//            await stakanApi.setUpStakan(program);
+
             setStakanState(state ? state : null);
 //            if (state) {
             console.log("Arweave ", arw)

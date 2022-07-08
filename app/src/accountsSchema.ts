@@ -18,7 +18,7 @@ class Assignable extends Function {
   }
 
   export class StakanStateSchema extends Assignable { 
-    static id = "StakanState";
+    static id = "StakanState2";
     
     public static deserialize(buffer: Buffer): StakanStateSchema {
 
@@ -29,12 +29,19 @@ class Assignable extends Function {
             kind: 'struct', 
             fields: [
                 ['discriminant', [8]],
+                
                 ['id', 'String'], 
+           
                 ['stakan_state_account', [32]],
-                ['stakan_state_account_bump', [1]],
+                ['stakan_state_account_bump', 'u8'],
+           
                 ['global_max_score', 'u64'], 
+
                 ['reward_funds_account', [32]], 
+           
                 ['escrow_account', [32]], 
+                ['escrow_account_bump', 'u8'], 
+           
                 ['mint_token', [32]],
                 ['program_wallet', [32]],
                 ['champion_account_opt_variant', 'u8'], 
@@ -51,10 +58,11 @@ class Assignable extends Function {
                 ['discriminant', [8]],
                 ['id', 'String'], 
                 ['stakan_state_account', [32]],
-                ['stakan_state_account_bump', [1]],
+                ['stakan_state_account_bump', 'u8'],
                 ['global_max_score', 'u64'], 
                 ['reward_funds_account', [32]], 
                 ['escrow_account', [32]], 
+                ['escrow_account_bump', 'u8'], 
                 ['mint_token', [32]],
                 ['program_wallet', [32]],
                 ['champion_account_opt_variant', 'u8'], 
@@ -67,11 +75,11 @@ class Assignable extends Function {
       let acc;
       try {
         acc = deserialize(schemaNeverUsedStakanState, StakanStateSchema, 
-          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+32+32+1));
+          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+1+32+32+1));
       } catch {
         console.log("catch -> deserialized: ", acc);
         acc = deserialize(schemaStakanState, StakanStateSchema, 
-          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+32+32+1+32));
+          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+1+32+32+1+32));
       }
       console.log("deserialized: ", acc);
       return acc;

@@ -18,3 +18,4 @@ wallet = "/home/yury/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+after-build = "cp ./target/idl/stakan.json ./app/src/idl/stakan.json \n cp ./target/types/stakan.ts ./app/src/idl/stakan.ts"

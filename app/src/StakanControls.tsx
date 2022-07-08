@@ -45,7 +45,11 @@ export function StakanControls(props: any) {
     const [keydown, setKeydown] = useState<number | null>(null);
     const [keydownDelay, setKeydownDelay] = useState<ReturnType<typeof setInterval> | null>(null);
   
-    const [moveDelay, setMoveDelay] = useState<ReturnType<typeof setInterval> | null>(null);
+    const [moveDelayTimer, setMoveDelayTimer] = useState<ReturnType<typeof setInterval> | null>(null);
+    const moveDelayRef = useRef<() => void>();
+
+    const [entryDelayTimer, setEntryDelayTimer] = useState<ReturnType<typeof setInterval> | null>(null);
+    
     const [disableControls, setDisableControls] = useState(true);
     const [childWillRender, setChildWillRender] = useState(0);
   
@@ -85,7 +89,7 @@ export function StakanControls(props: any) {
           break;
         }
         case 40: {// arrow down - soft drop
-          stakanRef.current.softDrop();
+          stakanRef.current.moveDown();
           break;
         }
         case 32: {// space
@@ -111,11 +115,9 @@ export function StakanControls(props: any) {
         }
     }
   
-    const recordsMock = [{key: 1, score: 42}, {key: 2, score: 55},]; 
-  
     const resetMoveDelay = () => {
-      moveDelay && clearInterval(moveDelay);
-      setMoveDelay(null);
+      moveDelayTimer && clearInterval(moveDelayTimer);
+      setMoveDelayTimer(null);
     }
   
     const resetKeydownDelay = () => {
@@ -124,6 +126,10 @@ export function StakanControls(props: any) {
       setKeydownDelay(null);    
     }
   
+    const moveDownTick = () => {
+        stakanRef.current?.moveDown();
+    }
+
     const setEntryDelay = () => {
         setDisableControls(true);    
         resetMoveDelay();
@@ -131,18 +137,24 @@ export function StakanControls(props: any) {
   
         if (stakanRef.current === null || session === null) return;
   
-        const entryDelay = setTimeout(() => {
-          clearTimeout(entryDelay);
-  
-          stakanRef.current && stakanRef.current.pieceEntryCommand();
-  
-          setDisableControls(false); 
-          setMoveDelay(setInterval(() => {
-            stakanRef.current && stakanRef.current.moveDown();
-  
-          }, session.stepDelay)
-          );
-        }, ENTRY_DELAY);
+        setEntryDelayTimer(
+          setTimeout(() => {
+            entryDelayTimer && clearTimeout(entryDelayTimer);
+            setEntryDelayTimer(null);
+    
+//            console.log("pieceEntryCommand");
+            stakanRef.current?.pieceEntryCommand();
+    
+            setDisableControls(false); 
+
+            setMoveDelayTimer( 
+              setInterval(
+                () => moveDelayRef.current && moveDelayRef.current(), 
+                session.stepDelay
+              )
+            )
+          }, ENTRY_DELAY)
+        );
     }
   
     const handleEntryNewPiece = (linesCleared: number) => {
@@ -197,6 +209,11 @@ export function StakanControls(props: any) {
     [])
 
     useEffect(() => {
+      moveDelayRef.current = moveDownTick;  
+    });
+
+
+    useEffect(() => {
       if (props.startSession) startSession()
     },
     [props.startSession])
@@ -224,20 +241,21 @@ export function StakanControls(props: any) {
     useEffect(() => {
       if (session !== null) {
 
-        stakanRef.current && stakanRef.current.setSession(session);
+        stakanRef.current?.setSession(session);
         
         if (session.active) {
+          console.log("useEffect->setEntryDelay");
           setEntryDelay();
 
           props.onSessionUpdated(session, stakanRef.current?.tiles);
         }
-        stakanRef.current && stakanRef.current.focus();
+        stakanRef.current?.focus();
       }
     },
     [session])
   
     useEffect(() => {
-      stakanRef.current && stakanRef.current.fitToParent();
+      stakanRef.current?.fitToParent();
     },
     [stakanRef])
 
@@ -246,7 +264,7 @@ export function StakanControls(props: any) {
       if (props.archivedSession) {
         const rowsWithBorder = props.archivedSession['tiles_rows'];
         const colsWithBorder = props.archivedSession['tiles_cols'];
-        const tilesFlat = Array.from(props.archivedSession['tiles']);
+        const tilesFlat = Array<number>.from(props.archivedSession['tiles']);
 
         const tiles = stakanFrom(rowsWithBorder, colsWithBorder, tilesFlat);   
 

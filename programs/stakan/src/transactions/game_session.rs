@@ -30,7 +30,7 @@ impl GameSession {
 #[instruction(stake: u64)]
 
 pub struct InitGameSession<'info> {
-    stakan_state_account: Account<'info, StakanGlobalState>,
+    stakan_state_account: Box<Account<'info, StakanGlobalState>>,
 
     #[account(mut,
         constraint = user_account.user.user_wallet == user_wallet.key(),
@@ -143,6 +143,7 @@ pub fn finish(ctx: Context<FinishGameSession>,
 
     if record_hit {
         ctx.accounts.stakan_state_account.global_max_score = game_session_score;
+        ctx.accounts.stakan_state_account.champion_account = Some(ctx.accounts.user_account.key());
     }
 
     if stake > 0 {   
@@ -156,7 +157,7 @@ pub fn finish(ctx: Context<FinishGameSession>,
 
                 let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.stakan_state_account_bump.to_le_bytes();
                 let signer_seeds = [
-                    b"stakan_state_account".as_ref(),
+                    StakanGlobalState::SEED.as_ref(),
                     &temp_bump
                 ];
 

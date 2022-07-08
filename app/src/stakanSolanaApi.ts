@@ -104,7 +104,7 @@ export async function setUpStakan(program: Program<Stakan>) {
     const [stakanStateAccount, stakanStateAccountBump] =
       await web3.PublicKey.findProgramAddress(
         [
-          Buffer.from('stakan_state_account'), 
+          Buffer.from('stakan_state_account2'), 
         ],
         program.programId
       );
@@ -114,6 +114,7 @@ export async function setUpStakan(program: Program<Stakan>) {
       const [stakanEscrowAccount, stakanEscrowAccountBump] =
       await web3.PublicKey.findProgramAddress(
         [
+          Buffer.from('stakan_state_account2'),
           Buffer.from('stakan_escrow_account'), 
         ],
         program.programId
@@ -123,6 +124,7 @@ export async function setUpStakan(program: Program<Stakan>) {
   
     const [stakanMint, stakanMintBump] = await web3.PublicKey.findProgramAddress(
       [
+        Buffer.from('stakan_state_account2'),
         Buffer.from('stakan_mint'),
       ],
       program.programId
@@ -138,6 +140,7 @@ export async function setUpStakan(program: Program<Stakan>) {
     );
     const tx = program.transaction.setUpStakan(
       stakanStateAccountBump,
+      stakanEscrowAccountBump,
       {
           accounts: {
             stakanStateAccount,
@@ -330,6 +333,8 @@ export class User {
     }
 
     async getGameSessionInfo(tiles_cols: number, tiles_rows: number): Promise<accountsSchema.GameSessionAccount | undefined> {
+      console.log("this.gameSessionAccount: ", this.gameSessionAccount);
+      
       const accountInfo 
         = await this.program.provider.connection.getAccountInfo(this.gameSessionAccount as web3.PublicKey);
       
@@ -669,7 +674,7 @@ export async function initGameSession(
   export async function finishGameSession(
     user: User,
     stakanState: StakanState,
-    session: StakanSession,
+    session: any,
     stakanTiles: any,
     logCtx: LogTerminalContext | undefined,
   ) {
@@ -757,6 +762,7 @@ export async function initGameSession(
         userWallet: user.wallet.publicKey,
         rewardFundsAccount: stakanState.rewardFundsAccount,
   
+        associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
         tokenProgram: spl.TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
@@ -780,7 +786,7 @@ export async function initGameSession(
       .signers([])
       .rpc();  
   }
-
+/*
   export async function closeGlobalStakanAccountForDebug(stakanState: StakanState) {
     console.log("closeGlobalStakanAccountForDebug: ", stakanState);
     await stakanState.program.methods
@@ -788,7 +794,10 @@ export async function initGameSession(
       )
       .accounts({
         stakanStateAccount: stakanState.stateAccount,
+        escrowAccount: stakanState.escrowAccount,
+        rewardFundsAccount: stakanState.rewardFundsAccount,
         programWallet: stakanState.program.provider.wallet.publicKey,
+        mint: stakanState.stakanMint,
 
         systemProgram: SystemProgram.programId,
         rent: web3.SYSVAR_RENT_PUBKEY,
@@ -796,3 +805,4 @@ export async function initGameSession(
       .signers([])
       .rpc();  
   }
+*/

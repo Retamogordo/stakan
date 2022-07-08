@@ -21,9 +21,13 @@ pub mod stakan {
     pub fn set_up_stakan(
         ctx: Context<SetupStakan>,
         stakan_state_account_bump: u8,
-//        stakan_escrow_account_bump: u8,
+        escrow_account_bump: u8,
     ) -> Result<()> {
-        crate::transactions::set_up_stakan::set_up_stakan(ctx, stakan_state_account_bump)
+        crate::transactions::set_up_stakan::set_up_stakan(
+            ctx, 
+            stakan_state_account_bump,
+            escrow_account_bump
+        )
     }
 
     pub fn sign_up_user(
@@ -78,4 +82,12 @@ pub mod stakan {
     ) -> Result<()> {
         crate::transactions::user::force_delete(ctx)
     }
+/*
+    pub fn close_global_stakan_account_for_debug(
+        ctx: Context<CloseStakanAccountForDebug>,
+
+    ) -> Result<()> {
+        crate::transactions::set_up_stakan::close_acc(ctx)
+    }
+*/
 }

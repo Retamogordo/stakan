@@ -55,6 +55,10 @@ export type Stakan = {
         {
           "name": "stakanStateAccountBump",
           "type": "u8"
+        },
+        {
+          "name": "escrowAccountBump",
+          "type": "u8"
         }
       ]
     },
@@ -379,6 +383,11 @@ export type Stakan = {
           "isSigner": false
         },
         {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
@@ -406,32 +415,6 @@ export type Stakan = {
         },
         {
           "name": "userWallet",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeGlobalStakanAccountForDebug",
-      "accounts": [
-        {
-          "name": "stakanStateAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "programWallet",
           "isMut": true,
           "isSigner": false
         },
@@ -659,6 +642,10 @@ export const IDL: Stakan = {
         {
           "name": "stakanStateAccountBump",
           "type": "u8"
+        },
+        {
+          "name": "escrowAccountBump",
+          "type": "u8"
         }
       ]
     },
@@ -983,6 +970,11 @@ export const IDL: Stakan = {
           "isSigner": false
         },
         {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
@@ -1010,32 +1002,6 @@ export const IDL: Stakan = {
         },
         {
           "name": "userWallet",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "rent",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeGlobalStakanAccountForDebug",
-      "accounts": [
-        {
-          "name": "stakanStateAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "programWallet",
           "isMut": true,
           "isSigner": false
         },

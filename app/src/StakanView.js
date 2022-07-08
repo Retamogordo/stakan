@@ -89,7 +89,7 @@ class StakanView extends React.Component {
       this.rotateClockwise = this.rotateClockwise.bind(this);
       this.moveRight = this.moveRight.bind(this);
       this.moveLeft = this.moveLeft.bind(this);
-      this.softDrop = this.softDrop.bind(this);
+//      this.softDrop = this.softDrop.bind(this);
       this.hardDrop = this.hardDrop.bind(this);
       this.startPieceXOffset = this.startPieceXOffset.bind(this);
       this.startPieceYOffset = this.startPieceYOffset.bind(this);
@@ -146,15 +146,13 @@ class StakanView extends React.Component {
               this.currentPiece.color
     );
 
-    if (!isFull(this.tiles)) {
-    
-      const linesCleared = clearRows(this.tiles, this.pieceYOffset);
+    this.currentPiece = null;
 
-      this.currentPiece = null;
+    if (!isFull(this.tiles)) {    
+      const linesCleared = clearRows(this.tiles, this.pieceYOffset);
       
       this.props.evEntryNewPiece(linesCleared);
     } else {
-      this.currentPiece = null;
       this.props.onFull()
     }
   }
@@ -197,14 +195,14 @@ class StakanView extends React.Component {
       this.props.willRender();
     }
   }
-
+/*
   softDrop() {
     if (canMove(this.currentPiece.piece[this.rotationPosition], this.tiles, this.pieceXOffset, this.pieceYOffset - 1)) {
       this.pieceYOffset -= 1;
       this.props.willRender();
     }
   }
-
+*/
   hardDrop() {
     let nextYOffset = this.pieceYOffset;
     while (canMove(this.currentPiece.piece[this.rotationPosition], this.tiles, this.pieceXOffset, nextYOffset - 1)) {

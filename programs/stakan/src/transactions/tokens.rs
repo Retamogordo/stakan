@@ -33,10 +33,6 @@ pub struct PurchaseTokens<'info> {
     #[account(mut)]
     user_wallet: Signer<'info>,
 
-//    /// CHECK:` pubkey of programs wallet to receive lamports from user wallet
-//    #[account(mut)]
-//    program_wallet: AccountInfo<'info>,
-
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
 }
@@ -76,9 +72,6 @@ pub struct SellTokens<'info> {
     )]
     reward_funds_account: Account<'info, TokenAccount>,
 
-//    #[account(mut)]
-//    program_wallet: Signer<'info>,
-
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
     rent: Sysvar<'info, Rent>,
@@ -87,28 +80,23 @@ pub struct SellTokens<'info> {
 
 pub fn purchase(
     ctx: Context<PurchaseTokens>,
-//    stakan_state_account_bump: u8,
     token_amount: u64, 
 ) -> Result<()> {
     solana_program::program::invoke(
         &solana_program::system_instruction::transfer(
             ctx.accounts.user_wallet.key, 
             &ctx.accounts.stakan_state_account.escrow_account,
-//            ctx.accounts.stakan_state_account.to_account_info().key,
-//            ctx.accounts.program_wallet.key, 
             token_amount * PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN),
         &[
             ctx.accounts.user_wallet.to_account_info(),
             ctx.accounts.stakan_escrow_account.to_account_info(),
-//            ctx.accounts.stakan_state_account.to_account_info(),
-//            ctx.accounts.program_wallet.to_account_info(),
             ctx.accounts.system_program.to_account_info()
         ],
     )?;
 
     let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.stakan_state_account_bump.to_le_bytes();
     let signer_seeds = [
-        b"stakan_state_account".as_ref(),
+        StakanGlobalState::SEED.as_ref(),
         &temp_bump
     ];
     anchor_spl::token::mint_to(
@@ -172,41 +160,5 @@ pub fn sell(
             .checked_add(lamports_delta)
             .ok_or(crate::errors::StakanError::BalanceOverflow)?;
 
-/*
-//    let temp_bump: [u8; 1] = stakan_state_account_bump.to_le_bytes();
-    let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.escrow_account_bump.to_le_bytes();
-    let signer_seeds = [
-//        b"stakan_state_account".as_ref(),
-        b"stakan_escrow_account".as_ref(),
-        &temp_bump
-    ];
-    solana_program::program::invoke_signed(
-        &solana_program::system_instruction::transfer(
-//            ctx.accounts.stakan_state_account.to_account_info().key, 
-            ctx.accounts.stakan_escrow_account.to_account_info().key, 
-            ctx.accounts.user_wallet.key, 
-            token_amount * PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN),
-        &[
-//            ctx.accounts.stakan_state_account.to_account_info(),
-            ctx.accounts.stakan_escrow_account.to_account_info(),
-            ctx.accounts.user_wallet.to_account_info(),
-            ctx.accounts.system_program.to_account_info()
-        ],
-        &[&signer_seeds]
-    )?;
-    */
-/*
-    solana_program::program::invoke(
-        &solana_program::system_instruction::transfer(
-            ctx.accounts.program_wallet.key, 
-            ctx.accounts.user_wallet.key, 
-            token_amount * PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN),
-        &[
-            ctx.accounts.program_wallet.to_account_info(),
-            ctx.accounts.user_wallet.to_account_info(),
-            ctx.accounts.system_program.to_account_info()
-        ],
-    )?;
-*/
     Ok(())
 }

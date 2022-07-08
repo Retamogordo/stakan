@@ -12,6 +12,8 @@ pub struct User {
 } 
 
 impl User {
+//    pub(crate) const SEED: &'static [u8] = b"user_account";
+
     pub(crate) fn size_for_init() -> usize {
         use std::mem::size_of;
 
@@ -44,24 +46,6 @@ impl User {
 
         self.inner_size = self.user.size_for_borsh() as u16;
     }
-    
-/*
-    pub(crate) fn compose_user_account_seeds_with_bump<'a>(&self,
-        bump_vec: &'a [u8; 1],
-    //    username: &'a str,
-    //    arweave_storage_address: &'a str,
-    ) -> [&'a [u8]; 4] {
-    //    let temp_bump: [u8; 1] = bump.to_le_bytes();
-        let seeds = [
-            b"user_account".as_ref(), 
-//            SignUpUser::username_slice_for_seed(username.as_str())
-            Self::username_slice_for_seed(&self.user.username),
-            Self::arweave_storage_address_for_seed(&self.user.arweave_storage_address),
-            bump_vec
-        ];
-        seeds
-    }
-*/
 }
 
 #[derive(Clone, AnchorSerialize, AnchorDeserialize)]
@@ -74,7 +58,6 @@ pub struct UserInner {
     pub saved_game_sessions: u64,
     pub token_account: Pubkey,
     pub arweave_storage_address: Vec<u8>, 
-//    pub has_active_game_session: bool,
     pub game_session: Option<Pubkey>,
 } 
 
@@ -160,6 +143,7 @@ pub struct SignOutUser<'info> {
         close = user_wallet,
 //        constraint = user_account.user.has_active_game_session == false,
         constraint = user_account.user.game_session == None,
+        constraint = user_account.user.user_wallet == user_wallet.key(),
     )]
     user_account: Account<'info, User>,
 
@@ -189,6 +173,7 @@ pub struct SignOutUser<'info> {
     )]
     stakan_escrow_account: AccountInfo<'info>,
 
+    associated_token_program: Program<'info, AssociatedToken>,
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
     rent: Sysvar<'info, Rent>,
@@ -243,7 +228,6 @@ pub fn sign_out(ctx: Context<SignOutUser>,
 ) -> Result<()> {
     let token_amount = ctx.accounts.user_token_account.amount;
     let temp_bump: [u8; 1] = ctx.accounts.user_account.user.bump.to_le_bytes();
-//    let temp_bump: [u8; 1] = user_account_bump.to_le_bytes();
     let signer_seeds = [
         b"user_account".as_ref(),
         User::username_slice_for_seed(ctx.accounts.user_account.user.username.as_ref()),
@@ -282,19 +266,19 @@ pub fn sign_out(ctx: Context<SignOutUser>,
             .checked_add(lamports_delta)
             .ok_or(crate::errors::StakanError::BalanceOverflow)?;
 
-/*
-    solana_program::program::invoke(
-        &solana_program::system_instruction::transfer(
-            ctx.accounts.program_wallet.key, 
-            ctx.accounts.user_wallet.key, 
-            token_amount * crate::transactions::tokens::PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN),
-        &[
-            ctx.accounts.program_wallet.to_account_info(),
-            ctx.accounts.user_wallet.to_account_info(),
-            ctx.accounts.system_program.to_account_info()
-        ],
+    anchor_spl::token::close_account(
+        CpiContext::new_with_signer(
+            ctx.accounts.associated_token_program.to_account_info(),
+
+            anchor_spl::token::CloseAccount {
+                account: ctx.accounts.user_token_account.to_account_info(),
+                destination: ctx.accounts.user_wallet.to_account_info(),
+                authority: ctx.accounts.user_account.to_account_info()
+            },
+            &[&signer_seeds]
+        )
     )?;
-*/
+
     Ok(())
 }
 

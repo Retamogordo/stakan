@@ -185,6 +185,15 @@ export const UserWalletsPanel = (props: any) => {
         props.onUserWalletsStatusChanged(userWalletsStatus);        
     }, [userWalletsStatus]);
 
+    const setupStakanGlobalAccount = () => {
+        (async () => {
+            console.log("before setting up: ", userConnectionCtx);
+            if (userConnectionCtx?.stakanProgram) {
+                console.log("setting up");
+                await stakanApi.setUpStakan(userConnectionCtx?.stakanProgram)
+            }
+        })()
+    }
 
     return (
         <div className='left-panel'>
@@ -259,6 +268,11 @@ export const UserWalletsPanel = (props: any) => {
 
             <div style={{marginTop: '30%' }}>                
                 <input type='button' value='Delete User' disabled={false} onClick={props.onDeleteUserClick}></input>
+            </div>
+            <div>
+                <input type='button' value='SETUPr' disabled={false} 
+                onClick={setupStakanGlobalAccount}></input>
+                
             </div>
       </div>
     )

@@ -109,7 +109,7 @@ export const RightPanel = (props: any) => {
 
     const deleteStakanForDebug = () => {
         (async () => {
-            await stakanApi.closeGlobalStakanAccountForDebug(props.userConnectionCtx?.stakanState);
+//            await stakanApi.closeGlobalStakanAccountForDebug(props.userConnectionCtx?.stakanState);
             //                   props.userConnectionCtx?.stakanState?.getUserFromAccount()  
         })()
     }
