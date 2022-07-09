@@ -25,6 +25,7 @@ function App() {
   const [loadingMode, setLoadingMode] = useState(false);
   const [archivedSession, setArchivedSession] = useState<GameSessionArchive | null>(null);
   const [stakanWidthBiggerThanHalf, setStakanWidthBiggerThanHalf] = useState(false);
+  const [rewardBalance, setRewardBalance] = useState(0);
   //  const [pollTimer, setPollTimer] = useState<NodeJS.Timer | null>(null);
   
   const logCtx = UseLogTerminal({log: ''}); 
@@ -65,8 +66,6 @@ function App() {
         }
 //        await updateUserWalletsStatus();
         setSignalUserWalletsStatus(true);
-
-        console.log("user.gameSessionAcc: ", user?.gameSessionAccount);
 
         setSignalStartSession(true);
       }
@@ -140,9 +139,11 @@ function App() {
   }
 
   const handleArchivedSessionChosen = (archSession: GameSessionArchive) => {
-    console.log("handleArchivedSessionChosen: ", archSession);
-
     setArchivedSession({...archSession});
+  }
+
+  const handleRewardBalanceRefreshed = (refreshedRewardBalance: number) => {
+    setRewardBalance(refreshedRewardBalance);
   }
 
   const handleStakanWidthBiggerThanHalf = (isBigger: boolean) => {
@@ -203,15 +204,10 @@ function App() {
           <div className="stakan-wrapper">
             <StakePanel 
               visible={!sessionActive.active}
-              startButtonLabel={
-                userConnectionCtx?.user?.gameSessionAccount ? 'Resume' : 'Stake 1 & Start'
-              }
-              startButtonDisabled={
-                !userWalletsStatus.hasWinstonToStoreSession
-                || userWalletsStatus.tokenBalance <= 0
-              }
+              userConnectionCtx={userConnectionCtx}
               userWalletsStatus={userWalletsStatus}
               loadingMode={loadingMode}
+              rewardBalance={rewardBalance}
               onStartSessionClick={handleBeforeSessionStarted}
               onStartFreePlayClick={handleStartFreePlayStarted}
             />   
@@ -234,6 +230,7 @@ function App() {
                 logCtx={logCtx}
                 enabled={!sessionActive.active}
                 onArchivedSessionChosen={handleArchivedSessionChosen}
+                onRewardBalanceRefreshed={handleRewardBalanceRefreshed}
               />
             : null
           }

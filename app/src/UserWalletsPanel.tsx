@@ -238,7 +238,7 @@ export const UserWalletsPanel = (props: any) => {
             <NumericNonNegativeInput 
                 visible={userWalletsStatus.tokenBalance > 0}
                 onInput={sellStakanTokens}
-                buttonText={'Sell tokens'}
+                buttonText={'   Sell tokens   '}
             />
       </div>
     )

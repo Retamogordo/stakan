@@ -111,25 +111,26 @@ export const RightPanel = (props: any) => {
     },
     [props.update]);
 
-/*
-            <div>Champion Acc 
-                {props.userConnectionCtx?.stakanState?.championAccount.toBase58()}
-            </div>
+    useEffect(() => {
+        props.onRewardBalanceRefreshed(rewardBalance);
+    },
+    [rewardBalance]);
 
-*/
     return (
         <div className="right-panel">
-            <div>Record Score  
-                {' ' + props.userConnectionCtx?.stakanState?.globalMaxScore.toString()}
+            <div style={{textAlign: "left", marginLeft: "5%"}}>Record Score  
+                <span style={{color:'hsl(59, 88%, 59%)'}}>
+                    {' ' + props.userConnectionCtx?.stakanState?.globalMaxScore.toString()}
+                </span>
             </div>
-            <div>Champion 
-                { championAccount ? ' ' + championAccount : ' <unknown>'}
+            <div style={{textAlign: "left", marginLeft: "5%"}}>Champion 
+                { championAccount ? <span style={{color:'hsl(59, 88%, 59%)'}}>{' ' + championAccount}</span> : <span>{' <unknown>'}</span>}
             </div>
             <div className="right-panel-active-users">
-                <div style={{textAlign: "left"}}>
+                <div style={{textAlign: "left", marginLeft: "5%"}}>
                     Reward Fund balance {rewardBalance}
                 </div>
-                <div style={{textAlign: "left"}}>
+                <div style={{textAlign: "left", marginLeft: "5%"}}>
                     Estimated Winner Reward {(() => {
                         const stake = 1; // supposing that stake is always 1
                         return Math.floor(rewardBalance/2 - stake);

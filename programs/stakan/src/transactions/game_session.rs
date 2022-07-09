@@ -70,7 +70,7 @@ pub struct InitGameSession<'info> {
 #[derive(Accounts)]
 pub struct FinishGameSession<'info> {
     #[account(mut)]
-    stakan_state_account: Account<'info, StakanGlobalState>,
+    stakan_state_account: Box<Account<'info, StakanGlobalState>>,
 
     #[account(mut,
         constraint = user_account.user.user_wallet == user_wallet.key(),
@@ -129,15 +129,14 @@ pub fn init(
 pub fn finish(ctx: Context<FinishGameSession>,
     // just to ensure arweave has confirmed storage transaction
     _dummy_arweave_storage_tx_id: Option<String>, 
-    user_account_bump: u8,
     score: u64,
 ) -> Result<()> {
 
     let global_max_score = ctx.accounts.stakan_state_account.global_max_score;
     let game_session_score = score;
     let stake = ctx.accounts.game_session_account.stake;
-    let username = ctx.accounts.user_account.user.username.clone();
-    let arweave_storage_address = ctx.accounts.user_account.user.arweave_storage_address.clone();
+//    let username = ctx.accounts.user_account.user.username.clone();
+//    let arweave_storage_address = ctx.accounts.user_account.user.arweave_storage_address.clone();
     
     let record_hit = game_session_score > global_max_score;
 
@@ -148,12 +147,16 @@ pub fn finish(ctx: Context<FinishGameSession>,
 
     if stake > 0 {   
         if record_hit {
-            let funds_div_2 = ctx.accounts.reward_funds_account.amount / 2;
+            let half_funds = ctx.accounts.reward_funds_account.amount / 2;
             
-                // if funds_div_2 <= stake, nothing is transferred, 
+                // if half_funds <= stake, nothing is transferred, 
                 // so user keeps their stake
-            if funds_div_2 > stake {
-                let reward = funds_div_2 - stake;
+            if half_funds > stake {
+                let h: f64 = half_funds as f64;
+                let s: f64 = stake as f64;
+                let x: f64 = game_session_score as f64;
+                let x0: f64 = global_max_score as f64;
+                let reward = h + (s - h) * ((-s/h * x*(x - x0)/h) as f64).exp();
 
                 let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.stakan_state_account_bump.to_le_bytes();
                 let signer_seeds = [
@@ -172,20 +175,13 @@ pub fn finish(ctx: Context<FinishGameSession>,
                         },
                         &[&signer_seeds]
                     ),
-                    reward,
+                    reward as u64,
                     )?;
             }
         } else {
-            let temp_bump: [u8; 1] = user_account_bump.to_le_bytes();
-//            let signer_seeds 
-//                = ctx.accounts.user_account.compose_user_account_seeds_with_bump(&temp_bump);          
-            let signer_seeds = [
-                b"user_account".as_ref(),
-                User::username_slice_for_seed(&username[..]),
-                User::arweave_storage_address_for_seed(&arweave_storage_address[..]),
-                &temp_bump
-            ];
-            
+            let user = &ctx.accounts.user_account.user;
+            let signer_seeds = signer_seeds!(user);
+          
             anchor_spl::token::transfer(
                 CpiContext::new_with_signer(
                     ctx.accounts.token_program.to_account_info(),

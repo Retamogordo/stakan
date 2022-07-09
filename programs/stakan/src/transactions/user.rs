@@ -7,7 +7,8 @@ use crate::errors::StakanError;
 macro_rules! signer_seeds {
     // `()` indicates that the macro takes no argument.
     ($user_inner: ident) => {
-        [
+        [   
+            StakanGlobalState::SEED.as_ref(),
             b"user_account".as_ref(),
             User::username_slice_for_seed($user_inner.username.as_ref()),
             User::arweave_storage_address_for_seed($user_inner.arweave_storage_address.as_ref()),
@@ -65,6 +66,7 @@ impl User {
 pub struct UserInner {
     pub user_wallet: Pubkey,
     pub username: Vec<u8>,
+    pub stakan_seed: Vec<u8>,
     pub bump: u8,
     
     pub max_score: u64,
@@ -89,6 +91,7 @@ impl UserInner {
         size_of::<Pubkey>()
         // borsh serializes strings as: repr(s.len() as u32) repr(s as Vec<u8>) 
         + size_of::<u32>() + username_len 
+        + size_of::<u32>() + StakanGlobalState::SEED.len()
         + size_of::<u8>()
         + size_of::<u64>()
         + size_of::<u64>()
@@ -118,6 +121,7 @@ pub struct SignUpUser<'info> {
         payer = user_wallet, 
         space = User::size_for_init(),
         seeds = [
+            StakanGlobalState::SEED.as_ref(),
             b"user_account".as_ref(), 
             User::username_slice_for_seed(username.as_bytes()),
             User::arweave_storage_address_for_seed(arweave_storage_address.as_bytes()),
@@ -126,7 +130,7 @@ pub struct SignUpUser<'info> {
     )]
     user_account: Account<'info, User>,
 
-    stakan_state_account: Account<'info, StakanGlobalState>,
+    stakan_state_account: Box<Account<'info, StakanGlobalState>>,
     
     #[account(mut)]
     user_wallet: Signer<'info>,
@@ -150,11 +154,10 @@ pub struct SignUpUser<'info> {
 
 #[derive(Accounts)]
 pub struct SignOutUser<'info> {
-    stakan_state_account: Account<'info, StakanGlobalState>,
+    stakan_state_account: Box<Account<'info, StakanGlobalState>>,
 
     #[account(mut, 
         close = user_wallet,
-//        constraint = user_account.user.has_active_game_session == false,
         constraint = user_account.user.game_session == None,
         constraint = user_account.user.user_wallet == user_wallet.key(),
     )]
@@ -169,23 +172,6 @@ pub struct SignOutUser<'info> {
     /// CHECK:` pubkey of user wallet to receive lamports from program wallet
     #[account(mut)]
     user_wallet: AccountInfo<'info>,
-/*
-    #[account(mut,
-        constraint = reward_funds_account.owner == stakan_state_account.key(),
-    )]
-    reward_funds_account: Account<'info, TokenAccount>,
-*/
- /*   #[account(mut)]
-    program_wallet: Signer<'info>,
-    */
-/*
-    /// CHECK:` PDA account used as a program wallet for receiving lamports 
-    /// when a user purchases tokens
-    #[account(mut,
-        constraint = stakan_state_account.escrow_account == stakan_escrow_account.key(),
-    )]
-    stakan_escrow_account: AccountInfo<'info>,
-*/
     associated_token_program: Program<'info, AssociatedToken>,
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
@@ -221,6 +207,7 @@ pub fn sign_up(ctx: Context<SignUpUser>,
     user_account_bump: u8,
     arweave_storage_address: String,
 ) -> Result<()> {
+
     if UserInner::MAX_USERNAME_LEN < username.len() {
         return Err(StakanError::UsernameTooLong.into())
     }
@@ -230,10 +217,10 @@ pub fn sign_up(ctx: Context<SignUpUser>,
     user_account.user = UserInner {
         user_wallet: ctx.accounts.user_wallet.key(),
         username: username.into_bytes(),   
+        stakan_seed: StakanGlobalState::SEED.to_vec(),
         bump: user_account_bump,      
         max_score: 0,
         saved_game_sessions: 0,
-//                mint: ctx.accounts.stakan_state_account.mint_token.key(),
         token_account: ctx.accounts.token_account.key(),
         arweave_storage_address: arweave_storage_address.into_bytes(),
         game_session: None,

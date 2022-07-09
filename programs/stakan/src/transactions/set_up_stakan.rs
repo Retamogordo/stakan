@@ -10,6 +10,7 @@ pub(crate) struct StakanGlobalState {
     pub stakan_state_account: Pubkey,
     pub stakan_state_account_bump: u8,
     pub global_max_score: u64,
+    pub lamports_per_stakan_tokens: u64,
 
     pub reward_funds_account: Pubkey,
 
@@ -23,9 +24,10 @@ pub(crate) struct StakanGlobalState {
 } 
 
 impl StakanGlobalState {
-    pub(crate) const ID: &'static str = "StakanState2";
-    pub(crate) const SEED: &'static [u8] = b"stakan_state_account2";
+    pub(crate) const ID: &'static str = "StakanState3";
+    pub(crate) const SEED: &'static [u8] = b"stakan_state_account3";
     pub(crate) const ESCROW_ACCOUNT_SEED: &'static [u8] = b"stakan_escrow_account";
+    pub(crate) const LAMPORTS_PER_STAKAN_TOKEN: u64 = 1000000;
 
     pub(crate) fn size_for_borsh() -> usize {
         use std::mem::size_of;
@@ -34,6 +36,7 @@ impl StakanGlobalState {
             + size_of::<Pubkey>() // stakan_state_account
             + size_of::<u8>()     // stakan_state_account_bump
             + size_of::<u64>()    // global_max_score
+            + size_of::<u64>()    // lamports_per_stakan_tokens
             + size_of::<Pubkey>() // reward_funds_account
             + size_of::<Pubkey>() + size_of::<u8>() // escrow_account + bump
             + size_of::<Pubkey>() // mint_token
@@ -51,7 +54,7 @@ pub struct SetupStakan<'info> {
         ],
         bump,
     )]
-    stakan_state_account: Account<'info, StakanGlobalState>,
+    stakan_state_account: Box<Account<'info, StakanGlobalState>>,
 
     /// CHECK:` PDA account used as a program wallet for receiving lamports 
     /// when a user purchases tokens
@@ -98,7 +101,7 @@ pub struct CloseStakanAccountForDebug<'info> {
     #[account(mut, 
         close = program_wallet,
     )]
-    stakan_state_account: Account<'info, StakanGlobalState>,
+    stakan_state_account: Box<Account<'info, StakanGlobalState>>,
 
     /// CHECK:` pubkey of program wallet to receive lamports 
     #[account(mut)]
@@ -152,6 +155,7 @@ pub fn set_up_stakan(ctx: Context<SetupStakan>,
     acc.id = StakanGlobalState::ID.as_bytes().to_vec();
     acc.stakan_state_account = acc.key();
     acc.stakan_state_account_bump = stakan_state_account_bump;
+    acc.lamports_per_stakan_tokens = StakanGlobalState::LAMPORTS_PER_STAKAN_TOKEN;
     
     acc.mint_token = ctx.accounts.mint.key();
 

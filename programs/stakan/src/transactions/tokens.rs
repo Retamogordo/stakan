@@ -5,7 +5,7 @@ use crate::transactions::user::User;
 
 #[derive(Accounts)]
 pub struct PurchaseTokens<'info> {
-    stakan_state_account: Account<'info, StakanGlobalState>,
+    stakan_state_account: Box<Account<'info, StakanGlobalState>>,
 
     /// CHECK:` PDA account used as a program wallet for receiving lamports 
     /// when a user purchases tokens
@@ -36,14 +36,14 @@ pub struct PurchaseTokens<'info> {
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
 }
-
+/*
 impl PurchaseTokens<'_> {
     pub const LAMPORTS_PER_STAKAN_TOKEN: u64 = 1000000;
 }
-
+*/
 #[derive(Accounts)]
 pub struct SellTokens<'info> {
-    stakan_state_account: Account<'info, StakanGlobalState>,
+    stakan_state_account: Box<Account<'info, StakanGlobalState>>,
 
     /// CHECK:` PDA account used as a program wallet for receiving lamports 
     /// when a user purchases tokens
@@ -85,7 +85,7 @@ pub fn purchase(
         &solana_program::system_instruction::transfer(
             ctx.accounts.user_wallet.key, 
             &ctx.accounts.stakan_state_account.escrow_account,
-            token_amount * PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN),
+            token_amount * StakanGlobalState::LAMPORTS_PER_STAKAN_TOKEN),
         &[
             ctx.accounts.user_wallet.to_account_info(),
             ctx.accounts.stakan_escrow_account.to_account_info(),
@@ -142,7 +142,7 @@ pub(crate) fn user_sell_tokens<'info>(
         token_amount
     )?;
 
-    let lamports_delta = token_amount * PurchaseTokens::LAMPORTS_PER_STAKAN_TOKEN;
+    let lamports_delta = token_amount * StakanGlobalState::LAMPORTS_PER_STAKAN_TOKEN;
     let escrow_balance_after = stakan_escrow_account.lamports()
         .checked_sub(lamports_delta)
         .ok_or(crate::errors::StakanError::NegativeBalance)?;

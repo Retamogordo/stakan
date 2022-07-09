@@ -42,8 +42,6 @@ const useLoginUser = (
     const walletCtx = useWallet();
     const anchorWallet = useAnchorWallet();
 
-    console.log("useLoginUser usernameToSignUp: ", usernameToSignUp, ", userSignedOut: ", userSignedOut);
-
     const reconnect = async () => {
         if (walletCtx.publicKey && walletCtx.connected && anchorWallet) {
             

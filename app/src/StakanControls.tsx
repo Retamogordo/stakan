@@ -3,7 +3,7 @@ import { setupStakan, stakanFrom } from './stakanLogic'
 import StakanView from './StakanView'
 
 const ENTRY_DELAY = 700;
-const STEP_DELAY = 300;
+const STEP_DELAY = 1000; // for level 1 - from https://tetris.fandom.com/wiki/Tetris_Worlds
 const ROTATION_DELAY = 50;
 const SHORTER_DELAY = 10;
 
@@ -14,28 +14,45 @@ export class StakanSession {
   level: number;
   duration: number;
   stepDelay: number;
+  keyControlDelay: number;
   tiles: any
 
   constructor(rows: number, cols: number) {
     this.active = true;
     this.score = 0;
     this.linesCleared = 0;
-    this.level = 0;
+    this.level = 1;
     this.duration = 0;
     this.stepDelay = STEP_DELAY;
+    this.keyControlDelay = SHORTER_DELAY;
     this.tiles = setupStakan(rows, cols);
     this.updateScore = this.updateScore.bind(this);
   }
 
+  // rules taken from https://tetris.fandom.com/wiki/Tetris_Worlds
   updateScore(linesCleared: number) {
     this.linesCleared += linesCleared;
+    this.level = 1 + Math.floor(this.linesCleared/5);
+    this.stepDelay = Math.floor(1000*(0.8 - 0.007*(this.level - 1))**(this.level-1));
+    this.keyControlDelay = Math.min( SHORTER_DELAY, Math.floor(this.stepDelay/20))
+
+    switch (linesCleared) {
+      case 1: { this.score += 1; break; } 
+      case 2: { this.score += 3; break; } 
+      case 3: { this.score += 5; break; } 
+      case 4: { this.score += 8; break; } 
+    }
+  }
+/*  updateScore(linesCleared: number) {
+    this.linesCleared += linesCleared;
+    
     switch (linesCleared) {
       case 1: { this.score += 40*(this.level + 1); break; } 
       case 2: { this.score += 100*(this.level + 1); break; } 
       case 3: { this.score += 300*(this.level + 1); break; } 
       case 4: { this.score += 1200*(this.level + 1); break; } 
     }
-  }
+  }*/
 } 
 
 export function StakanControls(props: any) {
@@ -228,7 +245,8 @@ export function StakanControls(props: any) {
             () => { 
               resetKeydownDelay();
             },
-            actionKind(keydown) === 'rotation' ? ROTATION_DELAY : SHORTER_DELAY
+//            actionKind(keydown) === 'rotation' ? ROTATION_DELAY : SHORTER_DELAY
+            actionKind(keydown) === 'rotation' ? ROTATION_DELAY : session?.keyControlDelay
           )
         )
       }

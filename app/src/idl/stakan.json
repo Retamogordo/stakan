@@ -336,10 +336,6 @@
           }
         },
         {
-          "name": "userAccountBump",
-          "type": "u8"
-        },
-        {
           "name": "score",
           "type": "u64"
         }
@@ -541,6 +537,10 @@
           },
           {
             "name": "username",
+            "type": "bytes"
+          },
+          {
+            "name": "stakanSeed",
             "type": "bytes"
           },
           {

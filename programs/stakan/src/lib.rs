@@ -60,13 +60,11 @@ pub mod stakan {
     pub fn finish_game_session(ctx: Context<FinishGameSession>,
         // just to ensure arweave has confirmed storage transaction
         _dummy_arweave_storage_tx_id: Option<String>, 
-        user_account_bump: u8,
         score: u64,
     ) -> Result<()> {
         crate::transactions::game_session::finish(
             ctx, 
             _dummy_arweave_storage_tx_id,
-            user_account_bump,
             score,
         )
     }

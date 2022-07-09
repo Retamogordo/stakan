@@ -81,15 +81,46 @@ code {
   font-family: 'IBM Plex Mono';
   background-color: transparent;
   font-size:medium;
+}
+
+input[type=button]  {
+  border: solid;
+  border-width: 1px;
+  border-color:hsl(238, 68%, 79%);
+  color:hsl(238, 68%, 79%);
+  font-family: 'IBM Plex Mono';
+  background-color: transparent;
+  font-size:medium;
+}
+
+input[type=button]:disabled  {
+  color: hsl(238, 80%, 67%);
+  border-color: hsl(238, 80%, 67%);
+  cursor:auto;
+}
+
+input[type=button]:hover:enabled {
+  font-weight: bold;
   cursor: pointer;
+  color: hsl(237, 63%, 86%);
+  border-color: hsl(237, 63%, 86%);
 }
 
 .left-panel > .numeric-input > div > .numeric-input-button:disabled,
 .left-panel > .numeric-input > div > .numeric-input-button[disabled] {
-  color: rgb(246, 44, 44);
-  border-color: rgb(246, 44, 44);
+  color: hsl(238, 80%, 67%);
+  border-color: hsl(238, 80%, 67%);
   cursor:auto;
 }
+
+.left-panel > .numeric-input > div > .numeric-input-button:hover:enabled,
+.left-panel > .numeric-input > div > .numeric-input-button[hover][enabled] {
+  font-weight: bold;
+  cursor: pointer;
+  color: hsl(237, 63%, 86%);
+  border-color: hsl(237, 63%, 86%);
+}
+
 
 .left-panel-input {
   font-family: 'IBM Plex Mono';
@@ -98,14 +129,6 @@ code {
   border: solid;
   border-width: 1px;
   font-size:medium;
-}
-
-input[type=number] { 
-  background-color: transparent;
-  width: 30%;
-}
-input[type=number][disabled] {
-  color: red;
 }
 
 .title-div {
@@ -134,19 +157,21 @@ input[type=number][disabled] {
   background: black;
 }
 
-.stakan-canvas-inactive {
+.stakan-canvas {
   margin-top: 2%;
   margin-bottom: 2%;
   background: transparent;
   border-style: hidden;
 }
 
-.stakan-canvas-active {
+.stakan-canvas:hover {
   margin-top: 2%;
   margin-bottom: 2%;
   background: transparent;
-  border-color: hsl(124, 96%, 46%);
-  border-style: solid;
+  border-color:  hsl(0, 0%, 30%);
+  border-left-style: solid;
+  border-right-style: solid;
+  border-bottom-style: solid;
   border-width: 1px;
 }
 
@@ -193,6 +218,7 @@ input[type=number][disabled] {
   border-left-style: solid;
   border-color: hsl(0, 0%, 30%);
   color: rgba(5, 226, 255, 0.701);
+  font-family: 'IBM Plex Mono';
 }
 
 .right-panel-active-users {
@@ -217,7 +243,7 @@ input[type=number][disabled] {
   width: 100%;
   bottom: 0px;
   left: 0px;
-  color:rgba(0, 255, 162, 0.7);
+  color:rgb(75, 210, 25);
   background-color: hsl(0, 0%, 0%);
   border-color: hsl(0, 0%, 30%);
   border-top-style: hidden;

@@ -32,6 +32,12 @@ class StakePanel extends React.Component {
             <div className='control-panel-main'>
                 <div className='control-panel-section'>Connection and Balance Status</div>
 
+                <div style={{textAlign: 'left', marginLeft: "5%"}}>{'Logged in    '} {
+                    !!props.userConnectionCtx?.user 
+                    ? <span style={{color: 'green'}}>&#10003;</span>
+                    : <span style={{color: 'red'}}>&#10005;</span> 
+                }</div>
+
                 <div style={{textAlign: 'left', marginLeft: "5%"}}>Token balance {
                     props.userWalletsStatus.tokenBalance > 0
                     ? <span style={{color: 'green'}}>&#10003;</span>
@@ -86,8 +92,13 @@ class StakePanel extends React.Component {
             
                 <div style={{textAlign: 'right', marginRight: "5%"}}>
                     <input className="left-panel-input" type='button'                          
-                        value={this.props.startButtonLabel} 
-                        disabled={this.props.startButtonDisabled || this.props.loadingMode}
+                        value={props.userConnectionCtx?.user?.gameSessionAccount 
+                                ? ' Resume ' 
+                                : 'Stake & Start'} 
+                        disabled={
+                            !props.userWalletsStatus.hasWinstonToStoreSession
+                            || props.userWalletsStatus.tokenBalance <= 0 
+                            || this.props.loadingMode}
                         onClick={this.props.onStartSessionClick}>
                     </input>
                 </div>
@@ -98,7 +109,7 @@ class StakePanel extends React.Component {
                     </div>
                     <input className="left-panel-input" type='button' 
                         
-                        value='Free play' 
+                        value='    Free play    ' 
                         onClick={this.props.onStartFreePlayClick}>
                     </input>
                 </div>

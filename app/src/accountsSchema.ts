@@ -18,7 +18,8 @@ class Assignable extends Function {
   }
 
   export class StakanStateSchema extends Assignable { 
-    static id = "StakanState2";
+    static id = "StakanState3";
+    static SEED = 'stakan_state_account3';
     
     public static deserialize(buffer: Buffer): StakanStateSchema {
 
@@ -36,6 +37,7 @@ class Assignable extends Function {
                 ['stakan_state_account_bump', 'u8'],
            
                 ['global_max_score', 'u64'], 
+                ['lamports_per_stakan_tokens', 'u64'],
 
                 ['reward_funds_account', [32]], 
            
@@ -60,6 +62,7 @@ class Assignable extends Function {
                 ['stakan_state_account', [32]],
                 ['stakan_state_account_bump', 'u8'],
                 ['global_max_score', 'u64'], 
+                ['lamports_per_stakan_tokens', 'u64'],
                 ['reward_funds_account', [32]], 
                 ['escrow_account', [32]], 
                 ['escrow_account_bump', 'u8'], 
@@ -75,11 +78,11 @@ class Assignable extends Function {
       let acc;
       try {
         acc = deserialize(schemaStakanState, StakanStateSchema, 
-          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+1+32+32+1+32));
+          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+8+32+32+1+32+32+1+32));
       } catch {
         console.log("catch -> deserialized: ", acc);
         acc = deserialize(schemaNeverUsedStakanState, StakanStateSchema, 
-          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+32+32+1+32+32+1));
+          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+8+32+32+1+32+32+1));
       }
       console.log("deserialized: ", acc);
       return acc;
@@ -119,6 +122,7 @@ class Assignable extends Function {
             fields: [
               ['user_wallet', [32]],
               ['username', 'String'], 
+              ['stakan_seed', 'String'], 
               ['bump', 'u8'], 
               ['max_score', 'u64'], 
               ['saved_game_sessions', 'u64'],
@@ -137,6 +141,7 @@ class Assignable extends Function {
             fields: [
               ['user_wallet', [32]],
               ['username', 'String'], 
+              ['stakan_seed', 'String'], 
               ['bump', 'u8'], 
               ['max_score', 'u64'], 
               ['saved_game_sessions', 'u64'],

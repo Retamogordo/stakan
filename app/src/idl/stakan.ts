@@ -336,10 +336,6 @@ export type Stakan = {
           }
         },
         {
-          "name": "userAccountBump",
-          "type": "u8"
-        },
-        {
           "name": "score",
           "type": "u64"
         }
@@ -541,6 +537,10 @@ export type Stakan = {
           },
           {
             "name": "username",
+            "type": "bytes"
+          },
+          {
+            "name": "stakanSeed",
             "type": "bytes"
           },
           {
@@ -985,10 +985,6 @@ export const IDL: Stakan = {
           }
         },
         {
-          "name": "userAccountBump",
-          "type": "u8"
-        },
-        {
           "name": "score",
           "type": "u64"
         }
@@ -1190,6 +1186,10 @@ export const IDL: Stakan = {
           },
           {
             "name": "username",
+            "type": "bytes"
+          },
+          {
+            "name": "stakanSeed",
             "type": "bytes"
           },
           {

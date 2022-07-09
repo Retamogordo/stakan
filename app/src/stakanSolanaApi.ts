@@ -112,7 +112,7 @@ export async function setUpStakan(program: Program<Stakan>) {
     const [stakanStateAccount, stakanStateAccountBump] =
       await web3.PublicKey.findProgramAddress(
         [
-          Buffer.from('stakan_state_account2'), 
+          Buffer.from(accountsSchema.StakanStateSchema.SEED), 
         ],
         program.programId
       );
@@ -122,7 +122,7 @@ export async function setUpStakan(program: Program<Stakan>) {
       const [stakanEscrowAccount, stakanEscrowAccountBump] =
       await web3.PublicKey.findProgramAddress(
         [
-          Buffer.from('stakan_state_account2'),
+          Buffer.from(accountsSchema.StakanStateSchema.SEED),
           Buffer.from('stakan_escrow_account'), 
         ],
         program.programId
@@ -132,7 +132,7 @@ export async function setUpStakan(program: Program<Stakan>) {
   
     const [stakanMint, stakanMintBump] = await web3.PublicKey.findProgramAddress(
       [
-        Buffer.from('stakan_state_account2'),
+        Buffer.from(accountsSchema.StakanStateSchema.SEED),
         Buffer.from('stakan_mint'),
       ],
       program.programId
@@ -406,9 +406,11 @@ export async function queryWalletOwnerAccount(
         = accountsSchema.UserAccount.deserialize(acc.account.data as Buffer);
       
         if (username){
-           if (userAccountData['username'] === username) return [acc.pubkey, userAccountData]
-        } else {      
-          return [acc.pubkey, userAccountData];
+           if (userAccountData['username'] === username
+              && userAccountData['stakan_seed'] === accountsSchema.StakanStateSchema.SEED ) return [acc.pubkey, userAccountData]
+        } else {    
+          if (userAccountData['stakan_seed'] === accountsSchema.StakanStateSchema.SEED)  
+            return [acc.pubkey, userAccountData];
         }
     }
     catch(e) {
@@ -439,6 +441,7 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
 
     const [userAccount, userAccountBump] = await web3.PublicKey.findProgramAddress(
         [
+            Buffer.from(accountsSchema.StakanStateSchema.SEED),
             Buffer.from('user_account'), 
             Buffer.from(user.username).slice(0, 20),
             Buffer.from(arweaveStorageAddress).slice(0, 20),
@@ -723,7 +726,6 @@ export async function initGameSession(
       const txId = await stakanState.program.methods
         .finishGameSession(
           txid as string,
-          user.bump as number,
           new BN(session.score),
         )
         .accounts({

@@ -229,6 +229,10 @@ class StakanView extends React.Component {
           2*this.tileSize, 'score ', this.session.score);
         drawValue(context, this.tileSize*(this.props.cols+3), this.tileSize*2, 
           2*this.tileSize, 'lines cleared ', this.session.linesCleared);
+        drawValue(context, this.tileSize*(this.props.cols+3), this.tileSize*3, 
+          2*this.tileSize, 'level ', this.session.level);
+        drawValue(context, this.tileSize*(this.props.cols+3), this.tileSize*4, 
+          2*this.tileSize, 'gravity ', this.session.stepDelay);
         
         if (this.currentPiece !== null ) {
           drawPiece(context, this.tiles, this.tileSize, this.currentPiece.piece[this.rotationPosition], 
@@ -239,7 +243,7 @@ class StakanView extends React.Component {
     }
 
     return (
-      <canvas className="stakan-canvas-inactive" tabIndex={0} ref={this.canvasRef}> </canvas>
+      <canvas className="stakan-canvas" tabIndex={0} ref={this.canvasRef}> </canvas>
     )           
   }
 

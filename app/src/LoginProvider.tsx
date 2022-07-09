@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import useLoginUser from "./UseLoginUser"
 import * as stakanApi from './stakanSolanaApi'
 
@@ -9,7 +9,7 @@ const LoginProvider = (props: any) => {
     );
     const [userSignedOut, setUserSignedOut] = useState(false);
     const userConnectionCtx = useLoginUser(enteredUserName, userSignedOut, props.logCtx);
-    
+
     const handleChange = (ev: any) => {
     }
 
@@ -95,17 +95,18 @@ const LoginProvider = (props: any) => {
                     {' ' + userConnectionCtx.user?.username}
                 </span>
                 <div style={{textAlign: "right"}}>
-                    <input type="button" value='sign out'
+                    <input type="button" value='Sign out'
+                        style={{marginRight: "5%"}}
                         disabled={!userConnectionCtx.user}
                         onClick={handleSignOutButtonClicked}
                     ></input>
                 </div>
-                <div style={{textAlign: "right"}}>
+{/*                <div style={{textAlign: "right"}}>
                     <input type="button" value='force delete'
                         disabled={!userConnectionCtx.user}
                         onClick={handleForceDeleteUser}
-                    ></input>
-                </div>
+            ></input> 
+            </div> */}
             </div>
             :
                 !userConnectionCtx.stakanState
