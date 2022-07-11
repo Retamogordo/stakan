@@ -564,6 +564,10 @@ export type Stakan = {
             "type": "bytes"
           },
           {
+            "name": "lastReward",
+            "type": "u64"
+          },
+          {
             "name": "gameSession",
             "type": {
               "option": "publicKey"
@@ -1211,6 +1215,10 @@ export const IDL: Stakan = {
           {
             "name": "arweaveStorageAddress",
             "type": "bytes"
+          },
+          {
+            "name": "lastReward",
+            "type": "u64"
           },
           {
             "name": "gameSession",

@@ -49,7 +49,7 @@ class Assignable extends Function {
                 ['champion_account_opt_variant', 'u8'], 
               ] 
           }
-        ]
+        ] 
       ]);
       const schemaStakanState = new Map([
         [
@@ -80,11 +80,11 @@ class Assignable extends Function {
         acc = deserialize(schemaStakanState, StakanStateSchema, 
           buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+8+32+32+1+32+32+1+32));
       } catch {
-        console.log("catch -> deserialized: ", acc);
+//        console.log("catch -> deserialized: ", acc);
         acc = deserialize(schemaNeverUsedStakanState, StakanStateSchema, 
           buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+8+32+32+1+32+32+1));
       }
-      console.log("deserialized: ", acc);
+//      console.log("deserialized: ", acc);
       return acc;
     }
   }
@@ -128,6 +128,7 @@ class Assignable extends Function {
               ['saved_game_sessions', 'u64'],
               ['token_account', [32]],
               ['arweave_storage_address', 'String'],
+//              ['last_reward', 'u64'],
               ['game_session_opt_variant', 'u8'], 
             ] 
           }
@@ -147,6 +148,7 @@ class Assignable extends Function {
               ['saved_game_sessions', 'u64'],
               ['token_account', [32]],
               ['arweave_storage_address', 'String'],
+//              ['last_reward', 'u64'],
               ['game_session_opt_variant', 'u8'], 
               ['game_session', [32]] 
             ] 

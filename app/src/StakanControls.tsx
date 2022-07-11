@@ -28,12 +28,15 @@ export class StakanSession {
     this.tiles = setupStakan(rows, cols);
     this.updateScore = this.updateScore.bind(this);
   }
-
-  // rules taken from https://tetris.fandom.com/wiki/Tetris_Worlds
+  
+  // rules more or less comply with those from https://tetris.fandom.com/wiki/Tetris_Worlds
   updateScore(linesCleared: number) {
+    const MIN_DELAY = 120;
+    const currDelay = Math.floor(1000*(0.8 - 0.007*(this.level - 1))**(this.level-1));
+
     this.linesCleared += linesCleared;
     this.level = 1 + Math.floor(this.linesCleared/5);
-    this.stepDelay = Math.floor(1000*(0.8 - 0.007*(this.level - 1))**(this.level-1));
+    this.stepDelay = currDelay > MIN_DELAY ? currDelay : MIN_DELAY;
     this.keyControlDelay = Math.min( SHORTER_DELAY, Math.floor(this.stepDelay/20))
 
     switch (linesCleared) {

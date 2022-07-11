@@ -64,8 +64,42 @@ export const RightPanel = (props: any) => {
     }
  
     const pollChain = () => {
-        const stakanState = props.userConnectionCtx?.stakanState as stakanApi.StakanState;
+//        const stakanState = props.userConnectionCtx?.stakanState as stakanApi.StakanState;
+        if (!props.userConnectionCtx?.stakanState) return;
 
+        stakanApi.queryStakanAccount(props.userConnectionCtx?.stakanState.program)
+            // reload state to refresh Record Score
+            .then(reloadedStakanState => {
+                props.userConnectionCtx.stakanState = reloadedStakanState
+                return props.userConnectionCtx.stakanState
+            })
+            // reload balance from Reward Fund account
+            .then(stakanState => {
+                return stakanState.getRewardFundBalance();
+            })
+            .then(balance => {
+                setRewardBalance(balance?.value.uiAmount ? balance?.value.uiAmount : 0)
+
+//                console.log("reloaded balance: ", rewardBalance);
+                const stakanState = props.userConnectionCtx?.stakanState as stakanApi.StakanState;
+
+                if (stakanState) {
+                    stakanState.championAccount && stakanApi.getUserFromAccount(stakanState.championAccount, stakanState)
+                        .then(acc => {
+                            setChampionAccount(acc ? acc.username : null)
+                        })     
+            
+                    stakanApi.queryActiveUsers(stakanState)
+                    .then( users => {
+                        setActiveUsers( 
+                          users.map(([_accPubkey, userAccount]) => 
+                            (<li key={userAccount['username']}>{userAccount['username']}</li>)
+                          )
+                        )
+                    })
+                }
+            })
+/*
         stakanState?.getRewardFundBalance()
           .then( (balance: web3.RpcResponseAndContext<web3.TokenAmount>) => {
             setRewardBalance(balance?.value.uiAmount ? balance?.value.uiAmount : 0)
@@ -85,7 +119,7 @@ export const RightPanel = (props: any) => {
                   )
                 )
             })
-        }
+        }*/
     }    
 
     useEffect(() => {
@@ -112,7 +146,7 @@ export const RightPanel = (props: any) => {
     [props.update]);
 
     useEffect(() => {
-        props.onRewardBalanceRefreshed(rewardBalance);
+        props.onGlobalStateRefreshed(rewardBalance);
     },
     [rewardBalance]);
 
@@ -120,7 +154,11 @@ export const RightPanel = (props: any) => {
         <div className="right-panel">
             <div style={{textAlign: "left", marginLeft: "5%"}}>Record Score  
                 <span style={{color:'hsl(59, 88%, 59%)'}}>
-                    {' ' + props.userConnectionCtx?.stakanState?.globalMaxScore.toString()}
+                    {   props.userConnectionCtx?.stakanState?.globalMaxScore
+                        ?
+                        ' ' + props.userConnectionCtx?.stakanState?.globalMaxScore.toString()
+                        : ''
+                    }
                 </span>
             </div>
             <div style={{textAlign: "left", marginLeft: "5%"}}>Champion 
@@ -129,12 +167,6 @@ export const RightPanel = (props: any) => {
             <div className="right-panel-active-users">
                 <div style={{textAlign: "left", marginLeft: "5%"}}>
                     Reward Fund balance {rewardBalance}
-                </div>
-                <div style={{textAlign: "left", marginLeft: "5%"}}>
-                    Estimated Winner Reward {(() => {
-                        const stake = 1; // supposing that stake is always 1
-                        return Math.floor(rewardBalance/2 - stake);
-                    })()}
                 </div>
                 <p></p>
                 <div className='right-panel-active-users'>

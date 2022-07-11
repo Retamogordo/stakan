@@ -131,6 +131,22 @@ pub fn set_up_stakan(ctx: Context<SetupStakan>,
     escrow_account_bump: u8,
 ) -> Result<()> {
 
+    // set up escrow account and deposit lamports according to 
+    // initial token supply
+    // dev program wallet is charged 
+    solana_program::program::invoke(
+        &solana_program::system_instruction::transfer(
+            ctx.accounts.program_wallet.key, 
+            &ctx.accounts.escrow_account.key(),
+            SetupStakan::INITIAL_REWARD_FUNDS * StakanGlobalState::LAMPORTS_PER_STAKAN_TOKEN),
+        &[
+            ctx.accounts.program_wallet.to_account_info(),
+            ctx.accounts.escrow_account.to_account_info(),
+            ctx.accounts.system_program.to_account_info()
+        ],
+    )?;
+
+    // mint initial token supply
     let temp_bump: [u8; 1] = stakan_state_account_bump.to_le_bytes();
     let signer_seeds = [
         StakanGlobalState::SEED.as_ref(),

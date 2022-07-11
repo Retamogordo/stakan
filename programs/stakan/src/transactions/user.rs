@@ -73,6 +73,7 @@ pub struct UserInner {
     pub saved_game_sessions: u64,
     pub token_account: Pubkey,
     pub arweave_storage_address: Vec<u8>, 
+//    pub last_reward: u64,
     pub game_session: Option<Pubkey>,
 } 
 
@@ -95,8 +96,9 @@ impl UserInner {
         + size_of::<u8>()
         + size_of::<u64>()
         + size_of::<u64>()
-        + size_of::<Pubkey>()
+//        + size_of::<Pubkey>()
         + size_of::<u32>() + arweave_storage_address_len
+        + size_of::<u64>()
         + (1)
     }    
 
@@ -223,6 +225,7 @@ pub fn sign_up(ctx: Context<SignUpUser>,
         saved_game_sessions: 0,
         token_account: ctx.accounts.token_account.key(),
         arweave_storage_address: arweave_storage_address.into_bytes(),
+//        last_reward: 0,
         game_session: None,
     };
 

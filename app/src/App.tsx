@@ -23,6 +23,7 @@ function App() {
   const [sessionActive, setSessionActive] = useState({active: false, staked: false});
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
   const [loadingMode, setLoadingMode] = useState(false);
+  const [greetWinnerMode, setGreetWinnerMode] = useState(false);
   const [archivedSession, setArchivedSession] = useState<GameSessionArchive | null>(null);
   const [stakanWidthBiggerThanHalf, setStakanWidthBiggerThanHalf] = useState(false);
   const [rewardBalance, setRewardBalance] = useState(0);
@@ -34,10 +35,11 @@ function App() {
   const rows = 16;
   const tiles = setupStakan(rows, cols);
 
-  const handleBeforeSessionStarted = async () => {
-    const stake = 1;
+  const handleBeforeSessionStarted = async (stakeValue: number) => {
     try {
       console.log("Srart session, tiles: ", tiles);
+
+      setGreetWinnerMode(false);
 
       const user = userConnectionCtx?.user;
       const stakanState = userConnectionCtx?.stakanState;
@@ -54,12 +56,13 @@ function App() {
 */
       setLoadingMode(true);
 
-      if (user && stakanState) {
+      if (user && stakanState && userConnectionCtx.arweave) {
         if (!user.gameSessionAccount) { // check for pending session
           await stakanApi.initGameSession(
             user, 
             stakanState, 
-            stake,
+            userConnectionCtx.arweave,
+            stakeValue,
             logCtx,
           );
           await user?.reloadFromChain(stakanState, user?.username)
@@ -95,11 +98,12 @@ function App() {
       setLoadingMode(true);
 
       try {
-        if (user && stakanState) {
+        if (user && stakanState && userConnectionCtx.arweave) {
           await stakanApi.finishGameSession(
             user, 
             stakanState,
             session,
+            userConnectionCtx.arweave,
             tiles,
             logCtx,
             );
@@ -113,10 +117,12 @@ function App() {
         throw e;
       }
       setLoadingMode(false);
+      setGreetWinnerMode(true);
     }
   }
 
   const handleStartFreePlayStarted = () => {
+    setGreetWinnerMode(false);
     setSignalStartSession(true);
     setSessionActive({active: true, staked: false});
   }
@@ -150,7 +156,7 @@ function App() {
     setStakanWidthBiggerThanHalf(isBigger);
   }
 
-  const handleTokenTransactionStarted = (started: boolean) => {
+  const handleToggleLoadingMode = (started: boolean) => {
     setLoadingMode(started);
   }
 
@@ -198,7 +204,7 @@ function App() {
             onUserConnectionChanged={handleUserConnectionChanged}
             onUserWalletsStatusChanged={handleUserWalletsStatusChanged}
             onDeleteUserClick={handleDeleteUser}
-            onTokenTransactionStarted={handleTokenTransactionStarted}
+            toggleLoadingMode={handleToggleLoadingMode}
           />
 
           <div className="stakan-wrapper">
@@ -207,6 +213,7 @@ function App() {
               userConnectionCtx={userConnectionCtx}
               userWalletsStatus={userWalletsStatus}
               loadingMode={loadingMode}
+              greetWinnerMode={greetWinnerMode}
               rewardBalance={rewardBalance}
               onStartSessionClick={handleBeforeSessionStarted}
               onStartFreePlayClick={handleStartFreePlayStarted}
@@ -230,7 +237,7 @@ function App() {
                 logCtx={logCtx}
                 enabled={!sessionActive.active}
                 onArchivedSessionChosen={handleArchivedSessionChosen}
-                onRewardBalanceRefreshed={handleRewardBalanceRefreshed}
+                onGlobalStateRefreshed={handleRewardBalanceRefreshed}
               />
             : null
           }

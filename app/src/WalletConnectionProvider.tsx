@@ -56,6 +56,7 @@ export const WalletConnectionProvider = (props: any) => {
                 </WalletModalProvider>
                 <LoginProvider 
                     loggedUserChanged={props.loggedUserChanged}
+                    toggleLoadingMode={props.toggleLoadingMode}
                     logCtx={props.logCtx}
                     endpoint={endpoint}
                 />

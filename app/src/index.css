@@ -52,28 +52,30 @@ code {
   color: hsl(238, 68%, 79%);
 }
 
-.left-panel > .numeric-input {
+.left-panel > div > .numeric-input {
   margin-left: 5%; 
   margin-top: 5%;
+  width: 25%;
+
   font-family: 'IBM Plex Mono';
   color:hsl(238, 68%, 79%);
   background-color: transparent;
 }
-.left-panel > .numeric-input > .numeric-input-field {
+.numeric-input > input[type=number] {
   border: solid;
   border-width: 1px;
   border-color:hsl(238, 68%, 79%);
   color:hsl(238, 68%, 79%);
   font-family: 'IBM Plex Mono';
+  background-color: transparent;
 }
-.left-panel > .numeric-input > div {
+.numeric-input > div {
   margin-top: 1%;
   margin-right: 5%;
   text-align: right;
-;
 }
 
-.left-panel > .numeric-input > div > .numeric-input-button {
+.numeric-input > div > input[type=button] {
   border: solid;
   border-width: 1px;
   border-color:hsl(238, 68%, 79%);
@@ -106,15 +108,15 @@ input[type=button]:hover:enabled {
   border-color: hsl(237, 63%, 86%);
 }
 
-.left-panel > .numeric-input > div > .numeric-input-button:disabled,
-.left-panel > .numeric-input > div > .numeric-input-button[disabled] {
+.numeric-input > div > input[type=button]:disabled,
+.numeric-input > div > input[type=button][disabled] {
   color: hsl(238, 80%, 67%);
   border-color: hsl(238, 80%, 67%);
   cursor:auto;
 }
 
-.left-panel > .numeric-input > div > .numeric-input-button:hover:enabled,
-.left-panel > .numeric-input > div > .numeric-input-button[hover][enabled] {
+.numeric-input > div > input[type=button]:hover:enabled,
+.numeric-input > div > input[type=button][hover][enabled] {
   font-weight: bold;
   cursor: pointer;
   color: hsl(237, 63%, 86%);
@@ -197,6 +199,16 @@ input[type=button]:hover:enabled {
   height: 90%; 
   top: 5%;
   background: rgba(50, 50, 50, 0.5);
+}
+
+.control-panel-main .numeric-input > input[type=number]  {
+  width: 10%;
+  margin-left: 50%;
+}
+
+.control-panel-main .numeric-input > div  {
+  margin-top: 1%;
+  margin-right: 0%;
 }
 
 .control-panel-section {

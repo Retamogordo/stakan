@@ -28,7 +28,6 @@ impl GameSession {
 
 #[derive(Accounts)]
 #[instruction(stake: u64)]
-
 pub struct InitGameSession<'info> {
     stakan_state_account: Box<Account<'info, StakanGlobalState>>,
 
@@ -120,6 +119,7 @@ pub fn init(
     game_session_account.id = GameSession::ID.as_bytes().to_vec();
     game_session_account.user_account = ctx.accounts.user_account.key();
     game_session_account.stake = stake;
+    ctx.accounts.user_account.user.last_reward = 0;
 
     ctx.accounts.user_account.set_game_session(Some(game_session_account.key()));
 
@@ -135,8 +135,6 @@ pub fn finish(ctx: Context<FinishGameSession>,
     let global_max_score = ctx.accounts.stakan_state_account.global_max_score;
     let game_session_score = score;
     let stake = ctx.accounts.game_session_account.stake;
-//    let username = ctx.accounts.user_account.user.username.clone();
-//    let arweave_storage_address = ctx.accounts.user_account.user.arweave_storage_address.clone();
     
     let record_hit = game_session_score > global_max_score;
 
@@ -156,7 +154,7 @@ pub fn finish(ctx: Context<FinishGameSession>,
                 let s: f64 = stake as f64;
                 let x: f64 = game_session_score as f64;
                 let x0: f64 = global_max_score as f64;
-                let reward = h + (s - h) * ((-s/h * x*(x - x0)/h) as f64).exp();
+                let reward = (h + (s - h) * ((-s/h * x*(x - x0)/h) as f64).exp()) as u64;
 
                 let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.stakan_state_account_bump.to_le_bytes();
                 let signer_seeds = [
@@ -175,8 +173,10 @@ pub fn finish(ctx: Context<FinishGameSession>,
                         },
                         &[&signer_seeds]
                     ),
-                    reward as u64,
-                    )?;
+                    reward,
+                )?;
+
+                ctx.accounts.user_account.user.last_reward = reward;
             }
         } else {
             let user = &ctx.accounts.user_account.user;

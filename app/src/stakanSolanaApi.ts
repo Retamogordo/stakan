@@ -77,14 +77,14 @@ export async function queryStakanAccount(
         }
   );
 
-  console.log("queryStakanAccount:", accounts);
+//  console.log("queryStakanAccount:", accounts);
 
   for (let acc of accounts) {
     try {
       const stakanAccountData 
         = accountsSchema.StakanStateSchema.deserialize(acc.account.data as Buffer);
 
-        console.log("stakanAccountData: ", stakanAccountData);
+//        console.log("stakanAccountData: ", stakanAccountData);
 
       const stakanState = new StakanState(
         program,
@@ -223,7 +223,7 @@ export class User {
     username: string;
     program: Program<Stakan>;
     wallet: Wallet;
-    arweave: Arweave;
+//    arweave: Arweave;
     account?: web3.PublicKey; // pda user state account
     tokenAccount?: web3.PublicKey; // pda user token account
     arweaveWallet: JWKInterface | "use_wallet";
@@ -237,13 +237,13 @@ export class User {
         username: string, 
         program: Program<Stakan>,
         wallet: Wallet, 
-        arweave: Arweave, 
+//        arweave: Arweave, 
         arweaveWallet: JWKInterface | undefined,
     ) {
       this.username = username;
       this.program = program;
       this.wallet = wallet;
-      this.arweave = arweave;
+//      this.arweave = arweave;
       this.arweaveWallet = arweaveWallet ? arweaveWallet : "use_wallet";
       this.savedGameSessions = 0;
       this.maxScore = 0;
@@ -270,62 +270,51 @@ export class User {
     async getTokenBalance(): Promise<web3.RpcResponseAndContext<web3.TokenAmount>> {
       return await this.program.provider.connection.getTokenAccountBalance(this.tokenAccount as web3.PublicKey);
     }
-/*
-    async purchaseTokens(tokens: number) {
-      await purchaseStakanTokens(this, this.sta
-    }
-*/    
-    async arweaveAirdrop(winston: number): Promise<boolean> {
-      const tokens = winston.toString();
-      const arweaveStorageAddress = await this.arweave.wallets.getAddress(this.arweaveWallet);
 
-      const resp = await this.arweave.api.get(`/mint/${arweaveStorageAddress}/${tokens}`)
+    async arweaveAirdrop(arweave: Arweave, winston: number): Promise<boolean> {
+//      async arweaveAirdrop(winston: number): Promise<boolean> {
+      const tokens = winston.toString();
+      const arweaveStorageAddress = await arweave.wallets.getAddress(this.arweaveWallet);
+
+      const resp = await arweave.api.get(`/mint/${arweaveStorageAddress}/${tokens}`)
       
       if (resp.status != 200) return false;
       return true;
     }
 
-    async arweaveAirdropMin(tilesCols: number, tilesRows: number): Promise<boolean> {
+    async arweaveAirdropMin(arweave: Arweave, tilesCols: number, tilesRows: number): Promise<boolean> {
       const savePrice = parseInt(
-        await this.arweave.transactions
+        await arweave.transactions
           .getPrice(accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows), '')
       );
 //      console.log("max size: ",    accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows));
       console.log("savePrice: ", savePrice);        
-      return await this.arweaveAirdrop(savePrice);
+      return await this.arweaveAirdrop(arweave, savePrice);
     }
 
-    async getArweaveBalance(): Promise<number> {
-      const arweaveStorageAddress = await this.arweave.wallets.getAddress(this.arweaveWallet);
-      const balance = await this.arweave.wallets.getBalance(arweaveStorageAddress);
+    async getArweaveBalance(arweave: Arweave): Promise<number> {
+      const arweaveStorageAddress = await arweave.wallets.getAddress(this.arweaveWallet);
+      const balance = await arweave.wallets.getBalance(arweaveStorageAddress);
       return parseInt(balance);
     }
 
-    async hasWinstonToStoreSession(tilesCols: number, tilesRows: number): Promise<boolean> {
+    async hasWinstonToStoreSession(arweave: Arweave, tilesCols: number, tilesRows: number): Promise<boolean> {
       try {
         const savePrice = parseInt(
-          await this.arweave.transactions.getPrice(accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows), ''));
+          await arweave.transactions.getPrice(accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows), ''));
         return (
-          await this.isArweaveWalletConnected() 
+          await this.isArweaveWalletConnected(arweave) 
           && 
-          (savePrice <= await this.getArweaveBalance())
+          (savePrice <= await this.getArweaveBalance(arweave))
         );
       } catch {
         return false;
       }
     }
 
-    async isArweaveWalletConnected(): Promise<boolean> {
+    async isArweaveWalletConnected(arweave: Arweave): Promise<boolean> {
       try {
-        await this.arweave.wallets.getAddress(this.arweaveWallet);
-      } catch {
-        return false;
-      }
-      return true;
-    }
-    async isArweaveProviderConnected(): Promise<boolean> {
-      try {
-        await this.getArweaveBalance()
+        await arweave.wallets.getAddress(this.arweaveWallet);
       } catch {
         return false;
       }
@@ -397,7 +386,7 @@ export async function queryWalletOwnerAccount(
         }
     );
 //  console.log("queryWalletOwnerAccount: ", accounts)
-  accounts.map(acc => console.log(acc.pubkey.toBase58()));
+//  accounts.map(acc => console.log(acc.pubkey.toBase58()));
 
   for (let acc of accounts) {
     // deserialization success indicates this account is that we looked for
@@ -419,6 +408,16 @@ export async function queryWalletOwnerAccount(
   return undefined;
 }
 
+export async function isArweaveProviderConnected(arweave: Arweave): Promise<boolean> {
+  try {
+//    await this.getArweaveBalance(arweave)
+    await arweave.network.getInfo();
+  } catch {
+    return false;
+  }
+  return true;
+}
+
 export async function getUserFromAccount(
   account: web3.PublicKey,
   stakanState: StakanState,
@@ -436,8 +435,8 @@ export async function getUserFromAccount(
   }
 }
 
-export async function signUpUser(user: User, stakanState: StakanState,) {  
-    const arweaveStorageAddress = await user.arweave.wallets.getAddress(user.arweaveWallet);
+export async function signUpUser(user: User, stakanState: StakanState, arweave: Arweave) {  
+    const arweaveStorageAddress = await arweave.wallets.getAddress(user.arweaveWallet);
 
     const [userAccount, userAccountBump] = await web3.PublicKey.findProgramAddress(
         [
@@ -493,14 +492,14 @@ export async function signUpUser(user: User, stakanState: StakanState,) {
 export async function loginUser(
   userWallet: Wallet, 
   stakanState: StakanState, 
-  arweave: Arweave,
+//  arweave: Arweave,
   arweaveWallet: JWKInterface | undefined,
 ) : Promise<User | undefined> {
   const user = new User(
     'dummy_user',
     stakanState.program,
     userWallet,
-    arweave,
+//    arweave,
     arweaveWallet,
   );
   
@@ -598,10 +597,11 @@ export async function sellStakanTokens(
 export async function initGameSession(
     user: User,
     stakanState: StakanState,
+    arweave: Arweave,
     stake: number,
     logCtx: LogTerminalContext | undefined,
 ) {
-    const arweaveStorageAddress = await user.arweave.wallets.getAddress(user.arweaveWallet); 
+    const arweaveStorageAddress = await arweave.wallets.getAddress(user.arweaveWallet); 
     
     logCtx?.log('sending session initializing transaction...');
     try {
@@ -650,30 +650,29 @@ export async function initGameSession(
     }
   }
 
-  async function saveToArweave(user: User, data: any): Promise<string | undefined> {
-    console.log("before serialize: ", data);
+  async function saveToArweave(user: User, arweave: Arweave, data: any): Promise<string | undefined> {
+//    console.log("before serialize: ", data);
 
     const serializedData = accountsSchema.GameSessionArchive.serialize(data);
 
-    console.log("serializedData: ", serializedData);
+//    console.log("serializedData: ", serializedData);
 
     if (!user.account) throw 'Error saving to Arweave: user.account is undefined';
 
-    const tx = await user.arweave.createTransaction({
-//      data
+    const tx = await arweave.createTransaction({
       data: serializedData
     }, user.arweaveWallet);
 
     tx.addTag('App-Name', 'Stakan');
     tx.addTag('User', user.account?.toBase58());
 
-    await user.arweave.transactions.sign(tx, user.arweaveWallet);
-    await user.arweave.transactions.post(tx);
+    await arweave.transactions.sign(tx, user.arweaveWallet);
+    await arweave.transactions.post(tx);
 
     // mine transaction to simulate immediate confirmation
     await axios.get('http://localhost:1984/mine');
 
-    const statusAfterPost = await user.arweave.transactions.getStatus(tx.id);
+    const statusAfterPost = await arweave.transactions.getStatus(tx.id);
 
     return statusAfterPost.status === 200 ? tx.id : undefined;
   }
@@ -682,6 +681,7 @@ export async function initGameSession(
     user: User,
     stakanState: StakanState,
     session: any,
+    arweave: Arweave,
     stakanTiles: any,
     logCtx: LogTerminalContext | undefined,
   ) {
@@ -698,7 +698,7 @@ export async function initGameSession(
     const dateTime = new Date();
     const tilesArray = stakanTiles.tiles.flat();
 
-    let txid = await saveToArweave(user, 
+    let txid = await saveToArweave(user, arweave,
       {
         score: session.score,
         lines_cleared: session.linesCleared,
@@ -762,23 +762,30 @@ export async function initGameSession(
     
     await sellStakanTokens(user, stakanState, tokenBalance, logCtx)
 
-    await stakanState.program.methods
-      .signOutUser(
-      )
-      .accounts({
-        stakanStateAccount: stakanState.stateAccount,
-//        stakanEscrowAccount: stakanState.escrowAccount,
-        userAccount: user.account,
-        userTokenAccount: user.tokenAccount,
-        userWallet: user.wallet.publicKey,
-//        rewardFundsAccount: stakanState.rewardFundsAccount,
-  
-        associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
-        tokenProgram: spl.TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([])
-      .rpc();  
+    logCtx?.log("sending sign out user transaction...");
+    try {
+      await stakanState.program.methods
+        .signOutUser(
+        )
+        .accounts({
+          stakanStateAccount: stakanState.stateAccount,
+  //        stakanEscrowAccount: stakanState.escrowAccount,
+          userAccount: user.account,
+          userTokenAccount: user.tokenAccount,
+          userWallet: user.wallet.publicKey,
+  //        rewardFundsAccount: stakanState.rewardFundsAccount,
+    
+          associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
+          tokenProgram: spl.TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([])
+        .rpc(); 
+      } catch(e) {  
+        logCtx?.logLn('failed ' + e);
+//        throw e;
+    }
+    logCtx?.logLn('done ');
   }
 
   export async function forceDeleteUser(

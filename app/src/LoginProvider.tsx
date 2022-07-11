@@ -21,6 +21,8 @@ const LoginProvider = (props: any) => {
 
     const handleSignOutButtonClicked = (ev: any) => {
         if (userConnectionCtx.user && userConnectionCtx.stakanState) {
+            props.toggleLoadingMode && props.toggleLoadingMode(true);
+
             stakanApi.signOutUser(
                 userConnectionCtx.user, 
                 userConnectionCtx.stakanState,
@@ -29,6 +31,8 @@ const LoginProvider = (props: any) => {
             .then(() => {
                 userConnectionCtx.user = null;
                 setUserSignedOut(true);
+
+                props.toggleLoadingMode && props.toggleLoadingMode(false);
             });
         }
     }
@@ -56,7 +60,7 @@ const LoginProvider = (props: any) => {
     useEffect(() => {
         props.loggedUserChanged && props.loggedUserChanged(userConnectionCtx);
     },
-    [userConnectionCtx.user])
+    [userConnectionCtx.user, userConnectionCtx.arweave])
 
     useEffect(() => {
         setEnteredUserName(null);
@@ -101,11 +105,12 @@ const LoginProvider = (props: any) => {
                         onClick={handleSignOutButtonClicked}
                     ></input>
                 </div>
-{/*                <div style={{textAlign: "right"}}>
+                {/*
+                <div style={{textAlign: "right"}}>
                     <input type="button" value='force delete'
                         disabled={!userConnectionCtx.user}
                         onClick={handleForceDeleteUser}
-            ></input> 
+                    ></input> 
             </div> */}
             </div>
             :

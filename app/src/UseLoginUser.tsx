@@ -12,6 +12,7 @@ export class UserConnectionContextState {
     stakanProgram: Program<Stakan> | null;
     stakanState: stakanApi.StakanState | null
     walletContext: WalletContextState;
+    arweave: Arweave | null;
     connected: boolean;
 
     constructor(
@@ -19,12 +20,14 @@ export class UserConnectionContextState {
         stakanProgram: Program<Stakan> | null,
         stakanState: stakanApi.StakanState | null,
         walletContext: WalletContextState, 
+        arweave: Arweave | null,
         connected: boolean,  
     ) {
         this.user = user;
         this.stakanProgram = stakanProgram;
         this.stakanState = stakanState;
         this.walletContext = walletContext;
+        this.arweave = arweave;
         this.connected = connected;
     }
 }
@@ -47,7 +50,7 @@ const useLoginUser = (
             
             const connection = new Connection(anchorConnection.connection.rpcEndpoint, 'confirmed');
             const opts: ConfirmOptions = {
-                commitment: 'processed',
+                commitment: 'confirmed',
                 preflightCommitment: "max",
                 skipPreflight: false
             };
@@ -59,7 +62,7 @@ const useLoginUser = (
                 provider
             );
             setStakanProgram(program);        
-
+/*
             const arw = Arweave.init({
                 host: 'localhost',
                 port: 1984,
@@ -67,7 +70,8 @@ const useLoginUser = (
                 timeout: 20000,
                 logging: false,
             });
-  
+
+*/
             logCtx.log("retrieving stakan global state account...")
             
             console.log("retrieving stakan global state account...")
@@ -82,9 +86,9 @@ const useLoginUser = (
 
             setStakanState(state ? state : null);
 //            if (state) {
-            console.log("Arweave ", arw)
+//            console.log("Arweave ", arw)
             
-            setArweave(arw);
+//            setArweave(arw);
 /*            } else {
                 setArweave(null);
             }*/
@@ -92,7 +96,7 @@ const useLoginUser = (
             setStakanProgram(null);
             setStakanState(null);
             setCurrUser(null);
-            setArweave(null);
+//            setArweave(null);
         }
     }
 
@@ -103,7 +107,6 @@ const useLoginUser = (
             const user = await stakanApi.loginUser(
                 stakanProgram.provider.wallet as Wallet, 
                 stakanState, 
-                arweave,
                 // arweave wallet - will assign 'use_wallet' internally
                 // to connect via ArConnect in browser mode
                 undefined
@@ -121,11 +124,27 @@ const useLoginUser = (
     const tryToSignUp = async (user: stakanApi.User, arweave: Arweave) => {
         logCtx.log("signing user up...");
         if (stakanState && arweave) {
-            await stakanApi.signUpUser(user, stakanState);
+            await stakanApi.signUpUser(user, stakanState, arweave);
             await tryToLogin(arweave);
         }
         logCtx.logLn("done, username " + user.username)
     }
+
+    useEffect(() => {
+        console.log("useEffect() => []");
+
+        const arw = Arweave.init({
+            host: 'localhost',
+            port: 1984,
+            protocol: 'http',
+            timeout: 20000,
+            logging: false,
+        });
+        console.log("Arweave ", arw)
+            
+        setArweave(arw);
+    },
+    [])
 
     useEffect(() => {
         if (stakanProgram && stakanState && arweave) {
@@ -136,7 +155,6 @@ const useLoginUser = (
                     usernameToSignUp, 
                     stakanProgram,
                     stakanProgram.provider.wallet as Wallet,
-                    arweave,
                     undefined
                   );
 
@@ -146,7 +164,7 @@ const useLoginUser = (
             logout();
         }
     },
-    [stakanState, usernameToSignUp, userSignedOut, arweave]);
+    [stakanState, usernameToSignUp, userSignedOut]);
     
     useEffect(() => {
         if (walletCtx.connected)
@@ -156,13 +174,14 @@ const useLoginUser = (
 
         reconnect();
     },
-    [walletCtx.connected]);
+    [walletCtx.connected, arweave]);
     
     return new UserConnectionContextState(
         currUser, 
         stakanProgram, 
         stakanState, 
         walletCtx,
+        arweave,
         walletCtx.connected
     );
 };

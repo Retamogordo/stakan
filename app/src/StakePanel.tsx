@@ -1,13 +1,41 @@
 import React from 'react'
 import {TailSpin} from "react-loader-spinner"
+import {NumericNonNegativeInput} from './NumericNonNegativeInput'
 
 class StakePanel extends React.Component {
     props: any;
     loader: any;
+    prevTokenBalance: number;
     constructor(props: any) {
         super(props);
 
         this.props = props;
+        this.prevTokenBalance = this.props.userWalletsStatus.tokenBalance;
+        this.handleStakeChanged = this.handleStakeChanged.bind(this);
+        this.handleStartSessionClick = this.handleStartSessionClick.bind(this);
+    }
+
+    handleStakeChanged(value: number) {
+        const h = this.props.rewardBalance / 2;
+        const s = value;
+        const x0 = this.props.userConnectionCtx?.stakanState?.globalMaxScore;
+        const estimatedMinNewMaxScore = x0 + 1;
+        const estimatedMaxNewMaxScore = x0 + x0;
+        const x1 = estimatedMinNewMaxScore;
+        const x2 = estimatedMaxNewMaxScore;
+
+        // from game_session.rs
+        let rewardMin = h + (s - h) * Math.exp((-s/h * x1*(x1 - x0)/h));
+        let rewardMax = h + (s - h) * Math.exp((-s/h * x2*(x2 - x0)/h));
+
+//        console.log("h: " + h + ", s: " + s);
+        console.log("rewardMin: " + rewardMin + ", rewardMax: " + rewardMax);
+    }
+
+    handleStartSessionClick() {
+        this.prevTokenBalance = this.props.userWalletsStatus.tokenBalance;
+        console.log("-------------------------- token balance: ", this.prevTokenBalance);
+        this.props.onStartSessionClick();
     }
 
     render() {
@@ -15,7 +43,7 @@ class StakePanel extends React.Component {
         this.loader = {
             Component: TailSpin,
             props: {
-              color: "#0ead69",
+              color: "rgba(5, 226, 255, 0.701)",
               height: 40,
               width: 40,
               radius: 1,
@@ -47,7 +75,7 @@ class StakePanel extends React.Component {
                 <div style={{textAlign: 'left', marginLeft: "5%"}}>Arweave provider {
                     props.userWalletsStatus.arweaveProviderConnected
                     ? <span style={{color: 'green'}}>&#10003;</span>
-                    : <span style={{color: 'red'}}>&#10005; try running 'npx arlocal' in terminal</span> 
+                    : <span style={{color: 'red'}}>&#10005; try running 'npx arlocal' in terminal and reload page</span> 
                 }</div>
 
                 <div style={{textAlign: 'left', marginLeft: "5%"}}>Arweave balance {
@@ -85,22 +113,41 @@ class StakePanel extends React.Component {
                         </tr>
                     </tbody>
                 </table>
+                {props.greetWinnerMode 
+                    && this.props.userWalletsStatus.tokenBalance > this.prevTokenBalance
+                ?
+                <div style={{fontSize:'x-large',
+                    height: "5%", width: "100%", margin: "0 auto", clear: "both"}}>
+                    Powerful {props.userConnectionCtx?.user?.username}, you hit record score !    
+                </div>
+                :
                 <div style={{
                         height: "5%", width: "10%", margin: "0 auto", clear: "both"}}>
                     <this.loader.Component {...this.loader.props}/>
                 </div>
+                }
             
-                <div style={{textAlign: 'right', marginRight: "5%"}}>
-                    <input className="left-panel-input" type='button'                          
-                        value={props.userConnectionCtx?.user?.gameSessionAccount 
-                                ? ' Resume ' 
-                                : 'Stake & Start'} 
-                        disabled={
-                            !props.userWalletsStatus.hasWinstonToStoreSession
-                            || props.userWalletsStatus.tokenBalance <= 0 
-                            || this.props.loadingMode}
-                        onClick={this.props.onStartSessionClick}>
-                    </input>
+                <div style={{ marginRight: "5%"}}>
+                    {props.userConnectionCtx?.user?.gameSessionAccount
+                        ?
+                        <input style={{ display: "block", marginLeft: "auto", marginRight: "0"}} type='button'                          
+                                value='    Resume     ' 
+                                    
+                            disabled={
+                                !props.userWalletsStatus.hasWinstonToStoreSession
+                                || props.userWalletsStatus.tokenBalance <= 0 
+                                || this.props.loadingMode}
+                            onClick={this.handleStartSessionClick}>
+                        </input>
+                        : 
+                        <NumericNonNegativeInput
+                            visible={true}
+                            onInputValueChanged={this.handleStakeChanged}
+                            onInput={this.handleStartSessionClick}
+                            buttonText={'Stake & Start'}
+                        />
+                    }
+
                 </div>
                 <div style={{textAlign: 'right', marginRight: "5%"}}>
                     <div className='control-panel-section'>Off-chain</div>
@@ -109,7 +156,7 @@ class StakePanel extends React.Component {
                     </div>
                     <input className="left-panel-input" type='button' 
                         
-                        value='    Free play    ' 
+                        value='   Free play   ' 
                         onClick={this.props.onStartFreePlayClick}>
                     </input>
                 </div>

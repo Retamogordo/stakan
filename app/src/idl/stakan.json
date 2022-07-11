@@ -564,6 +564,10 @@
             "type": "bytes"
           },
           {
+            "name": "lastReward",
+            "type": "u64"
+          },
+          {
             "name": "gameSession",
             "type": {
               "option": "publicKey"

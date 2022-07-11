@@ -119,13 +119,13 @@ before(async () => {
 //  const arweaveStorageAddress = await arweave.wallets.getAddress(arweaveWallet);
 
   user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ", program, 
-    userWallet, arweave, arweaveWallet);
+    userWallet, arweaveWallet);
 //  user = new stakanApi.User("𝖠Β𝒞𝘋𝙴𝓕ĢȞỈ𝕵ꓗʟ𝙼ℕ০𝚸𝗤ՀꓢṰǓⅤ𝔚Ⲭ𝑌𝙕𝘢𝕤", userWallet);
 
   const arweaveWallet2 = await arweave.wallets.generate();
   const arweaveStorageAddress2 = await arweave.wallets.getAddress(arweaveWallet2);
   user2 = new stakanApi.User("superman", program, 
-    userWallet, arweave, arweaveWallet2);
+    userWallet, arweaveWallet2);
 });
 
 after(async () => {
@@ -167,7 +167,7 @@ describe("stakan", () => {
   it("Sign up user", async () => {
     const currUser = user as stakanApi.User;  
     
-    await stakanApi.signUpUser(currUser, stakanState as stakanApi.StakanState);
+    await stakanApi.signUpUser(currUser, stakanState as stakanApi.StakanState, arweave);
 //    await signUpUser(user, stakanState.getMintPublicKey());
     fs.writeFileSync(stakanApi.User.localDir + currUser.username + '_bump.json', JSON.stringify(currUser.bump?.toString()));
     fs.writeFileSync(stakanApi.User.localDir + currUser.username + '_arweave_wallet.json', JSON.stringify(currUser.arweaveWallet));
@@ -196,7 +196,6 @@ describe("stakan", () => {
       = await stakanApi.loginUser(
         (user as stakanApi.User).wallet, 
         stakanState as stakanApi.StakanState, 
-        arweave,
         arweaveWallet,
 //        userAccountBump
       );
@@ -211,7 +210,7 @@ describe("stakan", () => {
   });
 
   it("Check signing OUT user", async () => {
-    await stakanApi.signOutUser(user as stakanApi.User, stakanState)
+    await stakanApi.signOutUser(user as stakanApi.User, stakanState, undefined)
 
     const userAccount = user?.account as anchor.web3.PublicKey;
     const accountInfo 
@@ -230,7 +229,7 @@ describe("stakan", () => {
   it("Repeat signing up user", async () => {
     const currUser = user as stakanApi.User;  
     
-    await stakanApi.signUpUser(currUser, stakanState as stakanApi.StakanState);
+    await stakanApi.signUpUser(currUser, stakanState as stakanApi.StakanState, arweave);
 
     const userAccount = currUser.account as anchor.web3.PublicKey;
     const accountInfo 
@@ -242,7 +241,7 @@ describe("stakan", () => {
   it("Sign up another user with the same wallet (allowed for now)", async () => {
     const currUser = user2 as stakanApi.User;  
     
-    await stakanApi.signUpUser(currUser, stakanState);
+    await stakanApi.signUpUser(currUser, stakanState, arweave);
  //   await signUpUser(user2, stakanState.getMintPublicKey());          
     fs.writeFileSync(stakanApi.User.localDir + currUser.username + '_bump.json', JSON.stringify(currUser.bump?.toString()));
     fs.writeFileSync(stakanApi.User.localDir + currUser.username + '_arweave_wallet.json', JSON.stringify(currUser.arweaveWallet));
@@ -268,7 +267,7 @@ describe("stakan", () => {
   it("Re-create second user after force delete", async () => {
     const currUser = user2 as stakanApi.User;  
     
-    await stakanApi.signUpUser(currUser, stakanState);
+    await stakanApi.signUpUser(currUser, stakanState, arweave);
   });
 
   /*  
@@ -341,7 +340,7 @@ describe("stakan", () => {
 //    const stake = 1;
     const cols = 10;
     const rows = 16;
-    await stakanApi.initGameSession(currUser, stakanState, stake, undefined);
+    await stakanApi.initGameSession(currUser, stakanState, arweave, stake, undefined);
     
     const accountInfo 
       = await provider.connection.getAccountInfo(currUser.gameSessionAccount as anchor.web3.PublicKey);
@@ -412,6 +411,7 @@ describe("stakan", () => {
         level: 3,
         duration: 123,
       },
+      arweave,
       stakanObj,
       undefined);      
 
@@ -438,10 +438,10 @@ describe("stakan", () => {
     console.log("userWallet balance: ", await currUser.getBalance());
     console.log("programWallet balance: ", await provider.connection.getBalance(programWallet.publicKey));
     console.log("userMintAccount balance: ", await currUser.getTokenBalance());
-    let rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
+    let rewardFundsAccountBalance = await stakanState.getRewardFundBalance();
       console.log("reward funds token balance: ", rewardFundsAccountBalance);
   
-    await stakanApi.signOutUser(currUser, stakanState);
+    await stakanApi.signOutUser(currUser, stakanState, undefined);
 
     console.log("after signing user out");
     console.log("userWallet balance: ", await currUser.getBalance());
@@ -449,7 +449,7 @@ describe("stakan", () => {
     
     const userTokenBalance = await currUser.getTokenBalance();
     console.log("user token balance: ", userTokenBalance);
-    rewardFundsAccountBalance = await stakanState.getRewardFundsBalance();
+    rewardFundsAccountBalance = await stakanState.getRewardFundBalance();
     console.log("reward funds token balance: ", rewardFundsAccountBalance);
 //    assert(userTokenBalance, tokenAmount);
 //      await provider.connection.getTokenAccountBalance(user.tokenAccount)); 
