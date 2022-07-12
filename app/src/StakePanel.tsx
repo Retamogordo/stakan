@@ -3,18 +3,27 @@ import {TailSpin} from "react-loader-spinner"
 import {NumericNonNegativeInput} from './NumericNonNegativeInput'
 import { StakanSession } from './StakanControls';
 
-class StakePanel extends React.Component {
+type StakePanelState = {
+    prevTokenBalance: any,
+    estimatedReward: any,
+}
+
+class StakePanel extends React.Component<{}, StakePanelState> {
     props: any;
     loader: any;
-    prevTokenBalance: number;
-    estimatedReward: any;
+//    prevTokenBalance: number;
+//    estimatedReward: any;
 
     constructor(props: any) {
         super(props);
 
         this.props = props;
-        this.prevTokenBalance = this.props.userWalletsStatus.tokenBalance;
-        this.estimatedReward = undefined;
+        this.state = {
+            prevTokenBalance: props.userWalletsStatus.tokenBalance,
+            estimatedReward: undefined
+        }
+//        this.prevTokenBalance = this.props.userWalletsStatus.tokenBalance;
+//        this.estimatedReward = undefined;
         this.handleStakeChanged = this.handleStakeChanged.bind(this);
         this.handleStartSessionClick = this.handleStartSessionClick.bind(this);
         this.handleResumeSessionClick = this.handleResumeSessionClick.bind(this);
@@ -22,7 +31,7 @@ class StakePanel extends React.Component {
 
     handleStakeChanged(value: number) {
         if (value <= 0) {
-            this.estimatedReward = undefined;
+            this.setState( {estimatedReward: undefined});
             return;
         }
         const h = this.props.rewardBalance / 2;
@@ -41,16 +50,21 @@ class StakePanel extends React.Component {
          +  ", x2: " + x2.toString());
          console.log("h: " + h.toString() + ", s: " + s.toString());
 
-        this.estimatedReward = { min: rewardMin, max: rewardMax } ;
+        this.setState( {estimatedReward: { min: rewardMin, max: rewardMax } });
 
 //        console.log("h: " + h + ", s: " + s);
         console.log("rewardMin: " + rewardMin.toString() + ", rewardMax: " + rewardMax.toString());
-        console.log(this.estimatedReward)
+        console.log("state: ", this.state)
     }
 
     handleStartSessionClick(stakeValue: number) {
-        this.prevTokenBalance = this.props.userWalletsStatus.tokenBalance;
-        this.estimatedReward = undefined;
+    //    this.prevTokenBalance = this.props.userWalletsStatus.tokenBalance;
+    //    this.estimatedReward = undefined;
+
+        this.setState( {
+            prevTokenBalance: this.props.userWalletsStatus.tokenBalance,
+            estimatedReward: undefined 
+        });
 //        console.log("-------------------------- token balance: ", this.prevTokenBalance);
         this.props.onStartSessionClick(stakeValue);
     }
@@ -134,19 +148,25 @@ class StakePanel extends React.Component {
                         </tr>
                     </tbody>
                 </table>
-                {this.estimatedReward
+                {this.state.estimatedReward !== undefined
                 ?
-                <div style={{fontSize:'x-large',
+                <div style={{fontSize:'large',
                     height: "5%", width: "100%", margin: "0 auto", clear: "both"}}>
-                    Estimated  {this.estimatedReward.min} reward {this.estimatedReward.max} 
+                      { this.state.estimatedReward.min < this.state.estimatedReward.max
+                        ?
+                        this.state.estimatedReward.min  +' ≤ estimated reward ≤ ' + this.state.estimatedReward.max
+                        :
+                        this.state.estimatedReward.min  +' ≤ estimated reward'
+                    } 
                 </div>
                 :
                 props.greetWinnerMode 
-                    && this.props.userWalletsStatus.tokenBalance > this.prevTokenBalance
+                    && this.props.userWalletsStatus.tokenBalance > this.state.prevTokenBalance
                 ?
-                <div style={{fontSize:'x-large',
+                <div style={{fontSize:'x-large', color: "yellow",
                     height: "5%", width: "100%", margin: "0 auto", clear: "both"}}>
-                    Powerful {props.userConnectionCtx?.user?.username}, you hit record score !    
+                    <span>Powerful {props.userConnectionCtx?.user?.username}, you hit record score !</span>     
+                    <span>{this.props.userWalletsStatus.tokenBalance - this.state.prevTokenBalance} added to your tokens</span>
                 </div>
                 :
                 <div style={{

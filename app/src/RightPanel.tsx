@@ -101,27 +101,6 @@ export const RightPanel = (props: any) => {
                     })
                 }
             })
-/*
-        stakanState?.getRewardFundBalance()
-          .then( (balance: web3.RpcResponseAndContext<web3.TokenAmount>) => {
-            setRewardBalance(balance?.value.uiAmount ? balance?.value.uiAmount : 0)
-          });
-        
-        if (stakanState) {
-            stakanState.championAccount && stakanApi.getUserFromAccount(stakanState.championAccount, stakanState)
-                .then(acc => {
-                    setChampionAccount(acc ? acc.username : null)
-                })     
-    
-            stakanApi.queryActiveUsers(stakanState)
-            .then( users => {
-                setActiveUsers( 
-                  users.map(([_accPubkey, userAccount]) => 
-                    (<li key={userAccount['username']}>{userAccount['username']}</li>)
-                  )
-                )
-            })
-        }*/
     }    
 
     useEffect(() => {
@@ -184,6 +163,7 @@ export const RightPanel = (props: any) => {
                 <div className="title-div">
                     Onchain Stored Sessions 
                 </div>
+                <div style={{overflowY: 'auto'}}>
                 <table className="stored-sessions-table">
                     <thead>
                         <tr>
@@ -195,6 +175,8 @@ export const RightPanel = (props: any) => {
                         {archiveRows()}
                     </tbody>
                 </table>
+
+                </div>
             </div>
         </div>    
     )

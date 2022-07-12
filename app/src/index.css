@@ -27,6 +27,7 @@ code {
 }
 
 .main-area-wrapper {
+  position: absolute;
   flex: 1 0 auto;
   display: flex;
   flex-direction: row;
@@ -50,6 +51,7 @@ code {
   text-align: left;
   background: hsl(0, 0%, 17%);
   color: hsl(238, 68%, 79%);
+  overflow-y:scroll;
 }
 
 .left-panel > div > .numeric-input {
@@ -151,7 +153,6 @@ input[type=button]:hover:enabled {
 
 
 .stakan-wrapper {
-  position: relative;
   height: 100%;
   width: 50%;
   flex: 2 0 auto;
@@ -180,10 +181,11 @@ input[type=button]:hover:enabled {
 .control-panel {
   position: absolute;
   top: 0px;
-  left: 0px;
-  width: 100%;
+  left: 25%;
+  width: 50%;
   height: 100%; 
   background: 'rgba(20, 19, 19, 0.5)';
+  overflow-y:hidden;
 }
 .control-panel > .header {
   margin-top: 30%;
@@ -231,6 +233,7 @@ input[type=button]:hover:enabled {
   border-color: hsl(0, 0%, 30%);
   color: rgba(5, 226, 255, 0.701);
   font-family: 'IBM Plex Mono';
+  overflow-y:scroll;
 }
 
 .right-panel-active-users {
@@ -251,6 +254,7 @@ input[type=button]:hover:enabled {
 }
 
 .output_terminal_container  {
+  position: absolute;
   height: 15%;
   width: 100%;
   bottom: 0px;
@@ -258,7 +262,7 @@ input[type=button]:hover:enabled {
   color:rgb(75, 210, 25);
   background-color: hsl(0, 0%, 0%);
   border-color: hsl(0, 0%, 30%);
-  border-top-style: hidden;
+  border-top-style: solid;
   border-width: 1px;
   white-space: pre-line;
   text-align: left;
