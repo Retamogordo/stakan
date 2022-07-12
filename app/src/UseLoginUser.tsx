@@ -46,14 +46,14 @@ const useLoginUser = (
     const anchorWallet = useAnchorWallet();
 
     const reconnect = async () => {
-        if (walletCtx.publicKey && walletCtx.connected && anchorWallet) {
-            
-            const connection = new Connection(anchorConnection.connection.rpcEndpoint, 'confirmed');
-            const opts: ConfirmOptions = {
-                commitment: 'confirmed',
-                preflightCommitment: "max",
-                skipPreflight: false
-            };
+        const connection = new Connection(anchorConnection.connection.rpcEndpoint, 'confirmed');
+        const opts: ConfirmOptions = {
+            commitment: 'confirmed',
+            preflightCommitment: "max",
+            skipPreflight: false
+        };
+
+        if (anchorWallet) {
             const provider = new Provider(connection, anchorWallet, opts);
             
             const program = new Program<Stakan>(
@@ -62,16 +62,7 @@ const useLoginUser = (
                 provider
             );
             setStakanProgram(program);        
-/*
-            const arw = Arweave.init({
-                host: 'localhost',
-                port: 1984,
-                protocol: 'http',
-                timeout: 20000,
-                logging: false,
-            });
 
-*/
             logCtx.log("retrieving stakan global state account...")
             
             console.log("retrieving stakan global state account...")
@@ -80,23 +71,10 @@ const useLoginUser = (
             logCtx.logLn(state 
                 ? "done, pubkey: " + state?.pubKey.toBase58() : "failed");
 
-//            await stakanApi.setUpStakan(program);
-//            if (state)
-//                await stakanApi.closeGlobalStakanAccountForDebug(state)
-
             setStakanState(state ? state : null);
-//            if (state) {
-//            console.log("Arweave ", arw)
-            
-//            setArweave(arw);
-/*            } else {
-                setArweave(null);
-            }*/
-        } else {
-            setStakanProgram(null);
-            setStakanState(null);
+        }
+        if (!(walletCtx.publicKey && walletCtx.connected) ) {
             setCurrUser(null);
-//            setArweave(null);
         }
     }
 

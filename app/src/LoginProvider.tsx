@@ -114,7 +114,7 @@ const LoginProvider = (props: any) => {
             </div> */}
             </div>
             :
-                !userConnectionCtx.stakanState
+                !userConnectionCtx.stakanState && userConnectionCtx.connected
                 ?
                 <div style={{marginLeft: "5%", color: "red"}}>
                     Fatal: Stakan Global State not present

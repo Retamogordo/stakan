@@ -197,7 +197,7 @@ export function StakanControls(props: any) {
       }      
       setEntryDelay();
 
-      console.log("handleEntryNewPiece");
+//      console.log("handleEntryNewPiece");
       props.onSessionUpdated(session, stakanRef.current?.tiles);
     }
   
@@ -234,6 +234,10 @@ export function StakanControls(props: any) {
       })
     }
   
+    const handletakanWidthBiggerThanHalf = (bigger: boolean) => {
+      props.onStakanWidthBiggerThanHalf(bigger);
+    }
+
     useEffect(() => {
       window.addEventListener('resize', handleResize);
 
@@ -324,7 +328,7 @@ export function StakanControls(props: any) {
           evEntryNewPiece={handleEntryNewPiece}
           willRender={() => setChildWillRender(prev => prev + 1)}
           onFull={handleGameOver}
-          onStakanWidthBiggerThanHalf={props.onStakanWidthBiggerThanHalf}
+          onStakanWidthBiggerThanHalf={handletakanWidthBiggerThanHalf}
         />
     )
 }

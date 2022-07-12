@@ -188,9 +188,13 @@ export const UserWalletsPanel = (props: any) => {
                             </input>
                             : userWalletsStatus.arweaveWalletConnected
                                 ? userWalletsStatus.arweaveProviderConnected 
+                                    || !userConnectionCtx?.walletContext.connected
                                     ? null 
                                     : <div className='error-msg-div'>Arweave provider is disconnected. Is arlocal running ?</div>
-                                : <div className='error-msg-div'>Arweave wallet is disconnected. Is ArConnect installed ?</div>
+                                : userConnectionCtx?.walletContext.connected
+                                    ?
+                                    <div className='error-msg-div'>Arweave wallet is disconnected. Is ArConnect installed ?</div>
+                                    : null
                         }
                         </div>
                     </div>

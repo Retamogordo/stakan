@@ -89,7 +89,7 @@ export function setupStakan(rows: number, cols: number) {
     return false
   }
     
-  export function clearRows(stakan: any, yOffset: number) {
+  export function clearRows(stakan: any, yOffset: number): [] {
     let y = Math.max(yOffset, 1);
     let rowsToClear: any = [];
   
@@ -109,6 +109,6 @@ export function setupStakan(rows: number, cols: number) {
         }
       }
     }
-    return rowsToClear.length;
+    return rowsToClear;
   }
     

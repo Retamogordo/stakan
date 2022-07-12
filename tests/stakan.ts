@@ -3,8 +3,6 @@ import { Program } from "@project-serum/anchor";
 import * as spl from '@solana/spl-token';
 import fs from 'fs';
 
-//import * as spl from '@solana/spl-token';
-//import { Connection } from "@solana/web3.js";
 import * as accountsSchema from "../app/src/accountsSchema";
 import * as stakanApi from "../app/src/stakanSolanaApi";
 import * as stakanLogic from "../app/src/stakanLogic";
@@ -13,14 +11,10 @@ import { Stakan } from "../target/types/stakan";
 import Arweave from "arweave";
 import ArLocal from 'arlocal';
 
-//import { localNetProgram } from "../app/src/confProgram"
 //import ArLocal from 'arlocal';
 const axios = require('axios');
 
-import Bip39 from 'bip39';
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
-//import {setupStakan} from '../app/src/stakanLogic'
-//import TestWeave from "testweave-sdk";
 const stakanMatrix = Array.from(
   { length: 10 }, 
   (_, column) => {   

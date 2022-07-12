@@ -81,25 +81,27 @@ export const RightPanel = (props: any) => {
             .then(onChainBalance => {
                 const balance = onChainBalance?.value.uiAmount ? onChainBalance?.value.uiAmount : 0
                 setRewardBalance(balance)
-
+//                return props.userConnectionCtx.stakanState
+            })
+            .then(() => {
 //                console.log("reloaded balance: ", rewardBalance);
                 const stakanState = props.userConnectionCtx?.stakanState as stakanApi.StakanState;
-
-                if (stakanState) {
-                    stakanState.championAccount && stakanApi.getUserFromAccount(stakanState.championAccount, stakanState)
-                        .then(acc => {
-                            setChampionAccount(acc ? acc.username : null)
-                        })     
-            
-                    stakanApi.queryActiveUsers(stakanState)
-                    .then( users => {
-                        setActiveUsers( 
-                          users.map(([_accPubkey, userAccount]) => 
-                            (<li key={userAccount['username']}>{userAccount['username']}</li>)
-                          )
-                        )
-                    })
-                }
+//                if (stakanState.championAccount) 
+                    return stakanState.championAccount && stakanApi.getUserFromAccount(stakanState.championAccount, stakanState)
+            })
+            .then(acc => {
+                setChampionAccount(acc ? acc.username : null)
+            })
+            .then(() => {
+                const stakanState = props.userConnectionCtx?.stakanState as stakanApi.StakanState;
+                return stakanApi.queryActiveUsers(stakanState)
+            })        
+            .then( users => {
+                setActiveUsers( 
+                  users.map(([_accPubkey, userAccount]) => 
+                    (<li key={userAccount['username']}>{userAccount['username']}</li>)
+                  )
+                )
             })
     }    
 
@@ -155,7 +157,7 @@ export const RightPanel = (props: any) => {
                     <div className="title-div">
                         Active Users
                     </div>
-                    <ul style={{textAlign: "left"}}>{activeUsers}</ul>
+                    <ul style={{textAlign: "left", color: "yellow"}}>{activeUsers}</ul>
                 </div>
             </div>
             

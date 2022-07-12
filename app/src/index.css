@@ -20,6 +20,7 @@ code {
   background: rgb(231, 3, 239);
   width: 100%; 
   height: 100%;
+  overflow-x: hidden;
 }
 
 .error-msg-div {
@@ -181,7 +182,6 @@ input[type=button]:hover:enabled {
 .control-panel {
   position: absolute;
   top: 0px;
-  left: 25%;
   width: 50%;
   height: 100%; 
   background: 'rgba(20, 19, 19, 0.5)';
@@ -197,6 +197,7 @@ input[type=button]:hover:enabled {
 
 .control-panel-main {
   position: absolute;
+  left:0;
   width: 100%;
   height: 90%; 
   top: 5%;
@@ -246,11 +247,6 @@ input[type=button]:hover:enabled {
   width: 100%;
   height: 50%;
   flex: 1 0 auto;
-}
-
-.RecordPanel {
-  height: 80%;
-  width: 100%;
 }
 
 .output_terminal_container  {

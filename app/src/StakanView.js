@@ -151,7 +151,7 @@ class StakanView extends React.Component {
     if (!isFull(this.tiles)) {    
       const linesCleared = clearRows(this.tiles, this.pieceYOffset);
       
-      this.props.evEntryNewPiece(linesCleared);
+      this.props.evEntryNewPiece(linesCleared.length);
     } else {
       this.props.onFull()
     }
