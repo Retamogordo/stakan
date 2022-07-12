@@ -94,7 +94,7 @@ export async function queryStakanAccount(
         new web3.PublicKey(Buffer.from(stakanAccountData['escrow_account'])),
         new web3.PublicKey(Buffer.from(stakanAccountData['reward_funds_account'])),
         new web3.PublicKey(Buffer.from(stakanAccountData['mint_token'])),
-        stakanAccountData['global_max_score'],
+        (stakanAccountData['global_max_score'] as BN).toNumber(),
         stakanAccountData['champion_account_opt_variant'] === 1
         ?
           new web3.PublicKey(Buffer.from(stakanAccountData['champion_account']))
@@ -329,7 +329,7 @@ export class User {
       this.gameSessionAccountBump = gameSessionAccountBump;
     }
 
-    async getGameSessionInfo(tiles_cols: number, tiles_rows: number): Promise<accountsSchema.GameSessionAccount | undefined> {
+    async getGameSessionInfo(): Promise<accountsSchema.GameSessionAccount | undefined> {
       console.log("this.gameSessionAccount: ", this.gameSessionAccount);
 
       const accountInfo 
@@ -685,14 +685,15 @@ export async function initGameSession(
     stakanTiles: any,
     logCtx: LogTerminalContext | undefined,
   ) {
+/*
     const gameSessionInfo 
-      = await user.getGameSessionInfo(stakanTiles.colsWithBorder, stakanTiles.rowsWithBorder);
+      = await user.getGameSessionInfo();
   
     if (!gameSessionInfo) {
       logCtx?.logLn('could not retrieve session account');
       throw 'Cannot retrieve Session Info';
     }
-    
+*/    
     logCtx?.log('saving session data to arweave...');
     
     const dateTime = new Date();
@@ -727,6 +728,45 @@ export async function initGameSession(
         .finishGameSession(
           txid as string,
           new BN(session.score),
+        )
+        .accounts({
+            stakanStateAccount: stakanState.stateAccount,
+            userAccount: user.account,
+            userTokenAccount: user.tokenAccount,
+            gameSessionAccount: user.gameSessionAccount,
+            userWallet: user.wallet.publicKey,
+            rewardFundsAccount: stakanState.rewardFundsAccount,
+    
+            tokenProgram: spl.TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+        })
+        .signers([])
+        .rpc();
+      
+      logCtx?.logLn(txId ? 'done, tx id '+txId : 'failed');
+      
+      await user.reloadFromChain(stakanState, user.username);
+    } catch(e) {
+      logCtx?.logLn('failed ' + e);
+
+      throw e;
+    }
+  }
+
+  export async function cancelBrokenSession(
+    user: User,
+    stakanState: StakanState,
+    logCtx: LogTerminalContext | undefined,
+  ) {
+    if (!user.account || !user.tokenAccount || !user.gameSessionAccount)
+      throw 'Invalid User state';
+
+    logCtx?.log('sending session finalizing transaction...');
+    try {
+      const txId = await stakanState.program.methods
+        .finishGameSession(
+          '',
+          new BN(0),
         )
         .accounts({
             stakanStateAccount: stakanState.stateAccount,

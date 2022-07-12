@@ -73,7 +73,7 @@ class StakanView extends React.Component {
       this.currentPiece = null; 
       this.canvasRef = React.createRef();
 
-      console.log("constructor: ", props.sessionref?.tiles);
+//      console.log("constructor: ", props.sessionref?.tiles);
 
 //      this.tiles = setupStakan(props.rows, props.cols);
       this.tiles = props.sessionref?.tiles || setupStakan(props.rows, props.cols);

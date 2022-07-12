@@ -119,7 +119,7 @@ pub fn init(
     game_session_account.id = GameSession::ID.as_bytes().to_vec();
     game_session_account.user_account = ctx.accounts.user_account.key();
     game_session_account.stake = stake;
-    ctx.accounts.user_account.user.last_reward = 0;
+//    ctx.accounts.user_account.user.last_reward = 0;
 
     ctx.accounts.user_account.set_game_session(Some(game_session_account.key()));
 
@@ -176,7 +176,7 @@ pub fn finish(ctx: Context<FinishGameSession>,
                     reward,
                 )?;
 
-                ctx.accounts.user_account.user.last_reward = reward;
+//                ctx.accounts.user_account.user.last_reward = reward;
             }
         } else {
             let user = &ctx.accounts.user_account.user;

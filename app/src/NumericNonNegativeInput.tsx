@@ -29,6 +29,7 @@ export const NumericNonNegativeInput = (props: any) => {
                 min='0'
                 max={props.max}
                 value={props.value} 
+                disabled={props.disabled}
                 onChange={handleInputChange}
                 ref={inputRef}
             >                    
@@ -36,7 +37,7 @@ export const NumericNonNegativeInput = (props: any) => {
             <span>{inputValue > 0 ? props.fieldLabel : ''}</span>
             <div>
                 <input type='button' ref={buttonRef}
-                    disabled={!inputValue || inputValue <= 0}
+                    disabled={props.disabled || !inputValue || inputValue <= 0}
                     value={props.buttonText}
                     onClick={handleButtonClick}
                 >

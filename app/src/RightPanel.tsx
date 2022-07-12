@@ -15,11 +15,12 @@ export const RightPanel = (props: any) => {
 
     const getSessionsArchive = () => {
         const user = props.userConnectionCtx?.user;
+        const arweave = props.userConnectionCtx?.arweave;
 
-        if (user?.arweave && user?.account) { 
+        if (arweave && user?.account) { 
             props.logCtx.log("retrieving sessions archive...");
 
-            GameSessionArchive.get(user?.arweave, user?.account, 100)
+            GameSessionArchive.get(arweave, user?.account, 100)
                 .then(archives => {
                     props.logCtx.logLn("done, retrieved " + archives.length + " sessions");
                     
@@ -77,8 +78,9 @@ export const RightPanel = (props: any) => {
             .then(stakanState => {
                 return stakanState.getRewardFundBalance();
             })
-            .then(balance => {
-                setRewardBalance(balance?.value.uiAmount ? balance?.value.uiAmount : 0)
+            .then(onChainBalance => {
+                const balance = onChainBalance?.value.uiAmount ? onChainBalance?.value.uiAmount : 0
+                setRewardBalance(balance)
 
 //                console.log("reloaded balance: ", rewardBalance);
                 const stakanState = props.userConnectionCtx?.stakanState as stakanApi.StakanState;
@@ -130,7 +132,7 @@ export const RightPanel = (props: any) => {
         getSessionsArchive();
 
         return () => {
-//            console.log("clear interval");
+            console.log("clear interval");
             clearInterval(pollingTimer); 
         }     
     },
@@ -146,6 +148,7 @@ export const RightPanel = (props: any) => {
     [props.update]);
 
     useEffect(() => {
+        console.log("onGlobalStateRefreshed")
         props.onGlobalStateRefreshed(rewardBalance);
     },
     [rewardBalance]);
@@ -182,9 +185,12 @@ export const RightPanel = (props: any) => {
                     Onchain Stored Sessions 
                 </div>
                 <table className="stored-sessions-table">
-                    <th scope="col">Score</th>
-                    <th scope="col">When</th>
-
+                    <thead>
+                        <tr>
+                            <th scope="col">Score</th>
+                            <th scope="col">When</th>
+                        </tr>
+                    </thead>
                     <tbody style={{ textAlign: "left"}} className='session-archive-list'>
                         {archiveRows()}
                     </tbody>

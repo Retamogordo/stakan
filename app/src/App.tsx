@@ -11,7 +11,6 @@ import { LogTerminal } from './LogTerminal'
 import { UseLogTerminal } from './UseLogTerminal';
 import { UserWalletsPanel, UserWalletsStatus } from './UserWalletsPanel';
 import {GameSessionArchive} from './accountsSchema'
-//import {BN} from "@project-serum/anchor"
 
 function App() {  
   const [userConnectionCtx, setUserConnectionCtx] = useState<UserConnectionContextState | null>(null);
@@ -24,10 +23,10 @@ function App() {
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
   const [loadingMode, setLoadingMode] = useState(false);
   const [greetWinnerMode, setGreetWinnerMode] = useState(false);
+  const [resumedSession, setResumedSession] = useState<StakanSession | null>(null);
   const [archivedSession, setArchivedSession] = useState<GameSessionArchive | null>(null);
   const [stakanWidthBiggerThanHalf, setStakanWidthBiggerThanHalf] = useState(false);
   const [rewardBalance, setRewardBalance] = useState(0);
-  //  const [pollTimer, setPollTimer] = useState<NodeJS.Timer | null>(null);
   
   const logCtx = UseLogTerminal({log: ''}); 
 
@@ -37,7 +36,7 @@ function App() {
 
   const handleBeforeSessionStarted = async (stakeValue: number) => {
     try {
-      console.log("Srart session, tiles: ", tiles);
+      console.log("Srart session, stake: ", stakeValue);
 
       setGreetWinnerMode(false);
 
@@ -66,10 +65,29 @@ function App() {
             logCtx,
           );
           await user?.reloadFromChain(stakanState, user?.username)
-        }
-//        await updateUserWalletsStatus();
-        setSignalUserWalletsStatus(true);
 
+          setResumedSession(null);
+
+        } else {
+          const sessionJSON = localStorage.getItem("stakanSession");
+          if (!sessionJSON) {
+            // cannot resume interrupted session -> need to
+            // call finishGameSession to charge stake and unlock UI
+            logCtx.log("cannot load session from local storage, cancelling...")
+            try {
+              await stakanApi.cancelBrokenSession(user, stakanState, logCtx);
+            } catch {
+              logCtx.logLn("failed, stale account " +  
+                user.gameSessionAccount.toBase58() + "still hangs on-chain");
+            }
+            logCtx.logLn("done");
+          } else {
+            const storedSessionShallow = StakanSession.fromJson(sessionJSON);
+
+            setResumedSession(storedSessionShallow);
+          }
+        }
+        setSignalUserWalletsStatus(true);
         setSignalStartSession(true);
       }
     } catch(e) {
@@ -79,12 +97,14 @@ function App() {
   }
 
   const handleSessionStarted = async (session: StakanSession) => {
-
     if (!sessionActive.active) // check if this session is already started as free session
       setSessionActive({active: true, staked: true});
   }
   
   const handleSessionUpdated = async (session: StakanSession, tiles: any) => {
+    const sessionJson = JSON.stringify(session);
+
+    localStorage.setItem("stakanSession", sessionJson);
   }
 
   const handleGameOver = async (session: StakanSession, tiles: any) => {
@@ -223,6 +243,7 @@ function App() {
               cols={cols}
               rows={rows}
               startSession={signalStartSession}
+              resumedSession={resumedSession}
               archivedSession={archivedSession}
               onSessionStarted={handleSessionStarted}
               onSessionUpdated={handleSessionUpdated}

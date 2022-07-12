@@ -3,6 +3,7 @@ const BOTTOM_THICKNESS = 1;
 const SIDE_THICKNESS = 3;
 const TOP_OFFSET = 4;
 
+//export class tilesViewObject
 export function setupStakan(rows: number, cols: number) {
     const stakanMatrix 
       = Array.from(

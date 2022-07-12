@@ -28,6 +28,17 @@ export class StakanSession {
     this.tiles = setupStakan(rows, cols);
     this.updateScore = this.updateScore.bind(this);
   }
+
+  static fromJson(json: string): StakanSession {
+    let parsedSession: StakanSession 
+      = Object.assign(new StakanSession(0, 0), JSON.parse(json));
+//    console.log(parsedSession);
+    const tmpTiles = parsedSession.tiles.tiles;
+    parsedSession.tiles = setupStakan(parsedSession.tiles.rows, parsedSession.tiles.cols);
+    parsedSession.tiles.tiles = tmpTiles;
+    parsedSession.updateScore = parsedSession.updateScore.bind(parsedSession);
+    return parsedSession;
+  } 
   
   // rules more or less comply with those from https://tetris.fandom.com/wiki/Tetris_Worlds
   updateScore(linesCleared: number) {
@@ -185,6 +196,9 @@ export function StakanControls(props: any) {
         }
       }      
       setEntryDelay();
+
+      console.log("handleEntryNewPiece");
+      props.onSessionUpdated(session, stakanRef.current?.tiles);
     }
   
     const handleGameOver = () => {
@@ -211,8 +225,9 @@ export function StakanControls(props: any) {
 
         window.addEventListener('keydown', handleKeyDown)
   
-        let session = new StakanSession(props.rows, props.cols); 
-//        session.tiles = setupStakan(props.rows, props.cols);     
+        let session = props.resumedSession ? props.resumedSession : new StakanSession(props.rows, props.cols); 
+//        session.tiles = setupStakan(props.rows, props.cols);   
+        console.log(session)
 
         props.onSessionStarted(session);
         return session;
@@ -231,7 +246,6 @@ export function StakanControls(props: any) {
     useEffect(() => {
       moveDelayRef.current = moveDownTick;  
     });
-
 
     useEffect(() => {
       if (props.startSession) startSession()
@@ -267,8 +281,6 @@ export function StakanControls(props: any) {
         if (session.active) {
           console.log("useEffect->setEntryDelay");
           setEntryDelay();
-
-          props.onSessionUpdated(session, stakanRef.current?.tiles);
         }
         stakanRef.current?.focus();
       }
