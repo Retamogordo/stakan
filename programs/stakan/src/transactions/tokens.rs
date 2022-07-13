@@ -115,27 +115,22 @@ pub fn purchase(
     Ok(())
 }
 
-pub(crate) fn user_sell_tokens<'info>(
-    token_amount: u64,
-    user_account: &Account<'info, crate::transactions::user::User>,
-    user_token_account: &Account<'info, TokenAccount>,
-    reward_funds_account: &Account<'info, TokenAccount>,
-    stakan_escrow_account: &mut AccountInfo<'info>,
-    user_wallet: &AccountInfo<'info>,
-    token_program: &Program<'info, Token>,
-    rent: &Sysvar<'info, Rent>,
+pub fn sell(
+    ctx: Context<SellTokens>,
+    token_amount: u64, 
 ) -> Result<()> {
-    let user_inner = &user_account.user;
+
+    let user_inner = &ctx.accounts.user_account.user;
     let signer_seeds = signer_seeds!(user_inner);
 
     anchor_spl::token::transfer(
         CpiContext::new_with_signer(
-            token_program.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
 
             anchor_spl::token::Transfer {
-                from: user_token_account.to_account_info(),
-                to: reward_funds_account.to_account_info(),
-                authority: user_account.to_account_info(),
+                from: ctx.accounts.user_token_account.to_account_info(),
+                to: ctx.accounts.reward_funds_account.to_account_info(),
+                authority: ctx.accounts.user_account.to_account_info(),
             },
             &[&signer_seeds]
         ), 
@@ -143,37 +138,20 @@ pub(crate) fn user_sell_tokens<'info>(
     )?;
 
     let lamports_delta = token_amount * StakanGlobalState::LAMPORTS_PER_STAKAN_TOKEN;
-    let escrow_balance_after = stakan_escrow_account.lamports()
+    let escrow_balance_after = ctx.accounts.stakan_escrow_account.lamports()
         .checked_sub(lamports_delta)
         .ok_or(crate::errors::StakanError::NegativeBalance)?;
 
-    if !rent.is_exempt(escrow_balance_after, stakan_escrow_account.data_len()) {
+    if !ctx.accounts.rent.is_exempt(escrow_balance_after, ctx.accounts.stakan_escrow_account.data_len()) {
         // should never happen
         return Err(crate::errors::StakanError::GlobalEscrowAccountDepleted.into());
     }    
 
-    **stakan_escrow_account.lamports.borrow_mut() = escrow_balance_after;
-    **user_wallet.lamports.borrow_mut() =
-        user_wallet.lamports()
+    **ctx.accounts.stakan_escrow_account.lamports.borrow_mut() = escrow_balance_after;
+    **ctx.accounts.user_wallet.lamports.borrow_mut() =
+    ctx.accounts.user_wallet.lamports()
             .checked_add(lamports_delta)
             .ok_or(crate::errors::StakanError::BalanceOverflow)?;
 
     Ok(())
-}
-
-pub fn sell(
-    ctx: Context<SellTokens>,
-    token_amount: u64, 
-) -> Result<()> {
-
-    user_sell_tokens(
-        token_amount,
-        &ctx.accounts.user_account,
-        &ctx.accounts.user_token_account,
-        &ctx.accounts.reward_funds_account,
-        &mut ctx.accounts.stakan_escrow_account,
-        &ctx.accounts.user_wallet,
-        &ctx.accounts.token_program,
-        &ctx.accounts.rent,
-    )
 }

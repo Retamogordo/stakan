@@ -128,7 +128,6 @@ class Assignable extends Function {
               ['saved_game_sessions', 'u64'],
               ['token_account', [32]],
               ['arweave_storage_address', 'String'],
-//              ['last_reward', 'u64'],
               ['game_session_opt_variant', 'u8'], 
             ] 
           }
@@ -148,7 +147,6 @@ class Assignable extends Function {
               ['saved_game_sessions', 'u64'],
               ['token_account', [32]],
               ['arweave_storage_address', 'String'],
-//              ['last_reward', 'u64'],
               ['game_session_opt_variant', 'u8'], 
               ['game_session', [32]] 
             ] 
@@ -156,18 +154,14 @@ class Assignable extends Function {
         ]
       ]);
 
-      const [data_size, inner_buffer] = UserAccountWrapped.deserialize(buffer);
+      const [_data_size, inner_buffer] = UserAccountWrapped.deserialize(buffer);
   //    console.log("----------- DATA SIZE: ", data_size);
       let data;
       try { 
         data = deserialize(schemaWithoutGameSession, UserAccount, inner_buffer);
       } catch {
-//      if (data['game_session_opt_variant'] !== 0) { // not None
           data = deserialize(schemaWithGameSession, UserAccount, inner_buffer);
-//      }
       }
-      //    let data = deserialize(schema, UserAccount, buffer.slice(8+2, buffer.length));
-  //    console.log("----------- DATA: ", data);
       return data;
     }
   }

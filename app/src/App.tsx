@@ -1,6 +1,6 @@
 
-import React, { useState, useRef, useEffect, useCallback, useMemo, SetStateAction } from 'react'
 import './App.css';
+import { useState, useEffect, } from 'react'
 import {StakanControls, StakanSession} from './StakanControls';
 import StakePanel from './StakePanel'
 import { RightPanel } from './RightPanel';
@@ -23,6 +23,10 @@ function App() {
   const [userWalletsStatus, setUserWalletsStatus] = useState<UserWalletsStatus>(new UserWalletsStatus())
   const [loadingMode, setLoadingMode] = useState(false);
   const [greetWinnerMode, setGreetWinnerMode] = useState(false);
+  
+  const [signingOutMode, setSigningOutMode] = useState(false);
+  const [proceedSigningOut, setProceedSigningOut] = useState(false);
+  
   const [resumedSession, setResumedSession] = useState<StakanSession | null>(null);
   const [archivedSession, setArchivedSession] = useState<GameSessionArchive | null>(null);
   const [stakanWidthBiggerThanHalf, setStakanWidthBiggerThanHalf] = useState(false);
@@ -179,12 +183,24 @@ function App() {
   const handleToggleLoadingMode = (started: boolean) => {
     setLoadingMode(started);
   }
+  const handleSigningOut = (started: boolean) => {
+    setSigningOutMode(started);
+  }
+  
+  const handleCancelSigningOut = () => {
+    setSigningOutMode(false);
+  }
 
+  const handleProceedSigningOut = () => {
+    setLoadingMode(true);
+    setProceedSigningOut(true);
+    setSigningOutMode(false);
+  }
+  
   useEffect(() => {
   }, [userConnectionCtx?.stakanState]);
 
   useEffect(() => {
-    const user = userConnectionCtx?.user;
     setSignalUserWalletsStatus(true);
     setSignalUpdateRightPanel(true);
   }, [userConnectionCtx?.user]);
@@ -212,17 +228,24 @@ function App() {
 //      setArchivedSession(null);
   }, [archivedSession]);
 
+  useEffect(() => {
+    setProceedSigningOut(false);
+  }, [proceedSigningOut]);
+
   return (
     <div className="App">
       <div className='app-wrapper'>
         <div className="main-area-wrapper">
           <UserWalletsPanel 
             update={signalUserWalletsStatus} 
+            disabled={sessionActive.active || loadingMode || signingOutMode}
             logCtx={logCtx}
             cols={tiles.colsWithBorder}
             rows={tiles.rowsWithBorder}
             onUserConnectionChanged={handleUserConnectionChanged}
             onUserWalletsStatusChanged={handleUserWalletsStatusChanged}
+            onSigningOut={handleSigningOut}
+            proceedSigningOut={proceedSigningOut}
             onDeleteUserClick={handleDeleteUser}
             toggleLoadingMode={handleToggleLoadingMode}
           />
@@ -234,9 +257,12 @@ function App() {
               userWalletsStatus={userWalletsStatus}
               loadingMode={loadingMode}
               greetWinnerMode={greetWinnerMode}
+              signingOutMode={signingOutMode}
               rewardBalance={rewardBalance}
               onStartSessionClick={handleBeforeSessionStarted}
               onStartFreePlayClick={handleStartFreePlayStarted}
+              onCancelSigningOut={handleCancelSigningOut}
+              onProceedSigningOut={handleProceedSigningOut}
             />   
 
             <StakanControls 
@@ -256,7 +282,7 @@ function App() {
                 update={signalUpdateRightPanel} 
                 userConnectionCtx={userConnectionCtx}
                 logCtx={logCtx}
-                enabled={!sessionActive.active}
+                enabled={!sessionActive.active && !loadingMode && !signingOutMode}
                 onArchivedSessionChosen={handleArchivedSessionChosen}
                 onGlobalStateRefreshed={handleRewardBalanceRefreshed}
               />

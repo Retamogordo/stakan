@@ -360,6 +360,16 @@
           "isSigner": false
         },
         {
+          "name": "rewardFundsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "stakanEscrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "userWallet",
           "isMut": true,
           "isSigner": false
@@ -564,10 +574,6 @@
             "type": "bytes"
           },
           {
-            "name": "lastReward",
-            "type": "u64"
-          },
-          {
             "name": "gameSession",
             "type": {
               "option": "publicKey"
@@ -648,5 +654,8 @@
       "name": "ShouldSellTokensBeforeSigningOut",
       "msg": "Should sell all tokens in separate transaction prior to signing out"
     }
-  ]
+  ],
+  "metadata": {
+    "address": "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
+  }
 }

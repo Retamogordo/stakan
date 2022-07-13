@@ -1,7 +1,7 @@
-import React, { useMemo, FC, useEffect } from 'react'
+import React, { useMemo, useEffect } from 'react'
 
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletAdapterNetwork, WalletError } from '@solana/wallet-adapter-base';
+import { WalletError } from '@solana/wallet-adapter-base';
 import {
     PhantomWalletAdapter,
     SolflareWalletAdapter,
@@ -20,7 +20,7 @@ require('@solana/wallet-adapter-react-ui/styles.css');
 
 export const WalletConnectionProvider = (props: any) => {
     // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
-    const network = WalletAdapterNetwork.Devnet;
+//    const network = WalletAdapterNetwork.Devnet;
 
     // You can also provide a custom RPC endpoint.
 //    const endpoint = useMemo(() => clusterApiUrl(network), [network]);
@@ -35,7 +35,7 @@ export const WalletConnectionProvider = (props: any) => {
             new PhantomWalletAdapter(),
             new SolflareWalletAdapter(),
         ],
-        [network]
+        []
     );
 
     const handleError = (err: WalletError) => {
@@ -45,7 +45,7 @@ export const WalletConnectionProvider = (props: any) => {
     useEffect(() => {
         props.logCtx.logLn("connecting wallet provider on " + endpoint + "...");
     },
-    []);
+    [props.logCtx]);
 
     return (
         <ConnectionProvider endpoint={endpoint}>
@@ -56,9 +56,12 @@ export const WalletConnectionProvider = (props: any) => {
                 </WalletModalProvider>
                 <LoginProvider 
                     loggedUserChanged={props.loggedUserChanged}
+                    onSigningOut={props.onSigningOut}
+                    proceedSigningOut={props.proceedSigningOut}
                     toggleLoadingMode={props.toggleLoadingMode}
                     logCtx={props.logCtx}
                     endpoint={endpoint}
+                    disabled={props.disabled}
                 />
             </WalletProvider>
         </ConnectionProvider>

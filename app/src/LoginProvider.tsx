@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import useLoginUser from "./UseLoginUser"
 import * as stakanApi from './stakanSolanaApi'
 
@@ -21,8 +21,9 @@ const LoginProvider = (props: any) => {
 
     const handleSignOutButtonClicked = (ev: any) => {
         if (userConnectionCtx.user && userConnectionCtx.stakanState) {
-            props.toggleLoadingMode && props.toggleLoadingMode(true);
-
+            props.onSigningOut && props.onSigningOut(true);
+//            props.toggleLoadingMode && props.toggleLoadingMode(true);
+/*
             stakanApi.signOutUser(
                 userConnectionCtx.user, 
                 userConnectionCtx.stakanState,
@@ -32,11 +33,28 @@ const LoginProvider = (props: any) => {
                 userConnectionCtx.user = null;
                 setUserSignedOut(true);
 
-                props.toggleLoadingMode && props.toggleLoadingMode(false);
+//                props.toggleLoadingMode && props.toggleLoadingMode(false);
             });
+            */
         }
     }
 
+    const signOutUser = () => {
+        if (userConnectionCtx.user && userConnectionCtx.stakanState) {
+            stakanApi.signOutUser(
+                userConnectionCtx.user, 
+                userConnectionCtx.stakanState,
+                props.logCtx,
+            )
+            .then(() => {
+                userConnectionCtx.user = null;
+                setUserSignedOut(true);
+
+                props.toggleLoadingMode(false);
+            });
+        }
+    }
+/*
     const handleForceDeleteUser = (ev: any) => {
         if (userConnectionCtx.user && userConnectionCtx.stakanState) {
             stakanApi.forceDeleteUser(
@@ -49,7 +67,7 @@ const LoginProvider = (props: any) => {
             });
         }
     }
- 
+*/ 
     useEffect(() => {
         setEnteredUserName(userConnectionCtx.user?.username 
             ? userConnectionCtx.user?.username.slice()
@@ -71,6 +89,11 @@ const LoginProvider = (props: any) => {
         setUserSignedOut(false);
     },
     [userSignedOut])
+
+    useEffect(() => {
+        props.proceedSigningOut && signOutUser()
+    },
+    [props.proceedSigningOut])
 
     return (
         <div style={{marginTop: "5%"}}>
@@ -101,7 +124,7 @@ const LoginProvider = (props: any) => {
                 <div style={{textAlign: "right"}}>
                     <input type="button" value='Sign out'
                         style={{marginRight: "5%"}}
-                        disabled={!userConnectionCtx.user}
+                        disabled={!userConnectionCtx.user || props.disabled}
                         onClick={handleSignOutButtonClicked}
                     ></input>
                 </div>

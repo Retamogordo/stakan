@@ -1,7 +1,7 @@
 import React from 'react'
 import {TailSpin} from "react-loader-spinner"
 import {NumericNonNegativeInput} from './NumericNonNegativeInput'
-import { StakanSession } from './StakanControls';
+import { SigningOutDialog } from './SigningOutDialog';
 
 type StakePanelState = {
     prevTokenBalance: any,
@@ -119,7 +119,9 @@ class StakePanel extends React.Component<{}, StakePanelState> {
                     : <span style={{color: 'red'}}>&#10005;</span> 
                 }</div>
 
-                <table style={{marginTop: '5%'}} className='game-controls-table'>
+                {!props.signingOutMode 
+                ?
+                <table className='game-controls-table'>
                     <caption>Game Controls</caption>
                     <tbody>
                         <tr>
@@ -148,6 +150,14 @@ class StakePanel extends React.Component<{}, StakePanelState> {
                         </tr>
                     </tbody>
                 </table>
+                :
+                <SigningOutDialog 
+                    onCancelSigningOut={props.onCancelSigningOut}
+                    onProceedSigningOut={props.onProceedSigningOut}
+                    tokenBalance={props.userWalletsStatus.tokenBalance}
+                    lamportsPerToken={props.userConnectionCtx?.stakanState?.lamportsPerToken}
+                />
+                }
                 {this.state.estimatedReward !== undefined
                 ?
                 <div style={{fontSize:'large',
@@ -156,7 +166,9 @@ class StakePanel extends React.Component<{}, StakePanelState> {
                         ?
                         this.state.estimatedReward.min  +' ≤ estimated reward ≤ ' + this.state.estimatedReward.max
                         :
-                        this.state.estimatedReward.min  +' ≤ estimated reward'
+                        !isNaN(this.state.estimatedReward.min) 
+                            ? this.state.estimatedReward.min + ' ≤ estimated reward'
+                            : ''
                     } 
                 </div>
                 :
@@ -213,7 +225,13 @@ class StakePanel extends React.Component<{}, StakePanelState> {
                     </input>
                 </div>
             </div>
-
+            <div className='control-panel-footer'>
+                <a href="https://github.com/Retamogordo/stakan" target="_blank" rel="noopener noreferrer"
+                    style={{color: "rgba(255, 255, 255, 0.7)"}}
+                >
+                    https://github.com/Retamogordo/stakan
+                </a>
+            </div>
         </div>
         )
         :

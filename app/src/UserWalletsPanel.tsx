@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { WalletConnectionProvider } from './WalletConnectionProvider'
 import {UserConnectionContextState} from './UseLoginUser'
 import {NumericNonNegativeInput} from './NumericNonNegativeInput'
@@ -126,13 +126,19 @@ export const UserWalletsPanel = (props: any) => {
     }
 
     const handlePurchaseInputValueChanged = (val: number) => {
+        const stakanState = userConnectionCtx?.stakanState;
+
         setPurchaseStakanTokensValue(val.toString());
-        setPurchaseStakanTokensLabel(val ? '  ' + (1000000*val).toString() + ' lamports' : '');
+        stakanState && setPurchaseStakanTokensLabel(val 
+            ? '  ' + (stakanState?.lamportsPerToken*val).toString() + ' lamports' : '');
     }
 
     const handleSellInputValueChanged = (val: number) => {
+        const stakanState = userConnectionCtx?.stakanState;
+
         setSellStakanTokensValue(val.toString());
-        setSellStakanTokensLabel(val ? '  ' + (1000000*val).toString() + ' lamports' : '');
+        stakanState && setSellStakanTokensLabel(val ? 
+            '  ' + (stakanState?.lamportsPerToken*val).toString() + ' lamports' : '');
     }
     
     useEffect(() => {
@@ -161,7 +167,10 @@ export const UserWalletsPanel = (props: any) => {
             <WalletConnectionProvider 
                 loggedUserChanged={handleUserChanged}
                 toggleLoadingMode={props.toggleLoadingMode}
+                onSigningOut={props.onSigningOut}
+                proceedSigningOut={props.proceedSigningOut}
                 logCtx={props.logCtx}
+                disabled={props.disabled}
             />
             <div className="title-div">Solana</div>
             <div style={{marginLeft: "5%"}}>
@@ -184,7 +193,9 @@ export const UserWalletsPanel = (props: any) => {
                             airdropNeeded
                             ? <input type='button' className='left-panel-input'
                                     value={'Airdrop some winston'} 
-                                    onClick={airdropWinston}>
+                                    onClick={airdropWinston}
+                                    disabled={props.disabled}
+                                >
                             </input>
                             : userWalletsStatus.arweaveWalletConnected
                                 ? userWalletsStatus.arweaveProviderConnected 
@@ -214,6 +225,7 @@ export const UserWalletsPanel = (props: any) => {
             }
             <NumericNonNegativeInput 
                 visible={userWalletsStatus.solanaBalance > stakanApi.LAMPORTS_PER_STAKAN_TOKEN}
+                disabled={props.disabled}
                 onInput={purchaseStakanTokens}
                 onInputValueChanged={handlePurchaseInputValueChanged}
                 buttonText={'Purchase tokens'}
@@ -222,6 +234,7 @@ export const UserWalletsPanel = (props: any) => {
             />
             <NumericNonNegativeInput 
                 visible={userWalletsStatus.tokenBalance > 0}
+                disabled={props.disabled}
                 onInput={sellStakanTokens}
                 onInputValueChanged={handleSellInputValueChanged}
                 buttonText={'   Sell tokens   '}

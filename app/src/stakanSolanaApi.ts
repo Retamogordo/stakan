@@ -6,7 +6,6 @@ import { JWKInterface } from 'arweave/node/lib/wallet'
 import * as accountsSchema from "./accountsSchema";
 import { Stakan } from './idl/stakan'
 import { LogTerminalContext } from "./UseLogTerminal";
-import {StakanSession} from './StakanControls';
 import { SignatureResult } from "@solana/web3.js";
 
 export const LAMPORTS_PER_STAKAN_TOKEN = 1000000;
@@ -27,27 +26,27 @@ export class StakanState {
     stakanMint: web3.PublicKey;
     globalMaxScore: number;
     championAccount: web3.PublicKey | undefined;
+    lamportsPerToken: number;
   
     constructor(
         program: Program<Stakan>,
         pubKey: web3.PublicKey,
-        stateAccount: web3.PublicKey,
-        stateAccountBump: number,
-        escrowAccount: web3.PublicKey,
-        rewardFundsAccount: web3.PublicKey,
-        stakanMint: web3.PublicKey,
-        globalMaxScore: number,
-        championAccount: web3.PublicKey | undefined,
+        stakanAccountData: accountsSchema.StakanStateSchema
     ) {
         this.program = program;
         this.pubKey = pubKey;
-        this.stateAccount = stateAccount;
-        this.stateAccountBump = stateAccountBump;
-        this.escrowAccount = escrowAccount;
-        this.rewardFundsAccount = rewardFundsAccount;
-        this.stakanMint = stakanMint;
-        this.globalMaxScore = globalMaxScore;
-        this.championAccount = championAccount;
+        
+        this.stateAccount = new web3.PublicKey(Buffer.from(stakanAccountData['stakan_state_account']));
+        this.stateAccountBump = stakanAccountData['stakan_state_account_bump'];
+        this.escrowAccount = new web3.PublicKey(Buffer.from(stakanAccountData['escrow_account']));
+        this.rewardFundsAccount = new web3.PublicKey(Buffer.from(stakanAccountData['reward_funds_account']));
+        this.stakanMint = new web3.PublicKey(Buffer.from(stakanAccountData['mint_token']));
+        this.globalMaxScore = (stakanAccountData['global_max_score'] as BN).toNumber();
+        this.championAccount = stakanAccountData['champion_account_opt_variant'] === 1
+          ?
+            new web3.PublicKey(Buffer.from(stakanAccountData['champion_account']))
+          : undefined;
+        this.lamportsPerToken = (stakanAccountData['lamports_per_stakan_tokens'] as BN).toNumber(); 
     }
     
     async getBalance(): Promise<number> {
@@ -59,11 +58,7 @@ export class StakanState {
     }
 }
 
-export async function queryStakanAccount(
-  program: Program<Stakan>,
-  ): 
-  Promise<StakanState | undefined> {
-//  const Base58 = require("base-58");
+export async function queryStakanAccount(program: Program<Stakan>): Promise<StakanState | undefined> {
   const accounts 
     = await program.provider.connection.getParsedProgramAccounts(
         program.programId,
@@ -78,27 +73,15 @@ export async function queryStakanAccount(
   );
 
 //  console.log("queryStakanAccount:", accounts);
-
   for (let acc of accounts) {
     try {
       const stakanAccountData 
         = accountsSchema.StakanStateSchema.deserialize(acc.account.data as Buffer);
 
-//        console.log("stakanAccountData: ", stakanAccountData);
-
       const stakanState = new StakanState(
         program,
         acc.pubkey,
-        new web3.PublicKey(Buffer.from(stakanAccountData['stakan_state_account'])),
-        stakanAccountData['stakan_state_account_bump'],
-        new web3.PublicKey(Buffer.from(stakanAccountData['escrow_account'])),
-        new web3.PublicKey(Buffer.from(stakanAccountData['reward_funds_account'])),
-        new web3.PublicKey(Buffer.from(stakanAccountData['mint_token'])),
-        (stakanAccountData['global_max_score'] as BN).toNumber(),
-        stakanAccountData['champion_account_opt_variant'] === 1
-        ?
-          new web3.PublicKey(Buffer.from(stakanAccountData['champion_account']))
-        : undefined,
+        stakanAccountData,
       )  
       return stakanState;
     }
@@ -116,8 +99,7 @@ export async function setUpStakan(program: Program<Stakan>) {
         ],
         program.programId
       );
-
-      console.log("setUpStakan->stakanStateAccount: ", stakanStateAccount.toBase58());
+//      console.log("setUpStakan->stakanStateAccount: ", stakanStateAccount.toBase58());
     
       const [stakanEscrowAccount, stakanEscrowAccountBump] =
       await web3.PublicKey.findProgramAddress(
@@ -127,17 +109,17 @@ export async function setUpStakan(program: Program<Stakan>) {
         ],
         program.programId
       );
-      console.log("setUpStakan->stakanEscrowAccount: ", stakanEscrowAccount.toBase58());
+//      console.log("setUpStakan->stakanEscrowAccount: ", stakanEscrowAccount.toBase58());
 
   
-    const [stakanMint, stakanMintBump] = await web3.PublicKey.findProgramAddress(
+    const [stakanMint, _stakanMintBump] = await web3.PublicKey.findProgramAddress(
       [
         Buffer.from(accountsSchema.StakanStateSchema.SEED),
         Buffer.from('stakan_mint'),
       ],
       program.programId
     );
-    console.log("setUpStakan->stakanMint: ", stakanMint.toBase58());
+//    console.log("setUpStakan->stakanMint: ", stakanMint.toBase58());
   
     let rewardFundsAccount = await spl.Token.getAssociatedTokenAddress(
       spl.ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -272,14 +254,12 @@ export class User {
     }
 
     async arweaveAirdrop(arweave: Arweave, winston: number): Promise<boolean> {
-//      async arweaveAirdrop(winston: number): Promise<boolean> {
       const tokens = winston.toString();
       const arweaveStorageAddress = await arweave.wallets.getAddress(this.arweaveWallet);
 
       const resp = await arweave.api.get(`/mint/${arweaveStorageAddress}/${tokens}`)
       
-      if (resp.status != 200) return false;
-      return true;
+      return (resp.status === 200)
     }
 
     async arweaveAirdropMin(arweave: Arweave, tilesCols: number, tilesRows: number): Promise<boolean> {
@@ -288,7 +268,6 @@ export class User {
           .getPrice(accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows), '')
       );
 //      console.log("max size: ",    accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows));
-      console.log("savePrice: ", savePrice);        
       return await this.arweaveAirdrop(arweave, savePrice);
     }
 
@@ -346,7 +325,8 @@ export class User {
     async reloadFromChain(stakanState: StakanState, username: string | undefined) {
       const acc = await queryWalletOwnerAccount(this.wallet.publicKey, stakanState, username);
     
-      if (!acc) throw 'Can not reload User from chain, account: ' + this.account?.toBase58();
+      if (!acc) 
+        throw new Error('Can not reload User from chain, account: ' + this.account?.toBase58());
 
       const [accPubkey, userAccount] = acc;
 
@@ -614,7 +594,8 @@ export async function initGameSession(
           ],
           stakanState.program.programId
         );
-      if (!user.account || !user.tokenAccount) throw 'User is not connected';
+      if (!user.account || !user.tokenAccount) 
+        throw new Error('User is not connected');
       
       const tx = stakanState.program.transaction
         .initGameSession(
@@ -657,7 +638,8 @@ export async function initGameSession(
 
 //    console.log("serializedData: ", serializedData);
 
-    if (!user.account) throw 'Error saving to Arweave: user.account is undefined';
+    if (!user.account) 
+      throw new Error('Error saving to Arweave: user.account is undefined');
 
     const tx = await arweave.createTransaction({
       data: serializedData
@@ -715,12 +697,12 @@ export async function initGameSession(
 //    txid = "dummy_bad_tx";
     if (!txid) {
       logCtx?.logLn('failed');
-      throw "Failed saving to Arweave";
+      throw new Error("Failed saving to Arweave");
     }
     logCtx?.logLn('done, tx id ' + txid);
   
     if (!user.account || !user.tokenAccount || !user.gameSessionAccount)
-      throw 'Invalid User state';
+      throw new Error('Invalid User state');
 
     logCtx?.log('sending session finalizing transaction...');
     try {
@@ -759,7 +741,7 @@ export async function initGameSession(
     logCtx: LogTerminalContext | undefined,
   ) {
     if (!user.account || !user.tokenAccount || !user.gameSessionAccount)
-      throw 'Invalid User state';
+      throw new Error('Invalid User state');
 
     logCtx?.log('sending session finalizing transaction...');
     try {
@@ -797,10 +779,10 @@ export async function initGameSession(
     stakanState: StakanState,
     logCtx: LogTerminalContext | undefined
   ) {
-    const tokenBalance = parseInt((await user.getTokenBalance()).value.amount);
-    if (isNaN(tokenBalance)) throw "Parsed token balance is NaN";
+//    const tokenBalance = parseInt((await user.getTokenBalance()).value.amount);
+//    if (isNaN(tokenBalance)) throw "Parsed token balance is NaN";
     
-    await sellStakanTokens(user, stakanState, tokenBalance, logCtx)
+//    await sellStakanTokens(user, stakanState, tokenBalance, logCtx)
 
     logCtx?.log("sending sign out user transaction...");
     try {
@@ -809,14 +791,15 @@ export async function initGameSession(
         )
         .accounts({
           stakanStateAccount: stakanState.stateAccount,
-  //        stakanEscrowAccount: stakanState.escrowAccount,
+          stakanEscrowAccount: stakanState.escrowAccount,
           userAccount: user.account,
           userTokenAccount: user.tokenAccount,
           userWallet: user.wallet.publicKey,
-  //        rewardFundsAccount: stakanState.rewardFundsAccount,
+          rewardFundsAccount: stakanState.rewardFundsAccount,
     
           associatedTokenProgram: spl.ASSOCIATED_TOKEN_PROGRAM_ID,
           tokenProgram: spl.TOKEN_PROGRAM_ID,
+          rent: web3.SYSVAR_RENT_PUBKEY,
           systemProgram: SystemProgram.programId,
         })
         .signers([])

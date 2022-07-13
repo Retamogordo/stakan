@@ -11,7 +11,6 @@ import { Stakan } from "../target/types/stakan";
 import Arweave from "arweave";
 import ArLocal from 'arlocal';
 
-//import ArLocal from 'arlocal';
 const axios = require('axios');
 
 import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
@@ -41,7 +40,7 @@ let user:  stakanApi.User | undefined;
 let user2: stakanApi.User | undefined;
 let stakanState: stakanApi.StakanState;
 
-const arLocal = new ArLocal();
+const arLocal = new ArLocal(1984, true);
 
 before(async () => {
   // Start is a Promise, we need to start it inside an async function.
@@ -155,6 +154,9 @@ describe("stakan", () => {
     await provider.connection.confirmTransaction( 
       await provider.connection.requestAirdrop(currUser.wallet.publicKey, 1000000000)
     );
+
+    await currUser?.arweaveAirdropMin(arweave, 160, 100) 
+
   });
 
 
@@ -441,8 +443,8 @@ describe("stakan", () => {
     console.log("userWallet balance: ", await currUser.getBalance());
 //    console.log("programWallet balance: ", await stakanState.getBalance());
     
-    const userTokenBalance = await currUser.getTokenBalance();
-    console.log("user token balance: ", userTokenBalance);
+//    const userTokenBalance = await currUser.getTokenBalance();
+//    console.log("user token balance: ", userTokenBalance);
     rewardFundsAccountBalance = await stakanState.getRewardFundBalance();
     console.log("reward funds token balance: ", rewardFundsAccountBalance);
 //    assert(userTokenBalance, tokenAmount);

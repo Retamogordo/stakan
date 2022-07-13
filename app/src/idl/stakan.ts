@@ -360,6 +360,16 @@ export type Stakan = {
           "isSigner": false
         },
         {
+          "name": "rewardFundsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "stakanEscrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "userWallet",
           "isMut": true,
           "isSigner": false
@@ -562,10 +572,6 @@ export type Stakan = {
           {
             "name": "arweaveStorageAddress",
             "type": "bytes"
-          },
-          {
-            "name": "lastReward",
-            "type": "u64"
           },
           {
             "name": "gameSession",
@@ -1013,6 +1019,16 @@ export const IDL: Stakan = {
           "isSigner": false
         },
         {
+          "name": "rewardFundsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "stakanEscrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "userWallet",
           "isMut": true,
           "isSigner": false
@@ -1215,10 +1231,6 @@ export const IDL: Stakan = {
           {
             "name": "arweaveStorageAddress",
             "type": "bytes"
-          },
-          {
-            "name": "lastReward",
-            "type": "u64"
           },
           {
             "name": "gameSession",

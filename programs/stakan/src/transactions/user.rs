@@ -96,9 +96,9 @@ impl UserInner {
         + size_of::<u8>()
         + size_of::<u64>()
         + size_of::<u64>()
-//        + size_of::<Pubkey>()
+        + size_of::<Pubkey>()
         + size_of::<u32>() + arweave_storage_address_len
-        + size_of::<u64>()
+//        + size_of::<u64>()
         + (1)
     }    
 
@@ -169,8 +169,20 @@ pub struct SignOutUser<'info> {
         constraint = user_token_account.mint == stakan_state_account.mint_token,
         constraint = user_token_account.owner == user_account.key(),
     )]
+
     user_token_account: Account<'info, TokenAccount>,
+    #[account(mut,
+        constraint = reward_funds_account.owner == stakan_state_account.key(),
+    )]
+    reward_funds_account: Account<'info, TokenAccount>,
     
+    /// CHECK:` PDA account used as a program wallet for receiving lamports 
+    /// when a user purchases tokens
+    #[account(mut,
+        constraint = stakan_state_account.escrow_account == stakan_escrow_account.key(),
+    )]
+    stakan_escrow_account: AccountInfo<'info>,
+
     /// CHECK:` pubkey of user wallet to receive lamports from program wallet
     #[account(mut)]
     user_wallet: AccountInfo<'info>,
@@ -234,23 +246,41 @@ pub fn sign_up(ctx: Context<SignUpUser>,
     Ok(())
 }
 
-pub fn sign_out(ctx: Context<SignOutUser>, 
-    //user_account_bump: u8
-) -> Result<()> {
-/*    
+// sell all users tokens and close their account
+pub fn sign_out(ctx: Context<SignOutUser> ) -> Result<()> {
+    
     let token_amount = ctx.accounts.user_token_account.amount;
+    let user_inner = &ctx.accounts.user_account.user;
+    let signer_seeds = signer_seeds!(user_inner);
+    // transfer tokens to stakan reward account
+    anchor_spl::token::transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
 
-    crate::transactions::tokens::user_sell_tokens(
-        token_amount,
-        &ctx.accounts.user_account,
-        &ctx.accounts.user_token_account,
-        &ctx.accounts.reward_funds_account,
-        &mut ctx.accounts.stakan_escrow_account,
-        &ctx.accounts.user_wallet,
-        &ctx.accounts.token_program,
-        &ctx.accounts.rent,
+            anchor_spl::token::Transfer {
+                from: ctx.accounts.user_token_account.to_account_info(),
+                to: ctx.accounts.reward_funds_account.to_account_info(),
+                authority: ctx.accounts.user_account.to_account_info(),
+            },
+            &[&signer_seeds]
+        ), 
+        token_amount
     )?;
-*/
+    // calculate lamports to be redeemed to users wallet.
+    // users account will be added these lamports at the end of instruction,
+    // AFTER closing the account thus keeping user wallets balance consistent
+    let lamports_delta = token_amount * StakanGlobalState::LAMPORTS_PER_STAKAN_TOKEN;
+    let escrow_balance_after = ctx.accounts.stakan_escrow_account.lamports()
+        .checked_sub(lamports_delta)
+        .ok_or(crate::errors::StakanError::NegativeBalance)?;
+
+    if !ctx.accounts.rent.is_exempt(escrow_balance_after, ctx.accounts.stakan_escrow_account.data_len()) {
+        // should never happen
+        return Err(crate::errors::StakanError::GlobalEscrowAccountDepleted.into());
+    }    
+
+    ctx.accounts.user_token_account.reload()?;
+    
     if ctx.accounts.user_token_account.amount > 0 {
         return Err(StakanError::ShouldSellTokensBeforeSigningOut.into())
     }
@@ -269,6 +299,12 @@ pub fn sign_out(ctx: Context<SignOutUser>,
             &[&signer_seeds]
         )
     )?;
+    // now add lamports to users wallet
+    **ctx.accounts.stakan_escrow_account.lamports.borrow_mut() = escrow_balance_after;
+    **ctx.accounts.user_wallet.lamports.borrow_mut() =
+    ctx.accounts.user_wallet.lamports()
+            .checked_add(lamports_delta)
+            .ok_or(crate::errors::StakanError::BalanceOverflow)?;
 
     Ok(())
 }

@@ -33,7 +33,7 @@ code {
   display: flex;
   flex-direction: row;
   margin: 0 auto;
-  background: rgb(40, 22, 90);
+  background: rgb(60, 96, 227);
   border-style: solid;
   border-width: 1px;
   border-color: hsl(0, 0%, 30%);
@@ -222,6 +222,12 @@ input[type=button]:hover:enabled {
   font-size: larger;
 }
 
+.control-panel-footer {
+  position: absolute;
+  height: 5%;
+  width: 100%;
+  bottom: 0;
+}
 
 .right-panel {
   width: 25%;
@@ -277,6 +283,7 @@ input[type=button]:hover:enabled {
 .game-controls-table {
   width: 60%;
   margin-left: 20%;
+  margin-top: 5%;
   color: rgba(53, 93, 98, 0.701);
   font-family: 'IBM Plex Mono';
 }
@@ -292,3 +299,26 @@ input[type=button]:hover:enabled {
 
 .stored-sessions-table td:nth-child(1) { text-align: center; }
 .stored-sessions-table td:nth-child(2) { text-align: end; }
+
+.signing-out-dialog {
+  position: relative;
+  color: hsl(18, 93%, 61%);
+  border-style: solid;
+  border-color:  hsl(18, 93%, 61%);
+  border-width: 1px;
+  margin-top: 5%;
+  height: 30%;
+  text-align: left;
+}
+.signing-out-dialog > div > input {
+  color: hsl(18, 93%, 61%);
+  border-color:  hsl(18, 93%, 61%);
+}
+
+.signing-out-dialog > div > input:hover:enabled,
+.signing-out-dialog > div > input[hover][enabled] {
+  font-weight: bold;
+  cursor: pointer;
+  color:hsl(18, 97%, 72%);
+  border-color: hsl(18, 97%, 72%);
+}
