@@ -201,7 +201,36 @@ function pieceI() {
     ]
   }
 
-  const tetriminoMap = {
+  function pieceX() {
+    return [
+      [
+        [0, 8, 0, 0],
+        [8, 8, 8, 0],
+        [0, 8, 0, 0],
+        [0, 0, 0, 0],
+      ],
+      [
+        [0, 8, 0, 0],
+        [8, 8, 8, 0],
+        [0, 8, 0, 0],
+        [0, 0, 0, 0],
+      ],
+      [
+        [0, 8, 0, 0],
+        [8, 8, 8, 0],
+        [0, 8, 0, 0],
+        [0, 0, 0, 0],
+      ],
+      [
+        [0, 8, 0, 0],
+        [8, 8, 8, 0],
+        [0, 8, 0, 0],
+        [0, 0, 0, 0],
+      ],
+    ]
+  }
+
+  const pieceMap = {
     1: 'I',
     2: 'S',
     3: 'T',
@@ -209,9 +238,10 @@ function pieceI() {
     5: 'L',
     6: 'J',
     7: 'O',
+    8: 'X',
   }
   
-  export function createTetrimino(kind) {
+  export function createPiece(kind) {
       switch (kind) {
         case 'I': return { piece: pieceI(), color: 'rgb(5, 75, 75)' };
         case 'J': return { piece: pieceJ(), color: 'rgb(35, 15, 175)' };
@@ -220,10 +250,11 @@ function pieceI() {
         case 'S': return { piece: pieceS(), color: 'rgb(75, 210, 25)' };
         case 'T': return { piece: pieceT(), color: 'rgb(80, 5, 120)' };
         case 'Z': return { piece: pieceZ(), color: 'rgb(120, 5, 25)' };
+        case 'X': return { piece: pieceX(), color: 'rgb(155, 167, 195)' };
       }
   }
 
-  export function createTetriminoByValue(value) {
+  export function createPieceByValue(value) {
 //    if (value > 6) throw("value: ", value);
-    return createTetrimino(tetriminoMap[value]);
+    return createPiece(pieceMap[value]);
   }

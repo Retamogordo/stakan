@@ -37,6 +37,7 @@ class StakePanel extends React.Component<{}, StakePanelState> {
         const h = this.props.rewardBalance / 2;
         const s = value;
         const x0 = this.props.userConnectionCtx?.stakanState?.globalMaxScore;
+//        const x0 = 50;
         const estimatedMinNewMaxScore = x0 + 1;
         const estimatedMaxNewMaxScore = x0 + x0 + 1;
         const x1 = estimatedMinNewMaxScore;
@@ -201,6 +202,7 @@ class StakePanel extends React.Component<{}, StakePanelState> {
                         </input>
                         : 
                         <NumericNonNegativeInput
+                            max={props.userWalletsStatus.tokenBalance}
                             visible={true}
                             disabled={
                                 !props.userWalletsStatus.hasWinstonToStoreSession

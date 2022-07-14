@@ -63,6 +63,7 @@ const useLoginUser = (
             );
             setStakanProgram(program);        
 
+
             logCtx.log("retrieving stakan global state account...")
             
             console.log("retrieving stakan global state account...")
@@ -70,6 +71,9 @@ const useLoginUser = (
             const state = await stakanApi.queryStakanAccount(program);
             logCtx.logLn(state 
                 ? "done, pubkey: " + state?.pubKey.toBase58() : "failed");
+
+//            await stakanApi.setUpStakan(program);
+//            state && await stakanApi.closeGlobalStakanAccountForDebug(state);
 
             setStakanState(state ? state : null);
         }

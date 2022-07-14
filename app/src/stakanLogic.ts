@@ -1,4 +1,4 @@
-export const STAKAN_BORDER_VALUE = 8;
+export const STAKAN_BORDER_VALUE = 255;
 const BOTTOM_THICKNESS = 1;
 const SIDE_THICKNESS = 3;
 const TOP_OFFSET = 4;

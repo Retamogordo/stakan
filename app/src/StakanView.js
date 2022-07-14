@@ -1,5 +1,5 @@
 import React from 'react'
-import { createTetriminoByValue } from './tetrimino'
+import { createPieceByValue } from './piece'
 import { setupStakan, stamp, clearRows, isFull, canMove, STAKAN_BORDER_VALUE } from './stakanLogic'
 
 const drawValue = (ctx, x, y, width, label, value) => {
@@ -25,7 +25,7 @@ const drawTiles = (ctx, tiles, tileSize) => {
       }
       else
       if (tiles.tiles[i][j] !== 0) { // a piece is here
-        ctx.fillStyle = createTetriminoByValue(tiles.tiles[i][j]).color;
+        ctx.fillStyle = createPieceByValue(tiles.tiles[i][j]).color;
       }
       else if (i % 2 === 0) {
         ctx.fillStyle = 'rgb(10,10,10)';
@@ -133,7 +133,7 @@ class StakanView extends React.Component {
     this.pieceYOffset = this.startPieceYOffset();
     this.rotationPosition = 0;
 
-    this.currentPiece = createTetriminoByValue(1 + Math.floor(Math.random() * 7));
+    this.currentPiece = createPieceByValue(1 + Math.floor(Math.random() * 8));
 
     this.props.willRender();
   }

@@ -105,10 +105,10 @@ input[type=button]:disabled  {
 }
 
 input[type=button]:hover:enabled {
-  font-weight: bold;
   cursor: pointer;
   color: hsl(237, 63%, 86%);
   border-color: hsl(237, 63%, 86%);
+  background-color: hsla(237, 63%, 86%, 20%);
 }
 
 .numeric-input > div > input[type=button]:disabled,
@@ -120,10 +120,10 @@ input[type=button]:hover:enabled {
 
 .numeric-input > div > input[type=button]:hover:enabled,
 .numeric-input > div > input[type=button][hover][enabled] {
-  font-weight: bold;
   cursor: pointer;
   color: hsl(237, 63%, 86%);
   border-color: hsl(237, 63%, 86%);
+  background-color: hsla(237, 63%, 86%, 20%);
 }
 
 
@@ -317,8 +317,8 @@ input[type=button]:hover:enabled {
 
 .signing-out-dialog > div > input:hover:enabled,
 .signing-out-dialog > div > input[hover][enabled] {
-  font-weight: bold;
   cursor: pointer;
   color:hsl(18, 97%, 72%);
   border-color: hsl(18, 97%, 72%);
+  background-color: hsla(18, 97%, 72%, 20%);
 }

@@ -3,7 +3,7 @@ import { setupStakan, stakanFrom } from './stakanLogic'
 import StakanView from './StakanView'
 
 const ENTRY_DELAY = 700;
-const STEP_DELAY = 1000; // for level 1 - from https://tetris.fandom.com/wiki/Tetris_Worlds
+const STEP_DELAY = 1000; // for level 1 
 const ROTATION_DELAY = 50;
 const SHORTER_DELAY = 10;
 
@@ -40,7 +40,6 @@ export class StakanSession {
     return parsedSession;
   } 
   
-  // rules more or less comply with those from https://tetris.fandom.com/wiki/Tetris_Worlds
   updateScore(linesCleared: number) {
     const MIN_DELAY = 120;
     const currDelay = Math.floor(1000*(0.8 - 0.007*(this.level - 1))**(this.level-1));
@@ -57,8 +56,17 @@ export class StakanSession {
       case 4: { this.score += 8; break; } 
     }
   }
-/*  updateScore(linesCleared: number) {
+  
+/*
+  updateScore(linesCleared: number) {
+    const MIN_DELAY = 120;
+    const currDelay = Math.floor(1000*(0.8 - 0.007*(this.level - 1))**(this.level-1));
+
     this.linesCleared += linesCleared;
+    this.level = 1 + Math.floor(this.linesCleared/5);
+    this.stepDelay = currDelay > MIN_DELAY ? currDelay : MIN_DELAY;
+    this.keyControlDelay = Math.min( SHORTER_DELAY, Math.floor(this.stepDelay/20))
+
     
     switch (linesCleared) {
       case 1: { this.score += 40*(this.level + 1); break; } 
@@ -66,7 +74,8 @@ export class StakanSession {
       case 3: { this.score += 300*(this.level + 1); break; } 
       case 4: { this.score += 1200*(this.level + 1); break; } 
     }
-  }*/
+  }
+  */
 } 
 
 export function StakanControls(props: any) {
