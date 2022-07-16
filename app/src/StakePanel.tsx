@@ -11,8 +11,6 @@ type StakePanelState = {
 class StakePanel extends React.Component<{}, StakePanelState> {
     props: any;
     loader: any;
-//    prevTokenBalance: number;
-//    estimatedReward: any;
 
     constructor(props: any) {
         super(props);
@@ -22,8 +20,6 @@ class StakePanel extends React.Component<{}, StakePanelState> {
             prevTokenBalance: props.userWalletsStatus.tokenBalance,
             estimatedReward: undefined
         }
-//        this.prevTokenBalance = this.props.userWalletsStatus.tokenBalance;
-//        this.estimatedReward = undefined;
         this.handleStakeChanged = this.handleStakeChanged.bind(this);
         this.handleStartSessionClick = this.handleStartSessionClick.bind(this);
         this.handleResumeSessionClick = this.handleResumeSessionClick.bind(this);
@@ -37,7 +33,6 @@ class StakePanel extends React.Component<{}, StakePanelState> {
         const h = this.props.rewardBalance / 2;
         const s = value;
         const x0 = this.props.userConnectionCtx?.stakanState?.globalMaxScore;
-//        const x0 = 50;
         const estimatedMinNewMaxScore = x0 + 1;
         const estimatedMaxNewMaxScore = x0 + x0 + 1;
         const x1 = estimatedMinNewMaxScore;
@@ -47,26 +42,14 @@ class StakePanel extends React.Component<{}, StakePanelState> {
         let rewardMin = Math.floor(h + (s - h) * Math.exp((-s/h * x1*(x1 - x0)/h)));
         let rewardMax = Math.floor(h + (s - h) * Math.exp((-s/h * x2*(x2 - x0)/h)));
 
-        console.log("x0: " + x0.toString() + ", x1: " + x1.toString()
-         +  ", x2: " + x2.toString());
-         console.log("h: " + h.toString() + ", s: " + s.toString());
-
         this.setState( {estimatedReward: { min: rewardMin, max: rewardMax } });
-
-//        console.log("h: " + h + ", s: " + s);
-        console.log("rewardMin: " + rewardMin.toString() + ", rewardMax: " + rewardMax.toString());
-        console.log("state: ", this.state)
     }
 
     handleStartSessionClick(stakeValue: number) {
-    //    this.prevTokenBalance = this.props.userWalletsStatus.tokenBalance;
-    //    this.estimatedReward = undefined;
-
         this.setState( {
             prevTokenBalance: this.props.userWalletsStatus.tokenBalance,
             estimatedReward: undefined 
         });
-//        console.log("-------------------------- token balance: ", this.prevTokenBalance);
         this.props.onStartSessionClick(stakeValue);
     }
 

@@ -40,23 +40,12 @@ function App() {
 
   const handleBeforeSessionStarted = async (stakeValue: number) => {
     try {
-      console.log("Srart session, stake: ", stakeValue);
 
       setGreetWinnerMode(false);
 
       const user = userConnectionCtx?.user;
       const stakanState = userConnectionCtx?.stakanState;
   
-      /*
-      userConnectionCtx && userConnectionCtx.user && userConnectionCtx.stakanState
-      
-      && await stakanApi.finishGameSession(
-        userConnectionCtx.user, 
-        userConnectionCtx.stakanState,
-        tiles.colsWithBorder,
-        tiles.rowsWithBorder
-        )
-*/
       setLoadingMode(true);
 
       if (user && stakanState && userConnectionCtx.arweave) {
@@ -160,7 +149,6 @@ function App() {
   }
 
   const handleUserConnectionChanged = (loggedUserConnetctionCtx: UserConnectionContextState,) => {
-//    console.log("handleUserChanged -> user: ", loggedUserConnetctionCtx);
     setUserConnectionCtx(loggedUserConnetctionCtx);
   }
 
@@ -222,11 +210,6 @@ function App() {
       setSignalUpdateRightPanel(false);
     } 
   }, [signalUpdateRightPanel]);
-
-  useEffect(() => {
-      console.log("useEffect->setArchivedSession: ", archivedSession)
-//      setArchivedSession(null);
-  }, [archivedSession]);
 
   useEffect(() => {
     setProceedSigningOut(false);

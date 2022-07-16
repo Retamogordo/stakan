@@ -32,8 +32,8 @@ export class StakanSession {
   static fromJson(json: string): StakanSession {
     let parsedSession: StakanSession 
       = Object.assign(new StakanSession(0, 0), JSON.parse(json));
-//    console.log(parsedSession);
-    const tmpTiles = parsedSession.tiles.tiles;
+
+      const tmpTiles = parsedSession.tiles.tiles;
     parsedSession.tiles = setupStakan(parsedSession.tiles.rows, parsedSession.tiles.cols);
     parsedSession.tiles.tiles = tmpTiles;
     parsedSession.updateScore = parsedSession.updateScore.bind(parsedSession);
@@ -182,7 +182,6 @@ export function StakanControls(props: any) {
             entryDelayTimer && clearTimeout(entryDelayTimer);
             setEntryDelayTimer(null);
     
-//            console.log("pieceEntryCommand");
             stakanRef.current?.pieceEntryCommand();
     
             setDisableControls(false); 
@@ -206,7 +205,6 @@ export function StakanControls(props: any) {
       }      
       setEntryDelay();
 
-//      console.log("handleEntryNewPiece");
       props.onSessionUpdated(session, stakanRef.current?.tiles);
     }
   
@@ -235,8 +233,6 @@ export function StakanControls(props: any) {
         window.addEventListener('keydown', handleKeyDown)
   
         let session = props.resumedSession ? props.resumedSession : new StakanSession(props.rows, props.cols); 
-//        session.tiles = setupStakan(props.rows, props.cols);   
-        console.log(session)
 
         props.onSessionStarted(session);
         return session;
@@ -292,7 +288,6 @@ export function StakanControls(props: any) {
         stakanRef.current?.setSession(session);
         
         if (session.active) {
-          console.log("useEffect->setEntryDelay");
           setEntryDelay();
         }
         stakanRef.current?.focus();

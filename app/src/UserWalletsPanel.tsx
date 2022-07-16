@@ -110,7 +110,6 @@ export const UserWalletsPanel = (props: any) => {
 
         try {
             const escrowBalance = await stakanState.getBalance();
-            console.log("escrow balance: ", escrowBalance);
 
             await stakanApi.sellStakanTokens(user, stakanState, tokens, props.logCtx);
             await updateUserWalletsStatus();

@@ -52,7 +52,6 @@ export const RightPanel = (props: any) => {
                   
                     if (archiveIndStr) {
                         const archiveInd = parseInt(archiveIndStr);
-//                        console.log("click ", new BN(archive['score']).toString());
                         props.onArchivedSessionChosen(sessionsArchive[archiveInd]);
                     }
                 } : undefined }
@@ -81,13 +80,10 @@ export const RightPanel = (props: any) => {
             .then(onChainBalance => {
                 const balance = onChainBalance?.value.uiAmount ? onChainBalance?.value.uiAmount : 0
                 setRewardBalance(balance)
-//                return props.userConnectionCtx.stakanState
             })
             .then(() => {
-//                console.log("reloaded balance: ", rewardBalance);
                 const stakanState = props.userConnectionCtx?.stakanState as stakanApi.StakanState;
-//                if (stakanState.championAccount) 
-                    return stakanState.championAccount && stakanApi.getUserFromAccount(stakanState.championAccount, stakanState)
+                return stakanState.championAccount && stakanApi.getUserFromAccount(stakanState.championAccount, stakanState)
             })
             .then(acc => {
                 setChampionAccount(acc ? acc.username : null)
@@ -113,7 +109,6 @@ export const RightPanel = (props: any) => {
         getSessionsArchive();
 
         return () => {
-            console.log("clear interval");
             clearInterval(pollingTimer); 
         }     
     },
@@ -129,7 +124,6 @@ export const RightPanel = (props: any) => {
     [props.update]);
 
     useEffect(() => {
-        console.log("onGlobalStateRefreshed")
         props.onGlobalStateRefreshed(rewardBalance);
     },
     [rewardBalance]);

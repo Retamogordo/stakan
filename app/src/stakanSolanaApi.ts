@@ -72,7 +72,6 @@ export async function queryStakanAccount(program: Program<Stakan>): Promise<Stak
         }
   );
 
-//  console.log("queryStakanAccount:", accounts);
   for (let acc of accounts) {
     try {
       const stakanAccountData 
@@ -99,7 +98,6 @@ export async function setUpStakan(program: Program<Stakan>) {
         ],
         program.programId
       );
-//      console.log("setUpStakan->stakanStateAccount: ", stakanStateAccount.toBase58());
     
       const [stakanEscrowAccount, stakanEscrowAccountBump] =
       await web3.PublicKey.findProgramAddress(
@@ -109,7 +107,6 @@ export async function setUpStakan(program: Program<Stakan>) {
         ],
         program.programId
       );
-//      console.log("setUpStakan->stakanEscrowAccount: ", stakanEscrowAccount.toBase58());
 
   
     const [stakanMint, _stakanMintBump] = await web3.PublicKey.findProgramAddress(
@@ -119,7 +116,6 @@ export async function setUpStakan(program: Program<Stakan>) {
       ],
       program.programId
     );
-//    console.log("setUpStakan->stakanMint: ", stakanMint.toBase58());
   
     let rewardFundsAccount = await spl.Token.getAssociatedTokenAddress(
       spl.ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -182,6 +178,7 @@ export async function queryActiveUsers(
     }
     catch { 
     }
+    
     if (sessionAccount) {
       const sessionOwnerUserAccount = new web3.PublicKey(Buffer.from(sessionAccount['user_account']));
         
@@ -267,7 +264,6 @@ export class User {
         await arweave.transactions
           .getPrice(accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows), '')
       );
-//      console.log("max size: ",    accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows));
       return await this.arweaveAirdrop(arweave, savePrice);
     }
 
@@ -309,7 +305,6 @@ export class User {
     }
 
     async getGameSessionInfo(): Promise<accountsSchema.GameSessionAccount | undefined> {
-      console.log("this.gameSessionAccount: ", this.gameSessionAccount);
 
       const accountInfo 
         = await this.program.provider.connection.getAccountInfo(this.gameSessionAccount as web3.PublicKey);
@@ -365,8 +360,6 @@ export async function queryWalletOwnerAccount(
           ],
         }
     );
-//  console.log("queryWalletOwnerAccount: ", accounts)
-//  accounts.map(acc => console.log(acc.pubkey.toBase58()));
 
   for (let acc of accounts) {
     // deserialization success indicates this account is that we looked for
@@ -534,8 +527,6 @@ export async function purchaseStakanTokens(
 
       throw e;
     }
-
-//    console.log(logCtx);
 }
   
 export async function sellStakanTokens(
@@ -632,11 +623,7 @@ export async function initGameSession(
   }
 
   async function saveToArweave(user: User, arweave: Arweave, data: any): Promise<string | undefined> {
-//    console.log("before serialize: ", data);
-
     const serializedData = accountsSchema.GameSessionArchive.serialize(data);
-
-//    console.log("serializedData: ", serializedData);
 
     if (!user.account) 
       throw new Error('Error saving to Arweave: user.account is undefined');
@@ -667,15 +654,6 @@ export async function initGameSession(
     stakanTiles: any,
     logCtx: LogTerminalContext | undefined,
   ) {
-/*
-    const gameSessionInfo 
-      = await user.getGameSessionInfo();
-  
-    if (!gameSessionInfo) {
-      logCtx?.logLn('could not retrieve session account');
-      throw 'Cannot retrieve Session Info';
-    }
-*/    
     logCtx?.log('saving session data to arweave...');
     
     const dateTime = new Date();
@@ -806,7 +784,7 @@ export async function initGameSession(
         .rpc(); 
       } catch(e) {  
         logCtx?.logLn('failed ' + e);
-//        throw e;
+        throw e;
     }
     logCtx?.logLn('done ');
   }
@@ -834,7 +812,6 @@ export async function initGameSession(
   }
 
   export async function closeGlobalStakanAccountForDebug(stakanState: StakanState) {
-    console.log("closeGlobalStakanAccountForDebug: ", stakanState);
     await stakanState.program.methods
       .closeGlobalStakanAccountForDebug(
       )

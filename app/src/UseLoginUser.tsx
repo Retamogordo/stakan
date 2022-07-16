@@ -66,14 +66,9 @@ const useLoginUser = (
 
             logCtx.log("retrieving stakan global state account...")
             
-            console.log("retrieving stakan global state account...")
-            
             const state = await stakanApi.queryStakanAccount(program);
             logCtx.logLn(state 
                 ? "done, pubkey: " + state?.pubKey.toBase58() : "failed");
-
-//            await stakanApi.setUpStakan(program);
-//            state && await stakanApi.closeGlobalStakanAccountForDebug(state);
 
             setStakanState(state ? state : null);
         }
@@ -113,8 +108,6 @@ const useLoginUser = (
     }
 
     useEffect(() => {
-        console.log("useEffect() => []");
-
         const arw = Arweave.init({
             host: 'localhost',
             port: 1984,
@@ -122,7 +115,6 @@ const useLoginUser = (
             timeout: 20000,
             logging: false,
         });
-        console.log("Arweave ", arw)
             
         setArweave(arw);
     },

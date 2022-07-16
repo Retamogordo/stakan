@@ -155,7 +155,7 @@ class Assignable extends Function {
       ]);
 
       const [_data_size, inner_buffer] = UserAccountWrapped.deserialize(buffer);
-  //    console.log("----------- DATA SIZE: ", data_size);
+
       let data;
       try { 
         data = deserialize(schemaWithoutGameSession, UserAccount, inner_buffer);
@@ -229,7 +229,7 @@ class Assignable extends Function {
 
         return data;
       } catch(e) {
-        console.log(e);
+//        console.log(e);
         throw e;
       }
     }
@@ -278,7 +278,6 @@ class Assignable extends Function {
   
   return results.data.data.transactions.edges.map((edge: any) => {
 //    console.log("userAccount: ", userAccount.toBase58())
-//    console.log(edge.node)
     return edge.node.id
   });
 }
@@ -289,7 +288,7 @@ class Assignable extends Function {
     numberOfArchives: number
   ) {
     const archiveIds = await this.getArchiveIds(arweave, userAccount, numberOfArchives);
-//      console.log("ARCHIVE IDS: ", archiveIds); 
+
     let archivedData = new Array<GameSessionArchive>();
 
     for( let id of archiveIds ) {
@@ -299,7 +298,6 @@ class Assignable extends Function {
       const data = deserialize(GameSessionArchive.schema, GameSessionArchive, Buffer.from(buffer));
       archivedData.push(data);
     }
-//    console.log("archivedData: ", archivedData); 
 
     return archivedData;
   }

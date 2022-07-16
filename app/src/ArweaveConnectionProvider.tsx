@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import Arweave from 'arweave';
 
 const ArweaveConnectionProvider = (props: any) => {
@@ -20,7 +20,6 @@ const ArweaveConnectionProvider = (props: any) => {
                 return arweave.wallets.getAddress(arweaveWallet);
             })
             .then( arweaveStorageAddress => {
-//                console.log(arweaveStorageAddress);
                 props.onAddressGenerated && props.onAddressGenerated(arweaveStorageAddress);            
             });
     }

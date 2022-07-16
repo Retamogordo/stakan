@@ -1,5 +1,5 @@
 import React from 'react'
-import { createPieceByValue } from './piece'
+import { createPieceByValue, createPiece } from './piece'
 import { setupStakan, stamp, clearRows, isFull, canMove, STAKAN_BORDER_VALUE } from './stakanLogic'
 
 const drawValue = (ctx, x, y, width, label, value) => {
@@ -133,7 +133,10 @@ class StakanView extends React.Component {
     this.pieceYOffset = this.startPieceYOffset();
     this.rotationPosition = 0;
 
-    this.currentPiece = createPieceByValue(1 + Math.floor(Math.random() * 8));
+    const pieceXChosen = (Math.floor(Math.random() * 7 * 3) === 7*3-1);
+
+    this.currentPiece = !pieceXChosen 
+      ? createPieceByValue(1 + Math.floor(Math.random() * 7)) : createPiece('X');
 
     this.props.willRender();
   }
