@@ -8,7 +8,7 @@ import { Stakan } from './idl/stakan'
 import { LogTerminalContext } from "./UseLogTerminal";
 import { SignatureResult } from "@solana/web3.js";
 
-export const LAMPORTS_PER_STAKAN_TOKEN = 1000000;
+//export const LAMPORTS_PER_STAKAN_TOKEN = 1000000;
 //const ARWEAVE_FEE_WINSTON = 68142907; // 36063945
                    
 const axios = require('axios');

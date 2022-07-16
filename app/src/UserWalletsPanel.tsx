@@ -224,7 +224,9 @@ export const UserWalletsPanel = (props: any) => {
             </div>
             }
             <NumericNonNegativeInput 
-                visible={userWalletsStatus.solanaBalance > stakanApi.LAMPORTS_PER_STAKAN_TOKEN}
+//                visible={userWalletsStatus.solanaBalance > stakanApi.LAMPORTS_PER_STAKAN_TOKEN}
+                visible={userConnectionCtx?.stakanState?.lamportsPerToken 
+                    && userWalletsStatus.solanaBalance > userConnectionCtx?.stakanState?.lamportsPerToken}
                 disabled={props.disabled}
                 onInput={purchaseStakanTokens}
                 onInputValueChanged={handlePurchaseInputValueChanged}
