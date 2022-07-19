@@ -1,26 +1,26 @@
 {
   "files": {
     "main.css": "/stakan/static/css/main.c5becb3b.css",
-    "main.js": "/stakan/static/js/main.a7a9d52c.js",
+    "main.js": "/stakan/static/js/main.d53db7c3.js",
     "static/js/578.d808ece3.chunk.js": "/stakan/static/js/578.d808ece3.chunk.js",
-    "static/js/828.77e09650.chunk.js": "/stakan/static/js/828.77e09650.chunk.js",
-    "static/js/299.94e2c718.chunk.js": "/stakan/static/js/299.94e2c718.chunk.js",
-    "static/js/882.d980bcf0.chunk.js": "/stakan/static/js/882.d980bcf0.chunk.js",
+    "static/js/828.700746dd.chunk.js": "/stakan/static/js/828.700746dd.chunk.js",
+    "static/js/857.b41efb62.chunk.js": "/stakan/static/js/857.b41efb62.chunk.js",
+    "static/js/229.ae423453.chunk.js": "/stakan/static/js/229.ae423453.chunk.js",
     "static/js/507.59e7e4ab.chunk.js": "/stakan/static/js/507.59e7e4ab.chunk.js",
     "static/js/725.c73fe8a1.chunk.js": "/stakan/static/js/725.c73fe8a1.chunk.js",
-    "static/js/114.12fade42.chunk.js": "/stakan/static/js/114.12fade42.chunk.js",
+    "static/js/702.e7c3e84d.chunk.js": "/stakan/static/js/702.e7c3e84d.chunk.js",
     "index.html": "/stakan/index.html",
     "main.c5becb3b.css.map": "/stakan/static/css/main.c5becb3b.css.map",
-    "main.a7a9d52c.js.map": "/stakan/static/js/main.a7a9d52c.js.map",
+    "main.d53db7c3.js.map": "/stakan/static/js/main.d53db7c3.js.map",
     "578.d808ece3.chunk.js.map": "/stakan/static/js/578.d808ece3.chunk.js.map",
-    "828.77e09650.chunk.js.map": "/stakan/static/js/828.77e09650.chunk.js.map",
-    "299.94e2c718.chunk.js.map": "/stakan/static/js/299.94e2c718.chunk.js.map",
-    "882.d980bcf0.chunk.js.map": "/stakan/static/js/882.d980bcf0.chunk.js.map",
+    "828.700746dd.chunk.js.map": "/stakan/static/js/828.700746dd.chunk.js.map",
+    "857.b41efb62.chunk.js.map": "/stakan/static/js/857.b41efb62.chunk.js.map",
+    "229.ae423453.chunk.js.map": "/stakan/static/js/229.ae423453.chunk.js.map",
     "725.c73fe8a1.chunk.js.map": "/stakan/static/js/725.c73fe8a1.chunk.js.map",
-    "114.12fade42.chunk.js.map": "/stakan/static/js/114.12fade42.chunk.js.map"
+    "702.e7c3e84d.chunk.js.map": "/stakan/static/js/702.e7c3e84d.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.c5becb3b.css",
-    "static/js/main.a7a9d52c.js"
+    "static/js/main.d53db7c3.js"
   ]
 }
