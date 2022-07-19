@@ -9,11 +9,27 @@ use crate::transactions::tokens::*;
 use crate::transactions::game_session::*;
 
 declare_id!("C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx");
-/*
-pub fn program_id() -> Pubkey {
-    id()
+
+solana_security_txt::security_txt! {
+    // Required fields
+    name: "Stakan",
+    project_url: "https://retamogordo.github.io/stakan",
+    contacts: "email:yury.yukhananov@tutanota.com",
+    policy: "https://github.com/Retamogordo/stakan/SECURITY.md",
+
+    // Optional Fields
+    preferred_languages: "en,es,ru",
+    source_code: "https://github.com/Retamogordo/stakan",
+    auditors: "None",
+    acknowledgements: "
+        Super useful resources that made development of this project possible:
+        - https://lorisleiva.com/create-a-solana-dapp-from-scratch
+        - https://github.com/paul-schaaf/solana-escrow/
+        - David Choi Solana Programming series on Youtube: https://www.youtube.com/c/DavidChoiProgrammer
+"
 }
-*/
+
+
 #[program] 
 pub mod stakan {
     use super::*;
@@ -41,7 +57,6 @@ pub mod stakan {
 
     pub fn purchase_tokens(
         ctx: Context<PurchaseTokens>,
-//        stakan_state_account_bump: u8,
         token_amount: u64, 
     ) -> Result<()> {
         crate::transactions::tokens::purchase(ctx, token_amount)

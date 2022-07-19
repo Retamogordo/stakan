@@ -104,14 +104,12 @@ export const UserWalletsPanel = (props: any) => {
         setSellStakanTokensValue('');
         setSellStakanTokensLabel('');
 
-        if (isNaN(tokens) || tokens === 0) return;
+        if (isNaN(tokens) || 0 === tokens) return;
     
         if (user && stakanState) { 
             props.toggleLoadingMode(true);
 
         try {
-            const escrowBalance = await stakanState.getBalance();
-
             await stakanApi.sellStakanTokens(user, stakanState, tokens, props.logCtx);
             await updateUserWalletsStatus();
         } catch (e) {
@@ -187,8 +185,8 @@ export const UserWalletsPanel = (props: any) => {
             <div className="title-div">Arweave</div>
             {(() => {
                 const airdropNeeded = 
-//                    !userWalletsStatus.hasWinstonToStoreSession 
-//                    && 
+                    !userWalletsStatus.hasWinstonToStoreSession 
+                    && 
                     userWalletsStatus.arweaveWalletConnected
                     && userWalletsStatus.arweaveProviderConnected;
                 const divClassName = airdropNeeded ? 'error-msg-div' : '';
@@ -199,22 +197,30 @@ export const UserWalletsPanel = (props: any) => {
                         <div style={{textAlign: "right", marginRight: "5%"}}>
                         {
                             airdropNeeded
-                            ? <input type='button' className='left-panel-input'
+                            ?
+                            <input type='button' className='error-msg-div'
                                     value={'Airdrop some winston'} 
                                     onClick={airdropWinston}
                                     disabled={props.disabled}
                                 >
                             </input>
-                            : props.arweaveConnection.connected
+                            :
+                            <input type='button' className='left-panel-input'
+                                    value={'Airdrop some winston'} 
+                                    onClick={airdropWinston}
+                                    disabled={props.disabled}
+                                >
+                            </input>
+                        }
+
+                        {
+                            props.arweaveConnection.connected
                                 ? userWalletsStatus.arweaveProviderConnected 
                                     || !userConnectionCtx?.walletContext.connected
                                     ? null 
                                     : <div className='error-msg-div'>Arweave provider is disconnected. Is arlocal running ?</div>
                                 : 
-                                //userConnectionCtx?.walletContext.connected
-                                //    ?
-                                    <div className='error-msg-div'>Arweave wallet is disconnected. Is ArConnect installed ?</div>
-                                //    : null
+                                <div className='error-msg-div'>Arweave wallet is disconnected. Is ArConnect installed ?</div>
                         }
                         </div>
                     </div>

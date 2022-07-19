@@ -276,6 +276,7 @@ function App() {
           </div>
           { !stakanWidthBiggerThanHalf     
             ? <RightPanel 
+                arweaveConnection={arweaveConnection}
                 update={signalUpdateRightPanel} 
                 userConnectionCtx={userConnectionCtx}
                 logCtx={logCtx}

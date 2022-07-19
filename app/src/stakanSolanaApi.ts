@@ -650,7 +650,7 @@ export async function initGameSession(
     const arweaveConfig = arweave.getConfig();
     const url = arweaveConfig.api.protocol + '://' + arweaveConfig.api.host
                 + ':' + arweaveConfig.api.port + '/mine';
-    console.log("url: ", url);
+//    console.log("url: ", url);
     await axios.get(url);
 
     const statusAfterPost = await arweave.transactions.getStatus(tx.id);

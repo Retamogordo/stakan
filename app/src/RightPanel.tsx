@@ -1,10 +1,10 @@
 import {useState, useEffect, useRef} from 'react'
-import {GameSessionArchive, UserAccount} from './accountsSchema'
+import {GameSessionArchive} from './accountsSchema'
 import * as stakanApi from './stakanSolanaApi'
 import { BN } from "@project-serum/anchor";
 
 export const RightPanel = (props: any) => {
-    const [sessionsArchive, SetSessionsArchive] = useState<GameSessionArchive[]>();
+    const [sessionsArchive, setSessionsArchive] = useState<GameSessionArchive[]>();
     const [rewardBalance, setRewardBalance] = useState(0);
     const [championAccount, setChampionAccount] = useState<string | null>(null);
     const [activeUsers, setActiveUsers] = useState<any>();
@@ -12,16 +12,19 @@ export const RightPanel = (props: any) => {
 
     const getSessionsArchive = () => {
         const user = props.userConnectionCtx?.user;
-        const arweave = props.userConnectionCtx?.arweave;
+        const arweave = props.arweaveConnection.arweave;
+
+        console.log("getSessionsArchive->arweave: ", arweave);
 
         if (arweave && user?.account) { 
             props.logCtx.log("retrieving sessions archive...");
+            const maxArchivesToLoad = 100;
 
-            GameSessionArchive.get(arweave, user?.account, 100)
+            GameSessionArchive.get(arweave, user?.account, maxArchivesToLoad)
                 .then(archives => {
                     props.logCtx.logLn("done, retrieved " + archives.length + " sessions");
                     
-                    SetSessionsArchive(archives)
+                    setSessionsArchive(archives)
                 })
         }      
     }
