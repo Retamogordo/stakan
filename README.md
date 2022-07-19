@@ -55,5 +55,19 @@ Observe the left panel. Basically, if you see red things there, something is not
 If you see you are logged in, this means the contract is accessed on Solana Devnet.
 If the arlocal is running you'll need to press Airdrop Winston button so your game session can be stored on Arweave when finished. 
 Also you'll need to purchase Stakan Token(s) in order to be able to stake.
+If you see all those green checks beneath 'Connection and Balance Status' you can enter the amount of tokens to stake by the Stake & Start button to unlock it.
 
+![Before Start](readme_images/before-start.png)
+
+When you hit the Stake&Start button your Solana wallet will ask your to confirm the transaction. 
+At this point the stake is not charged yet, it will be charged only when the game session is over and only if you don't hit the record score.
+The transaction the wallet asks you to confirm is for creating a temporary account for the game session. 
+Once the session is over its account will be closed and your lamports are back into your wallet.
+This temporary account exists for the case of connection outage or other forced circumstances, when your session is interrupted. 
+Also it will prevent you from cheating by dropping the session when you see you're not doing it.
+See below for how you can really cheat the contract.
+As interrupted session is stored on browsers local storage it will be resumed next time you want to play.
+When the game session is over your stake goes to the reward fund in the case you lose, otherwise you're rewarded for victory.
+No matter the result, your session is stored on Arweave local node and this fact is reflected on the left panel on the bottom.
+The sessions are there as long as arlocal server runs.
 
