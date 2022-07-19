@@ -55,6 +55,7 @@ export const WalletConnectionProvider = (props: any) => {
                     <WalletDisconnectButton />
                 </WalletModalProvider>
                 <LoginProvider 
+                    arweaveConnection={props.arweaveConnection}
                     loggedUserChanged={props.loggedUserChanged}
                     onSigningOut={props.onSigningOut}
                     proceedSigningOut={props.proceedSigningOut}

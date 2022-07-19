@@ -96,6 +96,12 @@ class StakePanel extends React.Component<{}, StakePanelState> {
                     ? <span style={{color: 'green'}}>&#10003;</span>
                     : <span style={{color: 'red'}}>&#10005; try running 'npx arlocal' in terminal and reload page</span> 
                 }</div>
+                
+                <div style={{textAlign: 'left', marginLeft: "5%"}}>Arweave wallet {
+                    props.arweaveConnection.connected
+                    ? <span style={{color: 'green'}}>&#10003;</span>
+                    : <span style={{color: 'red'}}>&#10005; is arConnect installed ?</span> 
+                }</div>
 
                 <div style={{textAlign: 'left', marginLeft: "5%"}}>Arweave balance {
                     props.userWalletsStatus.hasWinstonToStoreSession

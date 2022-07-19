@@ -34,17 +34,16 @@ export const UserWalletsPanel = (props: any) => {
 
     const updateUserWalletsStatus = async () => {
         const user = userConnectionCtx?.user;
-        const arweave = userConnectionCtx?.arweave;
+        const arweave = props.arweaveConnection.arweave;
+        const arweaveWalletConnected = props.arweaveConnection.connected;
     
         const userBalance = await user?.getBalance();
         
-        const arweaveConnected = !!user && !!arweave 
-                                        && await user?.isArweaveWalletConnected(arweave)
         const arweaveProviderConnected = !!arweave 
             && await stakanApi.isArweaveProviderConnected(arweave)
 
         const arBalance 
-            = arweaveConnected && arweaveProviderConnected 
+            = arweaveWalletConnected && arweaveProviderConnected 
                 ? await user?.getArweaveBalance(arweave) : 0;
         const hasWinstonToStoreSession 
             = !!user && !!arweave 
@@ -55,7 +54,9 @@ export const UserWalletsPanel = (props: any) => {
           let userWalletsStatus = new UserWalletsStatus();
           
           userWalletsStatus.solanaBalance = userBalance ? userBalance : 0;
-          userWalletsStatus.arweaveWalletConnected = arweaveConnected;
+          userWalletsStatus.arweaveWalletConnected = 
+            !!arweaveWalletConnected;
+
           userWalletsStatus.arweaveBalance = arBalance ? arBalance : 0;
           userWalletsStatus.hasWinstonToStoreSession = hasWinstonToStoreSession;
           userWalletsStatus.arweaveProviderConnected = arweaveProviderConnected;
@@ -66,7 +67,7 @@ export const UserWalletsPanel = (props: any) => {
 
     const airdropWinston = async () => {
         const user = userConnectionCtx?.user;
-        const arweave = userConnectionCtx?.arweave;
+        const arweave = props.arweaveConnection.arweave;
     
 //        console.log("props.cols: ", props.cols);        
         if (!!arweave && await user?.arweaveAirdropMin(arweave, props.cols, props.rows)) 
@@ -161,9 +162,16 @@ export const UserWalletsPanel = (props: any) => {
         props.onUserWalletsStatusChanged(userWalletsStatus);        
     }, [userWalletsStatus]);
 
+    useEffect(() => {
+        updateUserWalletsStatus()
+//        console.log("userConnectionCtx?.arweaveWalletConnected: ", userConnectionCtx?.arweaveWalletConnected);
+    }, [props.arweaveConnection.connected]);
+    
+
     return (
         <div className='left-panel'>
             <WalletConnectionProvider 
+                arweaveConnection={props.arweaveConnection}
                 loggedUserChanged={handleUserChanged}
                 toggleLoadingMode={props.toggleLoadingMode}
                 onSigningOut={props.onSigningOut}
@@ -179,8 +187,9 @@ export const UserWalletsPanel = (props: any) => {
             <div className="title-div">Arweave</div>
             {(() => {
                 const airdropNeeded = 
-                    !userWalletsStatus.hasWinstonToStoreSession 
-                    && userWalletsStatus.arweaveWalletConnected
+//                    !userWalletsStatus.hasWinstonToStoreSession 
+//                    && 
+                    userWalletsStatus.arweaveWalletConnected
                     && userWalletsStatus.arweaveProviderConnected;
                 const divClassName = airdropNeeded ? 'error-msg-div' : '';
                 
@@ -196,15 +205,16 @@ export const UserWalletsPanel = (props: any) => {
                                     disabled={props.disabled}
                                 >
                             </input>
-                            : userWalletsStatus.arweaveWalletConnected
+                            : props.arweaveConnection.connected
                                 ? userWalletsStatus.arweaveProviderConnected 
                                     || !userConnectionCtx?.walletContext.connected
                                     ? null 
                                     : <div className='error-msg-div'>Arweave provider is disconnected. Is arlocal running ?</div>
-                                : userConnectionCtx?.walletContext.connected
-                                    ?
+                                : 
+                                //userConnectionCtx?.walletContext.connected
+                                //    ?
                                     <div className='error-msg-div'>Arweave wallet is disconnected. Is ArConnect installed ?</div>
-                                    : null
+                                //    : null
                         }
                         </div>
                     </div>

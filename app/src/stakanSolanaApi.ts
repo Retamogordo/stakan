@@ -260,10 +260,14 @@ export class User {
     }
 
     async arweaveAirdropMin(arweave: Arweave, tilesCols: number, tilesRows: number): Promise<boolean> {
-      const savePrice = parseInt(
-        await arweave.transactions
-          .getPrice(accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows), '')
+      const maxSize = accountsSchema.GameSessionArchive.maxSize(tilesCols, tilesRows)
+      const coeffDueToBugInArLocal = 1;
+      const savePrice = coeffDueToBugInArLocal * parseInt(
+        await arweave.transactions.getPrice(maxSize, undefined)
       );
+
+      console.log("-------------------- save price: ", savePrice, 'maxSize: ', maxSize)
+    
       return await this.arweaveAirdrop(arweave, savePrice);
     }
 
@@ -409,6 +413,8 @@ export async function getUserFromAccount(
 }
 
 export async function signUpUser(user: User, stakanState: StakanState, arweave: Arweave) {  
+    console.log("arweaveWallet:", user.arweaveWallet);
+
     const arweaveStorageAddress = await arweave.wallets.getAddress(user.arweaveWallet);
 
     const [userAccount, userAccountBump] = await web3.PublicKey.findProgramAddress(
@@ -623,8 +629,11 @@ export async function initGameSession(
   }
 
   async function saveToArweave(user: User, arweave: Arweave, data: any): Promise<string | undefined> {
+//    console.log("DATA: ", data);
+    
     const serializedData = accountsSchema.GameSessionArchive.serialize(data);
 
+//    console.log("SERIALIZED DATA: ", serializedData);
     if (!user.account) 
       throw new Error('Error saving to Arweave: user.account is undefined');
 
@@ -638,8 +647,11 @@ export async function initGameSession(
     await arweave.transactions.sign(tx, user.arweaveWallet);
     await arweave.transactions.post(tx);
 
-    // mine transaction to simulate immediate confirmation
-    await axios.get('http://localhost:1984/mine');
+    const arweaveConfig = arweave.getConfig();
+    const url = arweaveConfig.api.protocol + '://' + arweaveConfig.api.host
+                + ':' + arweaveConfig.api.port + '/mine';
+    console.log("url: ", url);
+    await axios.get(url);
 
     const statusAfterPost = await arweave.transactions.getStatus(tx.id);
 
@@ -658,6 +670,8 @@ export async function initGameSession(
     
     const dateTime = new Date();
     const tilesArray = stakanTiles.tiles.flat();
+
+    console.log("finishGameSession-> arweave: ", arweave);
 
     let txid = await saveToArweave(user, arweave,
       {

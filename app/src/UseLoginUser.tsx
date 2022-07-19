@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useConnection, useWallet, useAnchorWallet, WalletContextState } from '@solana/wallet-adapter-react';
 import * as stakanApi from "./stakanSolanaApi";
-import { Connection, ConfirmOptions } from '@solana/web3.js';
+import { Connection, ConfirmOptions, PublicKey } from '@solana/web3.js';
 import { Program, Provider, Wallet } from "@project-serum/anchor";
-import Arweave from 'arweave'
 import { IDL, Stakan } from './idl/stakan'
+import idl from './idl/stakan.json'
 import { LogTerminalContext } from './UseLogTerminal';
+import {ArweaveConnectionContext} from './UseArweaveConnection'
 
 export class UserConnectionContextState {
     user: stakanApi.User | null;
     stakanProgram: Program<Stakan> | null;
     stakanState: stakanApi.StakanState | null
     walletContext: WalletContextState;
-    arweave: Arweave | null;
     connected: boolean;
 
     constructor(
@@ -20,27 +20,26 @@ export class UserConnectionContextState {
         stakanProgram: Program<Stakan> | null,
         stakanState: stakanApi.StakanState | null,
         walletContext: WalletContextState, 
-        arweave: Arweave | null,
-        connected: boolean,  
+        connected: boolean,
     ) {
         this.user = user;
         this.stakanProgram = stakanProgram;
         this.stakanState = stakanState;
         this.walletContext = walletContext;
-        this.arweave = arweave;
         this.connected = connected;
     }
 }
 
 const useLoginUser = (
     usernameToSignUp: string | null,
+    arweaveConnection: ArweaveConnectionContext,
     userSignedOut: boolean,
     logCtx: LogTerminalContext,
 ): UserConnectionContextState => {
     const [stakanProgram, setStakanProgram] = useState<Program<Stakan> | null>(null);
     const [stakanState, setStakanState] = useState<stakanApi.StakanState | null>(null);
-    const [arweave, setArweave] = useState<Arweave | null>(null);
     const [currUser, setCurrUser] = useState<stakanApi.User | null>(null);
+
     const anchorConnection = useConnection();
     const walletCtx = useWallet();
     const anchorWallet = useAnchorWallet();
@@ -58,11 +57,10 @@ const useLoginUser = (
             
             const program = new Program<Stakan>(
                 IDL, 
-                "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx",
+                new PublicKey(idl.metadata.address), // program id
                 provider
             );
             setStakanProgram(program);        
-
 
             logCtx.log("retrieving stakan global state account...")
             
@@ -77,7 +75,7 @@ const useLoginUser = (
         }
     }
 
-    const tryToLogin = async (arweave: Arweave) => {
+    const tryToLogin = async () => {
         if (stakanProgram && stakanState) {
             logCtx.log("logging user in...");
             
@@ -98,41 +96,28 @@ const useLoginUser = (
         setCurrUser(null);
     }
     
-    const tryToSignUp = async (user: stakanApi.User, arweave: Arweave) => {
+    const tryToSignUp = async (user: stakanApi.User) => {
         logCtx.log("signing user up...");
-        if (stakanState && arweave) {
-            await stakanApi.signUpUser(user, stakanState, arweave);
-            await tryToLogin(arweave);
+        if (stakanState && arweaveConnection.arweave) {
+            await stakanApi.signUpUser(user, stakanState, arweaveConnection.arweave);
+            await tryToLogin();
         }
         logCtx.logLn("done, username " + user.username)
     }
 
     useEffect(() => {
-        const arw = Arweave.init({
-            host: 'localhost',
-            port: 1984,
-            protocol: 'http',
-            timeout: 20000,
-            logging: false,
-        });
-            
-        setArweave(arw);
-    },
-    [])
-
-    useEffect(() => {
-        if (stakanProgram && stakanState && arweave) {
+        if (stakanProgram && stakanState && arweaveConnection.connected) {
             if (!usernameToSignUp || userSignedOut) {
-                tryToLogin(arweave);
+                tryToLogin();
             } else {
                 const user = new stakanApi.User(
                     usernameToSignUp, 
                     stakanProgram,
                     stakanProgram.provider.wallet as Wallet,
-                    undefined
+                    undefined // will assign 'use_wallet'
                   );
 
-                tryToSignUp(user, arweave);
+                tryToSignUp(user);
             }
         } else {
             logout();
@@ -148,15 +133,14 @@ const useLoginUser = (
 
         reconnect();
     },
-    [walletCtx.connected, arweave]);
-    
+    [walletCtx.connected, arweaveConnection.connected]);
+
     return new UserConnectionContextState(
         currUser, 
         stakanProgram, 
         stakanState, 
         walletCtx,
-        arweave,
-        walletCtx.connected
+        walletCtx.connected,
     );
 };
 

@@ -1,10 +1,7 @@
-import { web3 } from "@project-serum/anchor";
 import {useState, useEffect, useRef} from 'react'
 import {GameSessionArchive, UserAccount} from './accountsSchema'
 import * as stakanApi from './stakanSolanaApi'
 import { BN } from "@project-serum/anchor";
-
-//import {UserConnectionContextState} from './UseLoginUser'
 
 export const RightPanel = (props: any) => {
     const [sessionsArchive, SetSessionsArchive] = useState<GameSessionArchive[]>();
@@ -64,7 +61,6 @@ export const RightPanel = (props: any) => {
     }
  
     const pollChain = () => {
-//        const stakanState = props.userConnectionCtx?.stakanState as stakanApi.StakanState;
         if (!props.userConnectionCtx?.stakanState) return;
 
         stakanApi.queryStakanAccount(props.userConnectionCtx?.stakanState.program)
@@ -83,7 +79,9 @@ export const RightPanel = (props: any) => {
             })
             .then(() => {
                 const stakanState = props.userConnectionCtx?.stakanState as stakanApi.StakanState;
-                return stakanState.championAccount && stakanApi.getUserFromAccount(stakanState.championAccount, stakanState)
+                return stakanState.championAccount 
+                    ? stakanApi.getUserFromAccount(stakanState.championAccount, stakanState)
+                    : undefined
             })
             .then(acc => {
                 setChampionAccount(acc ? acc.username : null)

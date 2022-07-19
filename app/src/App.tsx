@@ -11,6 +11,7 @@ import { LogTerminal } from './LogTerminal'
 import { UseLogTerminal } from './UseLogTerminal';
 import { UserWalletsPanel, UserWalletsStatus } from './UserWalletsPanel';
 import {GameSessionArchive} from './accountsSchema'
+import {UseArweaveConnection} from './UseArweaveConnection'
 
 function App() {  
   const [userConnectionCtx, setUserConnectionCtx] = useState<UserConnectionContextState | null>(null);
@@ -31,8 +32,11 @@ function App() {
   const [archivedSession, setArchivedSession] = useState<GameSessionArchive | null>(null);
   const [stakanWidthBiggerThanHalf, setStakanWidthBiggerThanHalf] = useState(false);
   const [rewardBalance, setRewardBalance] = useState(0);
+
+//  console.log("window.arweaveWallet #1:", window)
   
   const logCtx = UseLogTerminal({log: ''}); 
+  const arweaveConnection = UseArweaveConnection({logCtx});
 
   const cols = 10;
   const rows = 16;
@@ -48,12 +52,14 @@ function App() {
   
       setLoadingMode(true);
 
-      if (user && stakanState && userConnectionCtx.arweave) {
+      if (user && stakanState && arweaveConnection.arweave ) {
+//        if (user && stakanState && userConnectionCtx.arweave) {
         if (!user.gameSessionAccount) { // check for pending session
           await stakanApi.initGameSession(
             user, 
             stakanState, 
-            userConnectionCtx.arweave,
+            arweaveConnection?.arweave,
+//            userConnectionCtx.arweave,
             stakeValue,
             logCtx,
           );
@@ -111,12 +117,12 @@ function App() {
       setLoadingMode(true);
 
       try {
-        if (user && stakanState && userConnectionCtx.arweave) {
+        if (user && stakanState && arweaveConnection.arweave) {
           await stakanApi.finishGameSession(
             user, 
             stakanState,
             session,
-            userConnectionCtx.arweave,
+            arweaveConnection.arweave,
             tiles,
             logCtx,
             );
@@ -184,13 +190,19 @@ function App() {
     setProceedSigningOut(true);
     setSigningOutMode(false);
   }
+
+  useEffect(() => {
+//    console.log("window.arweaveWallet: ", window);
+  }, []);
   
   useEffect(() => {
+//    console.log("window.arweaveWallet: ", window);
   }, [userConnectionCtx?.stakanState]);
 
   useEffect(() => {
     setSignalUserWalletsStatus(true);
     setSignalUpdateRightPanel(true);
+//    console.log("window.arweaveWallet: ", window);
   }, [userConnectionCtx?.user]);
 
   useEffect(() => {
@@ -220,6 +232,7 @@ function App() {
       <div className='app-wrapper'>
         <div className="main-area-wrapper">
           <UserWalletsPanel 
+            arweaveConnection={arweaveConnection}
             update={signalUserWalletsStatus} 
             disabled={sessionActive.active || loadingMode || signingOutMode}
             logCtx={logCtx}
@@ -235,6 +248,7 @@ function App() {
 
           <div className="stakan-wrapper">
             <StakePanel 
+              arweaveConnection={arweaveConnection}
               visible={!sessionActive.active}
               userConnectionCtx={userConnectionCtx}
               userWalletsStatus={userWalletsStatus}

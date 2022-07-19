@@ -8,10 +8,7 @@ const LoginProvider = (props: any) => {
         null
     );
     const [userSignedOut, setUserSignedOut] = useState(false);
-    const userConnectionCtx = useLoginUser(enteredUserName, userSignedOut, props.logCtx);
-
-    const handleChange = (ev: any) => {
-    }
+    const userConnectionCtx = useLoginUser(enteredUserName, props.arweaveConnection, userSignedOut, props.logCtx);
 
     const handleKeyUp = (ev: any) => {
         if (ev.keyCode === 13) {
@@ -22,20 +19,6 @@ const LoginProvider = (props: any) => {
     const handleSignOutButtonClicked = (ev: any) => {
         if (userConnectionCtx.user && userConnectionCtx.stakanState) {
             props.onSigningOut && props.onSigningOut(true);
-//            props.toggleLoadingMode && props.toggleLoadingMode(true);
-/*
-            stakanApi.signOutUser(
-                userConnectionCtx.user, 
-                userConnectionCtx.stakanState,
-                props.logCtx,
-            )
-            .then(() => {
-                userConnectionCtx.user = null;
-                setUserSignedOut(true);
-
-//                props.toggleLoadingMode && props.toggleLoadingMode(false);
-            });
-            */
         }
     }
 
@@ -78,7 +61,7 @@ const LoginProvider = (props: any) => {
     useEffect(() => {
         props.loggedUserChanged && props.loggedUserChanged(userConnectionCtx);
     },
-    [userConnectionCtx.user, userConnectionCtx.arweave])
+    [userConnectionCtx.user])
 
     useEffect(() => {
         setEnteredUserName(null);
@@ -143,19 +126,24 @@ const LoginProvider = (props: any) => {
                     Fatal: Stakan Global State not present
                 </div>
                 :
+                !props.arweaveConnection.connected
+                ?
+                <div style={{marginLeft: "5%", color: "red"}}>
+                    Connect Arweave wallet before signing up
+                </div>
+                : 
                 userConnectionCtx.connected 
                 ?
                 <div style={{marginLeft: "5%"}}>
                     Sign up:
-                    <div style={{textAlign: "center"}}>
-                        <input className='left-panel-input' 
-                            type="text" 
-                            defaultValue={''}
-                            onChange={handleChange} 
-                            onKeyUp={handleKeyUp}
-                            disabled={!userConnectionCtx.connected || userConnectionCtx.user !== null }>
-                        </input>
-                    </div>
+                        <div style={{textAlign: "center"}}>
+                            <input className='left-panel-input' 
+                                type="text" 
+                                defaultValue={''}
+                                onKeyUp={handleKeyUp}
+                                disabled={!userConnectionCtx.connected || userConnectionCtx.user !== null }>
+                            </input>
+                        </div>
                 </div>
                 :
                 null

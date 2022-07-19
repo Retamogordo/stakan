@@ -212,7 +212,6 @@ class Assignable extends Function {
               ['tiles_cols', 'u8'],
               ['tiles_rows', 'u8'],
               ['tiles', [GameSessionArchive.tilesCols*GameSessionArchive.tilesRows]]
-              //              ['tiles', 'String'],
             ] 
         }
       ]
@@ -277,7 +276,6 @@ class Assignable extends Function {
   let results = await arweave.api.post('/graphql', queryObject);
   
   return results.data.data.transactions.edges.map((edge: any) => {
-//    console.log("userAccount: ", userAccount.toBase58())
     return edge.node.id
   });
 }
