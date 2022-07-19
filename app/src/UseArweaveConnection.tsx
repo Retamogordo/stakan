@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Arweave from 'arweave';
+import * as arconnect from 'arconnect'
 
 export class ArweaveConnectionContext {
     arweave: Arweave | null;
@@ -23,11 +24,14 @@ export const UseArweaveConnection = (props: any) => {
     const [address, setAddress] = useState<string | null>(null);
 
     const handleWalletLoaded = () => {
-        window.arweaveWallet.getActiveAddress()
-            .then(arweaveAddress => {
-                setConnected(true);
-                setAddress(arweaveAddress);
-            });
+        window.arweaveWallet.connect(['ACCESS_ADDRESS'], {name: "Stakan"},)
+            .then( () => {
+                window.arweaveWallet.getActiveAddress()
+                    .then(arweaveAddress => {
+                        setConnected(true);
+                        setAddress(arweaveAddress);
+                    })
+        });
     }
 
     const init = () => {

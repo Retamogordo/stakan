@@ -8,7 +8,7 @@ use crate::transactions::user::*;
 use crate::transactions::tokens::*;
 use crate::transactions::game_session::*;
 
-declare_id!("C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx");
+declare_id!("6mEpDuNtJojXtHjBjLgjVM9v2incRGtpz6C52uwDxt98");
 
 solana_security_txt::security_txt! {
     // Required fields

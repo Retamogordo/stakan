@@ -1,19 +1,19 @@
 [features]
 seeds = false
 [programs.localnet]
-stakan = "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
+stakan = "6mEpDuNtJojXtHjBjLgjVM9v2incRGtpz6C52uwDxt98"
 
 [programs.devnet]
-stakan = "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
+stakan = "6mEpDuNtJojXtHjBjLgjVM9v2incRGtpz6C52uwDxt98"
 
 [programs.testnet]
-stakan = "C5WmRvAk9BBWyg3uSEZ4EHtrNVn7jZu7qgykckXxLekx"
+stakan = "6mEpDuNtJojXtHjBjLgjVM9v2incRGtpz6C52uwDxt98"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "/home/yury/.config/solana/id.json"
 
 [scripts]
