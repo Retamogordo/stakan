@@ -30,8 +30,11 @@ First you'll need to set your wallet adapters network to Devnet.
 Next you'll need to airdrop some lamports onto your wallet. This can be done, for instance, by using solana-cli.  
 Please refer to https://docs.solana.com/cli/install-solana-cli-tools for installation instructions.  
 Once installed, open a terminal and configure it by:  
+
 solana config set --url devnet  
+
 Then airdrop some sol:  
+
 solana airdrop 2 <your wallet pubkey>  
 
 ### Arweave
@@ -78,3 +81,13 @@ When the game session is over your stake goes to the reward fund in the case you
 No matter the result, your session is stored on Arweave local node and this fact is reflected on the left panel on the bottom.  
 The sessions are there as long as arlocal server runs.  
 
+## Cheating
+The web client communicates directly to the Solana program, so anybody can modify the client in such a way it sends counterfeit score to the program thus gaining the reward.
+
+## Acknowledgements
+These resourses have been highly useful for me during the process of development:  
+    - https://lorisleiva.com/create-a-solana-dapp-from-scratch  
+    - https://github.com/paul-schaaf/solana-escrow/  
+    - David Choi Solana Programming series on Youtube:   
+        https://www.youtube.com/c/DavidChoiProgrammer
+    - Solana Cookbook
