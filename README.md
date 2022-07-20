@@ -8,7 +8,7 @@ of Solana contracts combined with Arweave persistance.
 ![Stakan Overview](readme_images/overview.png)
 
 ## Website  
-    [Stakan on GitPages](https://retamogordo.github.io/stakan/)
+[Stakan on GitPages](https://retamogordo.github.io/stakan/)
 
 ## Disclaimer
 
