@@ -120,6 +120,19 @@ and
 There is no need to run arweave node since it is run by the test itself.  
 
 ## Reward Calculation
+The formula was found empirically, basically it sets lower and upper bounds for the reward, which asympthotically reaches total_reward_amount/2 at infinity while the curve slope depends on stake and score record values.
+
+reward upper limit: h = total_reward_amount/2  
+reward lower limit: s = user_stake  
+max. score record: x0  
+users score: x  
+user reward: y  
+
+formula:   
+    if x <= x0 then y = -s => user loses, stake is taken    
+    else y = h + (s-h)*exp(-s/h*x*(x-x0)/h)
+
+Some sketches of these functions family:  
 ![Graph](readme_images/graph.png)
 
 
