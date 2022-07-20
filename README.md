@@ -129,8 +129,8 @@ users score: x
 user reward: y  
 
 formula:   
-    if x <= x0 then y = -s => user loses, stake is taken    
-    else y = h + (s-h)*exp(-s/h*x*(x-x0)/h)
+    if x <= x0 then ```y = -s``` => user loses, stake is taken    
+    else ```y = h + (s-h)*exp(-s/h*x*(x-x0)/h)```
 
 Some sketches of these functions family:  
 ![Graph](readme_images/graph.png)
