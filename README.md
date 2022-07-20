@@ -35,12 +35,12 @@ solana config set --url devnet
 
 Then airdrop some sol:  
 
-solana airdrop 2 <your wallet pubkey>  
+```solana airdrop 2 <your wallet pubkey>  
 
 ### Arweave
 Please install ArConnect browser extention.   
 You will need to set up an Arweave Wallet by a standard procedure involving seedphrase feeding.  
-On ArConnect from Settings->Gateway->Custom choose your gateway to be l
+On ArConnect from Settings->Gateway->Custom choose your gateway to be 
 localhost, port 1984, protocol http.  
 In a terminal window run Arweave local server by:
 
@@ -72,7 +72,7 @@ If you see all those green checks beneath 'Connection and Balance Status' you ca
 When you hit the Stake&Start button your Solana wallet will ask your to confirm the transaction.   
 At this point the stake is not charged yet, it will be charged only when the game session is over and only if you don't hit the record score.  
 The transaction the wallet asks you to confirm is for creating a temporary account for the game session.   
-Once the session is over its account will be closed and your lamports are back into your wallet.  
+Once the session is over its account will be closed and your lamports are back into your wallet (the wallet asks to confirm this too).  
 This temporary account exists for the case of connection outage or other forced circumstances, when your session is interrupted.   
 Also it will prevent you from cheating by dropping the session when you feel you're not doing it.  
 See below for how you can really cheat the contract.  
@@ -89,5 +89,5 @@ These resourses have been highly useful for me during the process of development
     - https://lorisleiva.com/create-a-solana-dapp-from-scratch  
     - https://github.com/paul-schaaf/solana-escrow/  
     - David Choi Solana Programming series on Youtube:   
-        https://www.youtube.com/c/DavidChoiProgrammer
+        https://www.youtube.com/c/DavidChoiProgrammer  
     - Solana Cookbook
