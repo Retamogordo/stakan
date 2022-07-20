@@ -81,6 +81,10 @@ When the game session is over your stake goes to the reward fund in the case you
 No matter the result, your session is stored on Arweave local node and this fact is reflected on the left panel on the bottom.  
 The sessions are there as long as arlocal server runs.  
 
+## Chain Polling
+The Solana Devnet is polled regularly to query current game session accounts on-chain in order to display usernames of gamers owning these sessions.  
+The players usernames are displayed as Active Users on the right panel.  
+
 ## Contract Description
 ### Global Accounts
 After program deployment, the global account setup routine is run. It creates a PDA wallet for lamports (I called this account escrow, which is not an accurate name) held for tokens being trade.    
@@ -151,5 +155,5 @@ These resourses have been highly useful for me during the process of development
     - https://github.com/paul-schaaf/solana-escrow/  
     - David Choi Solana Programming series on Youtube:   
         https://www.youtube.com/c/DavidChoiProgrammer  
-    - Solana Cookbook
+    - Solana Cookbook  
     - http://fooplot.com
