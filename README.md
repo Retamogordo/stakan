@@ -97,7 +97,7 @@ When a new user signs up two accounts are created:
 the first one references user wallet pubkey and token account (this is the second account created upon signing up), arweave storage id, user name, number of game session ever played and so on.  
 The second account created is an associated token account for holding Stakan tokens being traded and staked.  
 The user can sign out if they don't have a game session pending.  
-In this case their tokens a sold, so the user gets corresponding amount of lamport back to their wallet.  
+In this case their tokens are sold, so the user gets the corresponding amount of lamports back to their wallet.  
 
 ### Token Trading
 When a user purchases tokens, the desired token supply is minted out of thin air and deposited to their associated token account.  
