@@ -91,7 +91,9 @@ The two mentioned accounts are established once and their balances are modified 
 ### User Account
 When a new user signs up two accounts are created:  
 the first one references user wallet pubkey and token account (this is the second account created upon signing up), arweave storage id, user name, number of game session ever played and so on.  
-The second account created is an associated token account for holding Stakan tokens being traded and staked.
+The second account created is an associated token account for holding Stakan tokens being traded and staked.  
+The user can sign out if they don't have a game session pending.  
+In this case their tokens a sold, so the user gets corresponding amount of lamport back to their wallet.  
 
 ### Token Trading
 When a user purchases tokens, the desired token supply is minted out of thin air and deposited to their associated token account.  
@@ -101,25 +103,34 @@ When the user sells their tokens, these are transfered to the global reward acco
 
 ### Game Session
 When the user initiates a game session, a new account is created. It holds the token stake amount and serves as a lock for ongoing session.  
-This prevents the user from starting multiple sessions at one time and ensures that the stake is not lost if the client gets disconnected.
+This prevents the user from starting multiple sessions at one time and ensures that the stake is not lost if the client gets disconnected.    
 The account is closed after the session is over and stored to Arweave node. 
 
 ## Tests
-There are some tests that can be run on Solana localnet test validator.
-In the cloned repo modify Anchor.toml cluster to 'localnet'.
+There are some tests that can be run on Solana localnet test validator.  
+In the cloned repo modify Anchor.toml cluster to 'localnet'.  
 Build the library by running   
-``` anchor build ```
-then
-``` anchor run after-build ```
-run the local validator in a terminal window
-``` solana-test-validator ```
-and
-``` anchor deploy ```
-here there is no need to run arweave node since it is run by the test itself
+``` anchor build ```  
+then  
+``` anchor run after-build ```  
+run the local validator in a terminal window  
+``` solana-test-validator ```  
+and  
+``` anchor deploy ```  
+There is no need to run arweave node since it is run by the test itself.  
+
+## Reward Calculation
+![Graph](readme_images/graph.png)
+
 
 
 ## Cheating
 The web client communicates directly to the Solana program, so anybody can modify the client in such a way it sends counterfeit score to the program thus gaining the reward.
+
+## Contributions
+This project is experimental.  
+Solana contract review, design flaws, bug reports, better client UI or any other suggestions are welcome with gratitude.  
+
 
 ## Acknowledgements
 These resourses have been highly useful for me during the process of development:  

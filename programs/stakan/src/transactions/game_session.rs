@@ -119,7 +119,6 @@ pub fn init(
     game_session_account.id = GameSession::ID.as_bytes().to_vec();
     game_session_account.user_account = ctx.accounts.user_account.key();
     game_session_account.stake = stake;
-//    ctx.accounts.user_account.user.last_reward = 0;
 
     ctx.accounts.user_account.set_game_session(Some(game_session_account.key()));
 
@@ -150,10 +149,10 @@ pub fn finish(ctx: Context<FinishGameSession>,
                 // if half_funds <= stake, nothing is transferred, 
                 // so user keeps their stake
             if half_funds > stake {
-                let h: f64 = half_funds as f64;
-                let s: f64 = stake as f64;
-                let x: f64 = game_session_score as f64;
-                let x0: f64 = global_max_score as f64;
+                let h = half_funds as f64;
+                let s = stake as f64;
+                let x = game_session_score as f64;
+                let x0 = global_max_score as f64;
                 let reward = (h + (s - h) * ((-s/h * x*(x - x0)/h) as f64).exp()) as u64;
 
                 let temp_bump: [u8; 1] = ctx.accounts.stakan_state_account.stakan_state_account_bump.to_le_bytes();
