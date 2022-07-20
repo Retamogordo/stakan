@@ -152,3 +152,4 @@ These resourses have been highly useful for me during the process of development
     - David Choi Solana Programming series on Youtube:   
         https://www.youtube.com/c/DavidChoiProgrammer  
     - Solana Cookbook
+    - http://fooplot.com
