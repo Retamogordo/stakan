@@ -15,7 +15,6 @@ pub struct PurchaseTokens<'info> {
     stakan_escrow_account: AccountInfo<'info>,
 
     #[account(mut,
-//        constraint = mint.key() == stakan_state_account.mint_token,
     )]
     mint: Account<'info, Mint>, 
 
@@ -36,11 +35,7 @@ pub struct PurchaseTokens<'info> {
     token_program: Program<'info, Token>,
     system_program: Program<'info, System>,
 }
-/*
-impl PurchaseTokens<'_> {
-    pub const LAMPORTS_PER_STAKAN_TOKEN: u64 = 1000000;
-}
-*/
+
 #[derive(Accounts)]
 pub struct SellTokens<'info> {
     stakan_state_account: Box<Account<'info, StakanGlobalState>>,

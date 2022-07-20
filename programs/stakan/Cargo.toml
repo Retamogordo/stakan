@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Solana + Arweave on-chain demo game created with Anchor"
 authors = ["Yury <yury.yukhananov@tutanota.com>"]
 edition = "2018"
-keywords = ["solana", "anchor", "arweave", "borsch", "graphql"]
+keywords = ["solana", "anchor", "associated-token", "borsch", "arweave"]
 repository = "https://github.com/Retamogordo/stakan"
 
 

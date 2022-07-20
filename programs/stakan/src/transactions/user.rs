@@ -5,7 +5,6 @@ use crate::transactions::set_up_stakan::StakanGlobalState;
 use crate::errors::StakanError;
 
 macro_rules! signer_seeds {
-    // `()` indicates that the macro takes no argument.
     ($user_inner: ident) => {
         [   
             StakanGlobalState::SEED.as_ref(),
@@ -19,15 +18,12 @@ macro_rules! signer_seeds {
 }
 
 #[account]
-//#[derive(agsol_borsh_schema::BorshSchema)]
 pub struct User {
     pub inner_size: u16,
     pub user: UserInner,    
 } 
 
 impl User {
-//    pub(crate) const SEED: &'static [u8] = b"user_account";
-
     pub(crate) fn size_for_init() -> usize {
         use std::mem::size_of;
 
@@ -73,7 +69,6 @@ pub struct UserInner {
     pub saved_game_sessions: u64,
     pub token_account: Pubkey,
     pub arweave_storage_address: Vec<u8>, 
-//    pub last_reward: u64,
     pub game_session: Option<Pubkey>,
 } 
 
@@ -191,7 +186,7 @@ pub struct SignOutUser<'info> {
     system_program: Program<'info, System>,
     rent: Sysvar<'info, Rent>,
 }
-
+// for dev and debug only
 #[derive(Accounts)]
 pub struct ForceDeleteUser<'info> {
     #[account(mut, 
@@ -237,7 +232,6 @@ pub fn sign_up(ctx: Context<SignUpUser>,
         saved_game_sessions: 0,
         token_account: ctx.accounts.token_account.key(),
         arweave_storage_address: arweave_storage_address.into_bytes(),
-//        last_reward: 0,
         game_session: None,
     };
 

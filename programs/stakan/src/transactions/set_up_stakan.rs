@@ -184,7 +184,7 @@ pub fn set_up_stakan(ctx: Context<SetupStakan>,
     acc.champion_account = None;
     Ok(())    
 }
-
+// this is used for dev & debug only
 pub fn close_acc(ctx: Context<CloseStakanAccountForDebug>,
 ) -> Result<()> {
 

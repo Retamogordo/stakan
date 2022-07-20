@@ -12,7 +12,7 @@ of Solana contracts combined with Arweave persistance.
 This product was designed for exclusively demonstration purpose,
 it leverages Solana Devnet for transactions, which means no real assets
 are involved.  
-The same reasoning applies to Arweave transactions which are executed on a local node only.  
+Similar reasoning applies to Arweave transactions which are executed on a local node only.  
 
 ## Function
 
@@ -31,7 +31,7 @@ Next you'll need to airdrop some lamports onto your wallet. This can be done, fo
 Please refer to https://docs.solana.com/cli/install-solana-cli-tools for installation instructions.  
 Once installed, open a terminal and configure it by:  
 
-solana config set --url devnet  
+```solana config set --url devnet```  
 
 Then airdrop some sol:  
 
@@ -44,7 +44,7 @@ On ArConnect from Settings->Gateway->Custom choose your gateway to be
 localhost, port 1984, protocol http.  
 In a terminal window run Arweave local server by:
 
-npx arlocal  
+```npx arlocal```  
 
 This should run on its default port 1984.  
 
@@ -80,6 +80,43 @@ As interrupted session is stored on browsers local storage it will be resumed ne
 When the game session is over your stake goes to the reward fund in the case you lose, otherwise you're rewarded for victory.  
 No matter the result, your session is stored on Arweave local node and this fact is reflected on the left panel on the bottom.  
 The sessions are there as long as arlocal server runs.  
+
+## Contract Description
+### Global Accounts
+After program deployment, the global account setup routine is run. It creates a PDA wallet for lamports (I called this account escrow, which is not an accurate name) held for tokens being trade.    
+The initial amount of lamports on it fits the number of initial token supply.  
+These tokens are kept in a reward account.
+The two mentioned accounts are established once and their balances are modified during token trading and reward distribution.
+
+### User Account
+When a new user signs up two accounts are created:  
+the first one references user wallet pubkey and token account (this is the second account created upon signing up), arweave storage id, user name, number of game session ever played and so on.  
+The second account created is an associated token account for holding Stakan tokens being traded and staked.
+
+### Token Trading
+When a user purchases tokens, the desired token supply is minted out of thin air and deposited to their associated token account.  
+To compensate the token supply, corresponding amount of lamports is transfered from users wallet to programs global PDA wallet (escrow).
+Thus the total token supply grows as well as overall lamport amount involved in the contract.  
+When the user sells their tokens, these are transfered to the global reward account and the user gets the corresponding amount of lamports onto their wallet from the global PDA wallet.
+
+### Game Session
+When the user initiates a game session, a new account is created. It holds the token stake amount and serves as a lock for ongoing session.  
+This prevents the user from starting multiple sessions at one time and ensures that the stake is not lost if the client gets disconnected.
+The account is closed after the session is over and stored to Arweave node. 
+
+## Tests
+There are some tests that can be run on Solana localnet test validator.
+In the cloned repo modify Anchor.toml cluster to 'localnet'.
+Build the library by running   
+``` anchor build ```
+then
+``` anchor run after-build ```
+run the local validator in a terminal window
+``` solana-test-validator ```
+and
+``` anchor deploy ```
+here there is no need to run arweave node since it is run by the test itself
+
 
 ## Cheating
 The web client communicates directly to the Solana program, so anybody can modify the client in such a way it sends counterfeit score to the program thus gaining the reward.
