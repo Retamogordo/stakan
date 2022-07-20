@@ -14,8 +14,6 @@ export const RightPanel = (props: any) => {
         const user = props.userConnectionCtx?.user;
         const arweave = props.arweaveConnection.arweave;
 
-        console.log("getSessionsArchive->arweave: ", arweave);
-
         if (arweave && user?.account) { 
             props.logCtx.log("retrieving sessions archive...");
             const maxArchivesToLoad = 100;
@@ -144,8 +142,11 @@ export const RightPanel = (props: any) => {
                 { championAccount ? <span style={{color:'hsl(59, 88%, 59%)'}}>{' ' + championAccount}</span> : <span>{' <unknown>'}</span>}
             </div>
             <div className="right-panel-active-users">
-                <div style={{textAlign: "left", marginLeft: "5%"}}>
+            <div style={{textAlign: "left", marginLeft: "5%"}}>
                     Reward Fund balance {rewardBalance}
+                </div>
+                <div style={{textAlign: "left", marginLeft: "5%"}}>
+                    Sessions played {props.userConnectionCtx?.stakanState?.totalSessionsFinished}
                 </div>
                 <p></p>
                 <div className='right-panel-active-users'>

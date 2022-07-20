@@ -20,6 +20,7 @@ pub(crate) struct StakanGlobalState {
     pub mint_token: Pubkey,
 
     pub program_wallet: Pubkey,
+    pub total_sessions_finished: u64,
     pub champion_account: Option<Pubkey>,
 } 
 
@@ -41,6 +42,7 @@ impl StakanGlobalState {
             + size_of::<Pubkey>() + size_of::<u8>() // escrow_account + bump
             + size_of::<Pubkey>() // mint_token
             + size_of::<Pubkey>() // program_wallet
+            + size_of::<u64>()    // total_sessions_finished
             + (1 + size_of::<Pubkey>())
     }    
 }
@@ -181,6 +183,7 @@ pub fn set_up_stakan(ctx: Context<SetupStakan>,
     acc.reward_funds_account = ctx.accounts.reward_funds_account.key(); 
     acc.global_max_score = 0;
     acc.program_wallet = ctx.accounts.program_wallet.key();
+    acc.total_sessions_finished = 0;
     acc.champion_account = None;
     Ok(())    
 }

@@ -27,6 +27,7 @@ export class StakanState {
     globalMaxScore: number;
     championAccount: web3.PublicKey | undefined;
     lamportsPerToken: number;
+    totalSessionsFinished: number;
   
     constructor(
         program: Program<Stakan>,
@@ -47,6 +48,7 @@ export class StakanState {
             new web3.PublicKey(Buffer.from(stakanAccountData['champion_account']))
           : undefined;
         this.lamportsPerToken = (stakanAccountData['lamports_per_stakan_tokens'] as BN).toNumber(); 
+        this.totalSessionsFinished = (stakanAccountData['total_sessions_finished'] as BN).toNumber();
     }
     
     async getBalance(): Promise<number> {
@@ -413,8 +415,6 @@ export async function getUserFromAccount(
 }
 
 export async function signUpUser(user: User, stakanState: StakanState, arweave: Arweave) {  
-    console.log("arweaveWallet:", user.arweaveWallet);
-
     const arweaveStorageAddress = await arweave.wallets.getAddress(user.arweaveWallet);
 
     const [userAccount, userAccountBump] = await web3.PublicKey.findProgramAddress(
@@ -671,8 +671,6 @@ export async function initGameSession(
     const dateTime = new Date();
     const tilesArray = stakanTiles.tiles.flat();
 
-    console.log("finishGameSession-> arweave: ", arweave);
-
     let txid = await saveToArweave(user, arweave,
       {
         score: session.score,
@@ -686,7 +684,6 @@ export async function initGameSession(
       }
     );
 
-//    txid = "dummy_bad_tx";
     if (!txid) {
       logCtx?.logLn('failed');
       throw new Error("Failed saving to Arweave");

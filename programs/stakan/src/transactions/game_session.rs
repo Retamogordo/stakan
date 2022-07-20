@@ -174,8 +174,6 @@ pub fn finish(ctx: Context<FinishGameSession>,
                     ),
                     reward,
                 )?;
-
-//                ctx.accounts.user_account.user.last_reward = reward;
             }
         } else {
             let user = &ctx.accounts.user_account.user;
@@ -204,5 +202,7 @@ pub fn finish(ctx: Context<FinishGameSession>,
     user_account.user.saved_game_sessions += 1;
 
     user_account.set_game_session(None);
+
+    ctx.accounts.stakan_state_account.total_sessions_finished += 1;
     Ok(())
 }

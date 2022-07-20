@@ -46,6 +46,7 @@ class Assignable extends Function {
            
                 ['mint_token', [32]],
                 ['program_wallet', [32]],
+                ['total_sessions_finished', 'u64'], 
                 ['champion_account_opt_variant', 'u8'], 
               ] 
           }
@@ -68,6 +69,7 @@ class Assignable extends Function {
                 ['escrow_account_bump', 'u8'], 
                 ['mint_token', [32]],
                 ['program_wallet', [32]],
+                ['total_sessions_finished', 'u64'], 
                 ['champion_account_opt_variant', 'u8'], 
                 ['champion_account', [32]],
               ] 
@@ -78,11 +80,11 @@ class Assignable extends Function {
       let acc;
       try {
         acc = deserialize(schemaStakanState, StakanStateSchema, 
-          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+8+32+32+1+32+32+1+32));
+          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+8+32+32+1+32+32+8+1+32));
       } catch {
 //        console.log("catch -> deserialized: ", acc);
         acc = deserialize(schemaNeverUsedStakanState, StakanStateSchema, 
-          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+8+32+32+1+32+32+1));
+          buffer.slice(0, 8+(4+StakanStateSchema.id.length)+32+1+8+8+32+32+1+32+32+8+1));
       }
 //      console.log("deserialized: ", acc);
       return acc;
