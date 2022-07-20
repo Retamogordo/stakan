@@ -35,7 +35,7 @@ solana config set --url devnet
 
 Then airdrop some sol:  
 
-```solana airdrop 2 <your wallet pubkey>  
+```solana airdrop 2 <your wallet pubkey>```  
 
 ### Arweave
 Please install ArConnect browser extention.   
