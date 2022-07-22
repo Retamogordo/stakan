@@ -192,17 +192,8 @@ function App() {
   }
 
   useEffect(() => {
-//    console.log("window.arweaveWallet: ", window);
-  }, []);
-  
-  useEffect(() => {
-//    console.log("window.arweaveWallet: ", window);
-  }, [userConnectionCtx?.stakanState]);
-
-  useEffect(() => {
     setSignalUserWalletsStatus(true);
     setSignalUpdateRightPanel(true);
-//    console.log("window.arweaveWallet: ", window);
   }, [userConnectionCtx?.user]);
 
   useEffect(() => {
